@@ -53,10 +53,17 @@ describe("computeColIndexes", () => {
   // doubling the columns roughly quadrupled the time and a real schema spent
   // ~100 ms here on every mouse move. Linear growth is the property worth
   // holding on to; the bound is loose so that a slow machine cannot fail it.
+  //
+  // The floor is two milliseconds rather than half of one because this suite
+  // runs beside forty-six others: a small run that lands between two scheduler
+  // slices measures near zero, and the bound computed from it then fails on a
+  // large run that merely met a garbage collection. Sixteen milliseconds is
+  // still an order of magnitude under what the quadratic version cost — around
+  // a hundred for five thousand columns, and this case has seven thousand.
   test("grows with the number of columns, not with its square", () => {
     const small = timeOf(schemaOf(60, 60));
     const double = timeOf(schemaOf(60, 120));
 
-    expect(double).toBeLessThan(Math.max(small, 0.5) * 8);
+    expect(double).toBeLessThan(Math.max(small, 2) * 8);
   });
 });
