@@ -3,10 +3,10 @@ import { type KonvaEventObject } from "konva/lib/Node";
 
 import type { Group as CoreGroup } from "konva/lib/Group";
 import type { Stage as CoreStage } from "konva/lib/Stage";
+import type { XYWHPosition } from "@/types/positions";
 
 import { useIsSelectMode } from "@/hooks/selection";
 import { selectionStore } from "@/stores/selectionStore";
-import { tableCoordsStore } from "@/stores/tableCoords";
 import {
   normalizeMarquee,
   selectionFromMarquee,
@@ -20,6 +20,15 @@ import {
 
 interface MarqueeSelectionArgs {
   stageRef: RefObject<CoreStage | null>;
+  /**
+   * The tables as they are drawn right now, read at the end of the gesture.
+   *
+   * Not `tableCoordsStore` directly, which is what this used to read: the
+   * heights in there belong to the layout, made once at full detail, so a drag
+   * through the empty space under a collapsed table caught it anyway. See
+   * `drawnBoxes`.
+   */
+  boxes: () => ReadonlyMap<string, XYWHPosition>;
   /**
    * The Group the tables live in. A pointer position read from it is already in
    * the coordinates `tableCoordsStore` holds — the stage transform and the
@@ -62,6 +71,7 @@ interface MarqueeStart {
 export const useMarqueeSelection = ({
   stageRef,
   tablesGroupRef,
+  boxes,
 }: MarqueeSelectionArgs): MarqueeSelection => {
   const isSelectMode = useIsSelectMode();
   const [marquee, setMarquee] = useState<Marquee | null>(null);
@@ -207,7 +217,7 @@ export const useMarqueeSelection = ({
 
     selectionStore.setSelected(
       selectionFromMarquee(
-        tableCoordsStore.getCurrentStore(),
+        boxes(),
         marqueeFrom(start, pointerInDiagram()),
         start.additive,
         selectionStore.getSelected(),

@@ -46,8 +46,10 @@ import {
   useKeyboardShortcuts,
 } from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { type TableDetailLevel } from "@/types/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
+import { drawnBoxes } from "@/utils/drawnBoxes";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
 import {
@@ -125,13 +127,37 @@ const DiagramWrapper = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
   const tablesGroupRef = useRef<null | CoreGroup>(null);
+
+  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
+  // Read through a ref rather than closed over: `fitToView` is captured once,
+  // by the mount-time subscription below, and a captured detail level would be
+  // whatever it was when the document opened for the rest of the document's
+  // life.
+  const detailLevelRef = useRef(detailLevel);
+  detailLevelRef.current = detailLevel;
+
+  // One resolver for everything on this component that measures tables. Built
+  // here rather than taken from `useDetailLevelResolver`, because the callers
+  // below are captured at mount: the ref is why the global level it reads is
+  // the current one, and the store is read the same way, at the call.
+  const levelFor = (tableName: string): TableDetailLevel =>
+    tableDetailLevelStore.levelFor(tableName) ?? detailLevelRef.current;
+
   const {
     marquee,
     stageIsDraggable,
     isPanning,
     onMouseDown: onMarqueeMouseDown,
     onMouseMove: onMarqueeMouseMove,
-  } = useMarqueeSelection({ stageRef, tablesGroupRef });
+  } = useMarqueeSelection({
+    stageRef,
+    tablesGroupRef,
+    // Read at the end of the gesture, not now: `drawnBoxes` asks each table's
+    // level, and a table set apart between mousedown and mouseup should be
+    // caught as it is drawn when the reader lets go.
+    boxes: () =>
+      drawnBoxes(tableCoordsStore.getCurrentStore(), tablesMeta, levelFor),
+  });
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -155,14 +181,6 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
 
-  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
-  // Read through a ref rather than closed over: `fitToView` is captured once,
-  // by the mount-time subscription below, and a captured detail level would be
-  // whatever it was when the document opened for the rest of the document's
-  // life.
-  const detailLevelRef = useRef(detailLevel);
-  detailLevelRef.current = detailLevel;
-
   const diagramBounds = (): {
     x: number;
     y: number;
@@ -172,12 +190,7 @@ const DiagramWrapper = ({
     computeDiagramBounds(
       tableCoordsStore.getCurrentStore(),
       tablesMeta,
-      // Built here rather than taken from `useDetailLevelResolver`: this is
-      // called from a subscription captured at mount, and the ref is why the
-      // global level it reads is the current one. The store is read the same
-      // way, at the call.
-      (tableName) =>
-        tableDetailLevelStore.levelFor(tableName) ?? detailLevelRef.current,
+      levelFor,
     );
 
   const fitToView = () => {

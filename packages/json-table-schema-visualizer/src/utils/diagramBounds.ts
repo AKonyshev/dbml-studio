@@ -1,4 +1,4 @@
-import { drawnTableHeight } from "./drawnTableHeight";
+import { drawnBoxes } from "./drawnBoxes";
 
 import type { JSONTableTable } from "shared/types/tableSchema";
 import type { XYWHPosition } from "@/types/positions";
@@ -36,27 +36,7 @@ export const computeDiagramBounds = (
   tables: JSONTableTable[],
   levelFor: DetailLevelResolver,
 ): { x: number; y: number; width: number; height: number } | null => {
-  const fieldsByName = new Map(
-    tables.map((table) => [table.name, table.fields]),
-  );
-
-  const boxes = [...coords.entries()]
-    // A table that has never been measured has no box to contribute, and
-    // treating its zeroes as a corner would drag the bounds to the origin.
-    .filter(([, coord]) => coord.w > 0 && coord.h > 0)
-    .map(([name, coord]) => {
-      const fields = fieldsByName.get(name);
-
-      return {
-        x: coord.x,
-        y: coord.y,
-        w: coord.w,
-        h:
-          fields === undefined
-            ? coord.h
-            : drawnTableHeight(fields, levelFor(name)),
-      };
-    });
+  const boxes = [...drawnBoxes(coords, tables, levelFor).values()];
 
   if (boxes.length === 0) {
     return null;
