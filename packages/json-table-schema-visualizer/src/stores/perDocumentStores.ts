@@ -1,6 +1,7 @@
 import { detailLevelStore } from "./detailLevelStore";
 import { stageStateStore } from "./stagesState";
 import { tableCoordsStore } from "./tableCoords";
+import { tableDetailLevelStore } from "./tableDetailLevelStore";
 import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
 
 /**
@@ -22,4 +23,5 @@ export const PER_DOCUMENT_STORES = [
   stageStateStore,
   detailLevelStore,
   tableRelationsVisibilityStore,
+  tableDetailLevelStore,
 ] as const;

@@ -1,6 +1,7 @@
 import { switchDocument } from "../switchDocument";
 import { detailLevelStore } from "../detailLevelStore";
 import { tableCoordsStore } from "../tableCoords";
+import { tableDetailLevelStore } from "../tableDetailLevelStore";
 
 import type { JSONTableField, JSONTableTable } from "shared/types/tableSchema";
 
@@ -96,5 +97,15 @@ describe("switchDocument", () => {
     // document's level it would be spaced for two hundred columns of table.
     const box = tableCoordsStore.getFullCoords("wide");
     expect(box.h).toBeLessThan(100);
+  });
+  test("a document's per-table levels arrive and leave with it", () => {
+    switchDocument("doc-a", [tableWith("users", 3)], []);
+    tableDetailLevelStore.cycle("users");
+
+    switchDocument("doc-b", [tableWith("users", 3)], []);
+    expect(tableDetailLevelStore.levelFor("users")).toBeNull();
+
+    switchDocument("doc-a", [tableWith("users", 3)], []);
+    expect(tableDetailLevelStore.levelFor("users")).not.toBeNull();
   });
 });

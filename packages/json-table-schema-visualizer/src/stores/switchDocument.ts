@@ -1,6 +1,7 @@
 import { detailLevelStore } from "./detailLevelStore";
 import { stageStateStore } from "./stagesState";
 import { tableCoordsStore } from "./tableCoords";
+import { tableDetailLevelStore } from "./tableDetailLevelStore";
 import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
 
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
@@ -48,4 +49,7 @@ export const switchDocument = (
   tableCoordsStore.switchTo(documentKey, tables, refs);
   stageStateStore.switchTo(documentKey);
   tableRelationsVisibilityStore.switchTo(documentKey);
+  // Last, and order-free unlike the three above: nothing here feeds the layout,
+  // so no one is waiting to read it.
+  tableDetailLevelStore.switchTo(documentKey);
 };
