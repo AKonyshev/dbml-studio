@@ -70,16 +70,34 @@ describe("tableDetailLevelStore", () => {
   });
 
   test("overrides come back with the document they were made on", () => {
-    tableDetailLevelStore.switchTo("doc-a");
+    // Named per run rather than fixed, so that this case cannot inherit what an
+    // earlier one left under the same key — the store is a module singleton and
+    // its storage outlives every test in this file.
+    const first = `doc-${Math.random()}`;
+    const second = `doc-${Math.random()}`;
+
+    tableDetailLevelStore.switchTo(first);
     tableDetailLevelStore.cycle("users");
 
-    tableDetailLevelStore.switchTo("doc-b");
+    tableDetailLevelStore.switchTo(second);
     expect(tableDetailLevelStore.levelFor("users")).toBeNull();
 
-    tableDetailLevelStore.switchTo("doc-a");
+    tableDetailLevelStore.switchTo(first);
     expect(tableDetailLevelStore.levelFor("users")).toBe(
       TableDetailLevel.HeaderOnly,
     );
+  });
+
+  test("a reset leaves storage as a document never opened", () => {
+    const key = `doc-${Math.random()}`;
+    tableDetailLevelStore.switchTo(key);
+    tableDetailLevelStore.cycle("users");
+    tableDetailLevelStore.resetAll();
+
+    // Read back through a fresh switch, which is the only way this store ever
+    // reads its own storage.
+    tableDetailLevelStore.switchTo(key);
+    expect(tableDetailLevelStore.hasOverrides()).toBe(false);
   });
 
   test("a change is announced once, and a no-op reset not at all", () => {

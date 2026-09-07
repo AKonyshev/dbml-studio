@@ -105,7 +105,10 @@ class TableDetailLevelStore extends PersistableStore<
     }
 
     overrides.clear();
-    this.persistCurrent();
+    // Removed rather than written as an empty record: nothing set apart is the
+    // same state as a document never opened, and it should leave storage
+    // looking that way too.
+    this.clear(this.activeKey ?? "default");
     this.announce();
     return true;
   }
