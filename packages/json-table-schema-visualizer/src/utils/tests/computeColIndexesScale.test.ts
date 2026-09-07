@@ -22,7 +22,7 @@ const timeOf = (tables: JSONTableTable[]): number => {
   const runs: number[] = [];
   for (let i = 0; i < 5; i++) {
     const started = performance.now();
-    computeColIndexes(tables, TableDetailLevel.FullDetails);
+    computeColIndexes(tables, () => TableDetailLevel.FullDetails);
     runs.push(performance.now() - started);
   }
   runs.sort((a, b) => a - b);
@@ -34,7 +34,7 @@ describe("computeColIndexes", () => {
   test("indexes every column by table and name", () => {
     const result = computeColIndexes(
       schemaOf(2, 3),
-      TableDetailLevel.FullDetails,
+      () => TableDetailLevel.FullDetails,
     );
 
     expect(result[computeColIndexesKey("t0", "c0")]).toBe(0);
@@ -45,7 +45,7 @@ describe("computeColIndexes", () => {
 
   test("costs nothing when only headers are drawn", () => {
     expect(
-      computeColIndexes(schemaOf(50, 50), TableDetailLevel.HeaderOnly),
+      computeColIndexes(schemaOf(50, 50), () => TableDetailLevel.HeaderOnly),
     ).toEqual({});
   });
 
