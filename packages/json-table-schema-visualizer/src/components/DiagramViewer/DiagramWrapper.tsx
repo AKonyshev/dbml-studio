@@ -29,6 +29,7 @@ import { stageStateStore } from "@/stores/stagesState";
 import { useScrollDirectionContext } from "@/hooks/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import { tableDetailLevelStore } from "@/stores/tableDetailLevelStore";
 import { useTablePositionContext } from "@/hooks/table";
 import {
   getHighlightedColumns,
@@ -171,7 +172,12 @@ const DiagramWrapper = ({
     computeDiagramBounds(
       tableCoordsStore.getCurrentStore(),
       tablesMeta,
-      detailLevelRef.current,
+      // Built here rather than taken from `useDetailLevelResolver`: this is
+      // called from a subscription captured at mount, and the ref is why the
+      // global level it reads is the current one. The store is read the same
+      // way, at the call.
+      (tableName) =>
+        tableDetailLevelStore.levelFor(tableName) ?? detailLevelRef.current,
     );
 
   const fitToView = () => {
