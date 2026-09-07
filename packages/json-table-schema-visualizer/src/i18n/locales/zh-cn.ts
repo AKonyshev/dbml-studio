@@ -34,7 +34,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.showLegend": "显示快捷键列表",
   "action.closeLegend": "关闭列表",
   "action.search": "搜索表",
-  "action.toggleRefs": "切换 DBML 中的 Ref",
+  "action.toggleRefs": "隐藏或显示表的关系",
   "action.openFile": "打开",
   "action.openFile.hint": "打开 .dbml 文件，或将文件拖到页面上",
   "action.downloadFile": "下载",

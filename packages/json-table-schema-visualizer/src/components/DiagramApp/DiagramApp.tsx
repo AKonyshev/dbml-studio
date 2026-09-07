@@ -39,6 +39,14 @@ interface DiagramAppProps {
    * host as `autoFit`. See `DiagramWrapper`.
    */
   revealControlsOnHover?: boolean;
+  /**
+   * Whether a bare letter runs the action bound to it, from inside the page.
+   *
+   * The VS Code adapter turns this off: there the workbench owns the chords, so
+   * that a reader can rebind any of them, and relays each one back as a
+   * command. Every other host keeps its own keyboard. See `DiagramWrapper`.
+   */
+  keyboardShortcuts?: boolean;
 }
 
 // The composition both hosts share. It reads nothing from `window` and knows
@@ -58,6 +66,7 @@ const DiagramApp = ({
   hostActions,
   autoFit,
   revealControlsOnHover,
+  keyboardShortcuts,
 }: DiagramAppProps) => {
   if (schemaErrorMessage !== null && schema === null) {
     return <ErrorMessage message={schemaErrorMessage} />;
@@ -78,6 +87,7 @@ const DiagramApp = ({
           hostActions={hostActions}
           autoFit={autoFit}
           revealControlsOnHover={revealControlsOnHover}
+          keyboardShortcuts={keyboardShortcuts}
         />
       </ScrollDirectionProvider>
     </ThemeProvider>

@@ -66,7 +66,7 @@ describe("toggleTableRelations", () => {
     ).toBe(false);
   });
 
-  test("does nothing without a table, which is Alt+H over empty canvas", () => {
+  test("does nothing without a table, which is H over empty canvas", () => {
     const heard: unknown[] = [];
     const listener = (): void => {
       heard.push(1);

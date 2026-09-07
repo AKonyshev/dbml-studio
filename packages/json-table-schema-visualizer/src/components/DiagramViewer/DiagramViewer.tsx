@@ -7,7 +7,6 @@ import { type ReactNode } from "react";
 
 import EmptyTableMessage from "../Messages/EmptyTableMessage";
 import Search from "../Search/Search";
-import ToggleRefsShortcut from "../ToggleRefsShortcut";
 
 import DiagramWrapper from "./DiagramWrapper";
 import RelationsConnections from "./Connections";
@@ -32,6 +31,8 @@ interface DiagramViewerProps {
    * diagram; see `DiagramWrapper`. The group they reveal from is on the `main`
    * below, because it is the one box that holds both. */
   revealControlsOnHover?: boolean;
+  /** Passed straight through to the wrapper; see `DiagramWrapper`. */
+  keyboardShortcuts?: boolean;
 }
 
 const DiagramViewer = ({
@@ -43,6 +44,7 @@ const DiagramViewer = ({
   hostActions = null,
   autoFit = false,
   revealControlsOnHover = false,
+  keyboardShortcuts = true,
 }: DiagramViewerProps) => {
   const { theme } = useThemeContext();
 
@@ -61,15 +63,13 @@ const DiagramViewer = ({
             className={`relative flex h-full w-full flex-col items-center ${theme === Theme.dark ? "dark" : ""} ${revealControlsOnHover ? "group/diagram" : ""}`}
           >
             {syncEffects}
-            {/* Inside the providers because it needs the hovered table; shared
-                by both hosts because hiding relations is now purely a view. */}
-            <ToggleRefsShortcut />
             <Search tables={tables} hideUntilHover={revealControlsOnHover} />
 
             <DiagramWrapper
               hostActions={hostActions}
               autoFit={autoFit}
               revealControlsOnHover={revealControlsOnHover}
+              keyboardShortcuts={keyboardShortcuts}
               tablesMeta={tables}
               refs={refs}
               connections={

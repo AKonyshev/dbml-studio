@@ -55,6 +55,12 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "toggleRefs",
+    key: "h",
+    labelKey: "action.toggleRefs",
+    executable: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",
@@ -70,12 +76,6 @@ export const SHORTCUTS = [
     id: "search",
     key: "Ctrl/Cmd+F",
     labelKey: "action.search",
-    executable: false,
-  },
-  {
-    id: "toggleRefs",
-    key: "Alt+H",
-    labelKey: "action.toggleRefs",
     executable: false,
   },
 ] as const satisfies readonly ShortcutEntry[];

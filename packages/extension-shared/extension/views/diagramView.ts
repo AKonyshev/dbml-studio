@@ -17,6 +17,7 @@ import { type JSONTableSchema } from "shared/types/tableSchema";
 import { DiagnosticError } from "shared/types/diagnostic";
 
 import { DIAGRAM_UPDATER_DEBOUNCE_TIME } from "../constants";
+import { RUN_DIAGRAM_ACTION } from "../types/webviewCommand";
 import { ExtensionConfig } from "../helper/extensionConfigs";
 
 import { WebviewHelper } from "./helper";
@@ -133,6 +134,21 @@ export class DiagramView implements Disposable {
     }
 
     void this.panel.webview.postMessage(message);
+  }
+
+  /**
+   * Run one of the diagram's actions, on behalf of a command the reader invoked.
+   *
+   * Dropped rather than queued when the webview is not up yet: unlike the
+   * schema, a keypress is worth nothing once it is late, and replaying it
+   * minutes later would toggle something the reader has since left alone.
+   */
+  public runAction(action: string): void {
+    if (!this.ready) {
+      return;
+    }
+
+    void this.panel.webview.postMessage({ type: RUN_DIAGRAM_ACTION, action });
   }
 
   public refresh(): void {

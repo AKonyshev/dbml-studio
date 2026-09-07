@@ -12,6 +12,7 @@ import {
 } from "../extension/types/webviewCommand";
 
 import { useSchema } from "./hooks/schema";
+import { useHostActions } from "./hooks/hostActions";
 import DbmlFileSyncEffects from "./components/DbmlFileSyncEffects";
 import { postToExtension } from "./vscodeApi";
 
@@ -29,6 +30,7 @@ const App = () => {
   useThemeClass(theme);
 
   const { schema, key, schemaErrorMessage, rawContent } = useSchema();
+  useHostActions();
   const supportsDbmlFileSync =
     window.EXTENSION_DEFAULT_CONFIG?.supportsDbmlFileSync === true;
   // In practice the config is always injected — `setupHtml` runs `injectScripts`
@@ -60,6 +62,9 @@ const App = () => {
       themeColors={themeColors}
       setTheme={saveThemePreference}
       scrollDirection={scrollDirection}
+      // The workbench owns the chords here, so that a reader can rebind them;
+      // they come back as commands through `useHostActions`.
+      keyboardShortcuts={false}
       syncEffects={
         supportsDbmlFileSync
           ? () => (

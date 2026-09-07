@@ -22,28 +22,29 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 - Entity-relationship diagram from your DBML file
 - Light and dark themes
 - Display modes: all columns, relational columns only, or table headers only
-- Hide/show relations per table via the icon in the table header; **Alt+H** comments refs in DBML for the table under the cursor
+- Hide/show relations per table via the icon in the table header, or **H** for the table under the pointer; it is a view preference and nothing is written to the file
 - Colored relations: either one neutral colour for all of them, or each relation painted in its source table's colour
 - Relation animation: the relations of the table under the cursor animate to show their direction
 
 ## Keyboard shortcuts
 
-Available while the diagram webview has focus. Keys are ignored while you are typing in a field, so the search box is unaffected.
+Every view action is a command, so the keys below are defaults rather than fixtures: rebind any of them in **Preferences: Open Keyboard Shortcuts** by searching for `DBML`, and run any of them from the command palette. They apply while the diagram has focus and nowhere else.
 
-| Key          | Action                                     |
-| ------------ | ------------------------------------------ |
-| `C`          | Colored relations                          |
-| `A`          | Relation animation                         |
-| `S`          | Short table names                          |
-| `D`          | Cycle detail level                         |
-| `L`          | Auto-arrange                               |
-| `F`          | Fit to view                                |
-| `?`          | Show the shortcuts legend                  |
-| `Esc`        | Close the legend                           |
-| `Ctrl/Cmd+F` | Search tables                              |
-| `Alt+H`      | Comment/uncomment refs for a hovered table |
+| Key | Command                                 |
+| --- | --------------------------------------- |
+| `C` | Colored relations                       |
+| `A` | Relation animation                      |
+| `S` | Short table names                       |
+| `D` | Cycle detail level                      |
+| `V` | Switch between pan and select           |
+| `L` | Auto-arrange                            |
+| `F` | Fit to view                             |
+| `H` | Hide/show the hovered table's relations |
+| `?` | Show the shortcuts legend               |
 
-The same list is available in the app: press `?` or use the keyboard button in the toolbar.
+Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search. Both are ignored while you are typing in a field.
+
+The same list is available in the app: press `?` or use the keyboard button in the toolbar. It shows the defaults, not a key you have rebound.
 
 ## Languages
 

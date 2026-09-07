@@ -40,12 +40,16 @@ import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
-import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
+import {
+  useDiagramActions,
+  useKeyboardShortcuts,
+} from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
+import { toggleTableRelations } from "@/stores/toggleTableRelations";
 import { useMarqueeSelection } from "@/hooks/marqueeSelection";
 
 interface DiagramWrapperProps {
@@ -87,6 +91,14 @@ interface DiagramWrapperProps {
    * search bar hides with the toolbar and is not inside this component.
    */
   revealControlsOnHover?: boolean;
+  /**
+   * Whether a bare letter on the document runs the action bound to it.
+   *
+   * False inside VS Code, where the workbench owns the chords so that a reader
+   * can rebind them, and hands them back as commands. The actions themselves
+   * stay registered either way; only this listener goes.
+   */
+  keyboardShortcuts?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -104,6 +116,7 @@ const DiagramWrapper = ({
   hostActions = null,
   autoFit = false,
   revealControlsOnHover = false,
+  keyboardShortcuts = true,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
@@ -434,7 +447,7 @@ const DiagramWrapper = ({
   const { resetPositions } = useTablePositionContext();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
-  useKeyboardShortcuts(
+  useDiagramActions(
     {
       colorRelations: () => {
         setColorRelations((prev) => !prev);
@@ -452,9 +465,16 @@ const DiagramWrapper = ({
       legend: () => {
         setIsLegendOpen(true);
       },
+      // Reading the hovered table at the keypress rather than subscribing to
+      // it: this component has no reason to re-render as the pointer moves.
+      toggleRefs: () => {
+        toggleTableRelations(getHoveredTableName() ?? "");
+      },
     },
     !isLegendOpen,
   );
+
+  useKeyboardShortcuts(keyboardShortcuts);
 
   /**
    * Center handler: listen for requests to center the stage on a given table

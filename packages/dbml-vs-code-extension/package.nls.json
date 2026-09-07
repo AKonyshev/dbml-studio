@@ -11,5 +11,14 @@
   "command.deleteConnection": "DBML: Delete connection",
   "command.importFromConnection": "DBML: Import from database",
   "command.compareWithConnection": "DBML: Compare with database",
+  "command.colorRelations": "DBML: Toggle colored relations",
+  "command.animateRelations": "DBML: Toggle relation animation",
+  "command.shortTableName": "DBML: Toggle short table names",
+  "command.detailLevel": "DBML: Cycle table detail level",
+  "command.interactionMode": "DBML: Switch between pan and select",
+  "command.autoArrange": "DBML: Arrange tables automatically",
+  "command.fitToView": "DBML: Fit the diagram to the view",
+  "command.toggleTableRelations": "DBML: Hide or show the hovered table's relations",
+  "command.showShortcuts": "DBML: Show the diagram legend",
   "configuration.title": "DBML Studio"
 }

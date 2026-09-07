@@ -31,7 +31,7 @@ export const MESSAGES_EN = {
   "action.showLegend": "Show this legend",
   "action.closeLegend": "Close the legend",
   "action.search": "Search tables",
-  "action.toggleRefs": "Toggle refs in DBML",
+  "action.toggleRefs": "Hide or show a table's relations",
   "action.openFile": "Open",
   "action.openFile.hint": "Open a .dbml file, or drop one anywhere on the page",
   "action.downloadFile": "Download",

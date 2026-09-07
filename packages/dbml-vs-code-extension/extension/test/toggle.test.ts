@@ -5,6 +5,8 @@ import * as path from "path";
 
 import * as vscode from "vscode";
 
+import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
+
 const EXTENSION_ID = "konyshevav.dbml-studio";
 const DIAGRAM_VIEW_TYPE = "dbml-studio-diagram";
 
@@ -140,6 +142,22 @@ suite("text/diagram toggle", () => {
       "the text editor should survive an open-beside",
     );
     assert.strictEqual(vscode.window.tabGroups.all.length, 2);
+  });
+
+  test("every diagram action is registered as a command", async () => {
+    const registered = new Set(await vscode.commands.getCommands(true));
+
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      assert.ok(registered.has(command), `${command} is not registered`);
+    }
+  });
+
+  test("a diagram action with no diagram open does nothing", async () => {
+    // The `when` clause keeps the keys off, but the palette and a rebound key
+    // can still reach the command; it has to be safe with nothing to act on.
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      await vscode.commands.executeCommand(command);
+    }
   });
 
   test("the diagram is registered as an optional editor for .dbml", async () => {

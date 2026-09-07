@@ -459,10 +459,11 @@ test("hiding a table's relations changes the view and not the file", async ({
   const names = Object.keys(await tablePositions(page));
   const grip = await pointOnTable(page, names[0]);
 
-  // Alt+H acts on whatever the pointer is over, so the pointer has to be over
-  // something first.
-  await page.mouse.move(grip.x, grip.y);
-  await page.keyboard.press("Alt+KeyH");
+  // H acts on whatever the pointer is over, so the pointer has to be over
+  // something first. The click is what takes focus off the editor: a bare
+  // letter is a shortcut on the diagram and a character in the text.
+  await page.mouse.click(grip.x, grip.y);
+  await page.keyboard.press("h");
 
   await expect.poll(async () => await drawnRelations(page)).toBe(0);
 
@@ -478,8 +479,8 @@ test("hiding a table's relations changes the view and not the file", async ({
 
   // And it comes back the same way it went.
   const gripAgain = await pointOnTable(page, names[0]);
-  await page.mouse.move(gripAgain.x, gripAgain.y);
-  await page.keyboard.press("Alt+KeyH");
+  await page.mouse.click(gripAgain.x, gripAgain.y);
+  await page.keyboard.press("h");
 
   await expect.poll(async () => await drawnRelations(page)).toBeGreaterThan(0);
   expect(await schemaText(page)).toBe(before);

@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { WEB_VIEW_NAME } from "../constants";
+import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
 
 interface Manifest {
   contributes: {
@@ -55,10 +56,37 @@ describe("custom editor contribution", () => {
     expect(preview?.alt).toBe("dbmlStudio.previewDiagramsInPlace");
   });
 
-  test("the workbench contributes no Alt+H binding", () => {
-    // Hiding a table's relations is a view preference the diagram owns; a
-    // workbench binding would only steal the chord from the page that handles it.
-    expect(manifest().contributes.keybindings ?? []).toEqual([]);
+  test("every diagram action is a command bound to the diagram alone", () => {
+    // The keys are the reader's to change, so each has to arrive as a command;
+    // the `when` clause is what keeps a bare letter from firing while they are
+    // typing anywhere else in the workbench.
+    const { commands, keybindings = [] } = manifest().contributes;
+    const declared = new Set(commands.map((command) => command.command));
+
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      expect(declared.has(command)).toBe(true);
+
+      const binding = keybindings.find((item) => item.command === command);
+      expect(binding?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
+      expect(binding?.key).toBeTruthy();
+    }
+  });
+
+  test("no two diagram actions want the same key", () => {
+    const keys = (manifest().contributes.keybindings ?? []).map(
+      (binding) => binding.key,
+    );
+
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  test("the diagram actions reach the palette only with a diagram open", () => {
+    const palette = manifest().contributes.menus.commandPalette;
+
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      const item = palette.find((entry) => entry.command === command);
+      expect(item?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
+    }
   });
 
   test("every menu command is a contributed command", () => {

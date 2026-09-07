@@ -21,11 +21,11 @@ The tab bookkeeping is covered automatically — `yarn workspace dbml-studio tes
 
 ## Relation visibility
 
-One state, two ways in — the header icon and `Alt+H` — and **neither writes to the file**.
+One state, two ways in — the header icon and `H` — and **neither writes to the file**.
 
 1. Hover a table that has relations; click the link icon in the **table header**. Its relations hide on the canvas, the icon gains a strike-through, and the table gets a dashed outline.
 2. Click again; relations reappear and the outline goes.
-3. Hover a table and press **Alt+H**: exactly the same as clicking the icon, outline included.
+3. Hover a table and press **H**: exactly the same as clicking the icon, outline included.
 4. Watch the editor text through both — nothing is written to it, and no `Ref` line is commented out.
 5. Reload the diagram; whatever you hid is still hidden. It is remembered per document, in the browser, not in the `.dbml`.
 
@@ -44,10 +44,15 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 
 ## Keyboard shortcuts and legend
 
-1. Press `C`, `A`, `S`, `D`, `L`, `F` with the webview focused — each produces the same result as its toolbar button.
+Every one of these is a command now, so each key is a default the reader can change.
+
+1. Press `C`, `A`, `S`, `D`, `V`, `L`, `F`, `H` with the diagram focused — each produces the same result as its toolbar button, and each acts **once**. Two toggles that cancel out is the failure this arrangement exists to prevent.
 2. Open the search with `Ctrl/Cmd+F` and type text containing `c`, `a`, `s` — the view modes must **not** toggle and the text must type normally.
-3. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
-4. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+3. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
+4. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
+5. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+6. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Close the diagram and look again: they are gone.
+7. In **Preferences: Open Keyboard Shortcuts**, search `DBML`, rebind **Fit to view** to something else, and check that the new key works and `F` no longer does.
 
 ## Toolbar tooltips
 
@@ -141,7 +146,7 @@ than the dev server, so what is tested is what would be deployed.
    open the file on the site — again, where you left them. This is the whole
    point of the shared metadata format, and it is the one thing no automated
    check in this repository covers.
-8. **Alt+H.** Hover a table on the diagram and press Alt+H. The lines it drew
+8. **H.** Hover a table on the diagram and press H. The lines it drew
    disappear and the table gets a dashed outline — the same as clicking the link
    icon in its header. The editor text does not change: this is a view
    preference, kept per document, and Ctrl/Cmd+Z has nothing to undo.

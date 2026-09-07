@@ -104,8 +104,8 @@ const EditorPane = ({
 
     // `executeEdits` between two undo stops rather than `setValue`, which
     // discards the undo history outright. Everything that reaches this effect is
-    // a command the reader ran — writing the layout into the text, or Alt+H — and
-    // a command that cannot be undone is worse than one that does nothing. The
+    // a command the reader ran — writing the layout into the text — and a
+    // command that cannot be undone is worse than one that does nothing. The
     // two stops are what make each of them a single step rather than merging
     // with whatever was typed before it.
     editor.pushUndoStop();

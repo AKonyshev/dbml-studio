@@ -33,7 +33,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.showLegend": "Показать эту легенду",
   "action.closeLegend": "Закрыть легенду",
   "action.search": "Поиск по таблицам",
-  "action.toggleRefs": "Переключить Ref в DBML",
+  "action.toggleRefs": "Скрыть или показать связи таблицы",
   "action.openFile": "Открыть",
   "action.openFile.hint": "Откройте файл .dbml или перетащите его на страницу",
   "action.downloadFile": "Скачать",

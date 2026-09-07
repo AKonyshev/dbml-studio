@@ -115,6 +115,45 @@ describe("DiagramView", () => {
     view.dispose();
   });
 
+  test("relays an action to a webview that is up", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    view.runAction("toggleRefs");
+
+    expect(panel.webview.postMessage).toHaveBeenCalledWith({
+      type: "runDiagramAction",
+      action: "toggleRefs",
+    });
+
+    view.dispose();
+  });
+
+  test("drops an action aimed at a webview that is not up yet", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+
+    view.runAction("toggleRefs");
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    // Unlike the schema, a keypress is worth nothing once it is late: replaying
+    // it here would toggle something the reader has since left alone.
+    expect(panel.webview.postMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "runDiagramAction" }),
+    );
+
+    view.dispose();
+  });
+
   test("does not dispose the panel it was given", () => {
     const panel = makePanel();
     const view = new DiagramView(

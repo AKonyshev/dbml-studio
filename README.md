@@ -12,7 +12,7 @@ _A fictional library schema — the model is in [`examples/library.dbml`](./exam
 
 - Create entity-relationship diagrams from DBML code
 - Light and dark themes
-- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility (icon or Alt+H)
+- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility (icon or H)
 - Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`)
 - **Fork additions (DBML):** import a PostgreSQL schema to DBML, compare an open `.dbml` file with a live database
 
