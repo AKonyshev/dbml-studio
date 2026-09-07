@@ -46,9 +46,11 @@ export function useTableRelationsVisibility(tableName: string): {
  * needs to know about the store.
  *
  * The same event as above, because a reset is announced the same way a single
- * toggle is. The initial read happens at mount, after `Connections` has
- * switched the store to the document, so a diagram opened with tables already
- * hidden shows the button live rather than greyed out.
+ * toggle is — and so is the switch to another document, which is what lets this
+ * mount in any order relative to whoever performs that switch. Mounting first
+ * reads an empty store and is corrected by the switch; mounting later reads the
+ * answer outright. Either way a diagram opened with tables already hidden shows
+ * the button live rather than greyed out.
  */
 export function useHasHiddenRelations(): boolean {
   const [hasHidden, setHasHidden] = useState(() =>

@@ -159,3 +159,27 @@ describe("hasHiddenRelations", () => {
     expect(tableRelationsVisibilityStore.hasHiddenRelations()).toBe(false);
   });
 });
+
+describe("switching document", () => {
+  test("announces, so a reader that came first is corrected", () => {
+    tableRelationsVisibilityStore.switchTo("doc-with-hidden");
+    toggleTableRelations("users");
+
+    tableRelationsVisibilityStore.switchTo("doc-elsewhere");
+
+    // Standing in for a component that mounted and read the store before
+    // anything had switched it to the document being drawn.
+    let seen = tableRelationsVisibilityStore.hasHiddenRelations();
+    const listener = (): void => {
+      seen = tableRelationsVisibilityStore.hasHiddenRelations();
+    };
+    eventEmitter.on(RELATIONS_TOGGLE_EVENT, listener);
+
+    expect(seen).toBe(false);
+
+    tableRelationsVisibilityStore.switchTo("doc-with-hidden");
+    eventEmitter.off(RELATIONS_TOGGLE_EVENT, listener);
+
+    expect(seen).toBe(true);
+  });
+});

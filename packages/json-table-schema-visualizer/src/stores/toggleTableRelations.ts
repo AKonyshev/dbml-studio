@@ -1,8 +1,14 @@
-import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
+import {
+  RELATIONS_TOGGLE_EVENT,
+  tableRelationsVisibilityStore,
+} from "./tableRelationsVisibilityStore";
 
 import eventEmitter from "@/events-emitter";
 
-export const RELATIONS_TOGGLE_EVENT = "on:table:relations:toggle";
+// Re-exported from where the store defines it: callers reach for the event
+// beside the actions that raise it, and moving the definition should not move
+// every import.
+export { RELATIONS_TOGGLE_EVENT };
 
 /**
  * Hide or show one table's relations on the canvas.

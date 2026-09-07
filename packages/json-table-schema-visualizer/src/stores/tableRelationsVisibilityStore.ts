@@ -1,5 +1,19 @@
 import { PersistableStore } from "./PersitableStore";
 
+import eventEmitter from "@/events-emitter";
+
+/**
+ * Announced whenever the set of hidden tables changes, including the change of
+ * switching to another document.
+ *
+ * It lives with the store rather than with the action that hides one table,
+ * because the store is what every listener re-reads when it hears this, and
+ * because the switch below has to announce without going through that action.
+ * No payload: a listener that trusted a table name would have to be told twice
+ * for a reset, and not at all for a switch.
+ */
+export const RELATIONS_TOGGLE_EVENT = "on:table:relations:toggle";
+
 class TableRelationsVisibilityStore extends PersistableStore<
   Record<string, boolean>
 > {
@@ -21,6 +35,12 @@ class TableRelationsVisibilityStore extends PersistableStore<
     } else {
       this.hiddenRelationsByKey.set(storeKey, new Set());
     }
+
+    // The switch is a change like any other, and saying so is what frees a
+    // reader of this store from having to mount after whoever calls this. A
+    // component that read the store before the document arrived is corrected
+    // here; one that mounts later reads the answer directly.
+    eventEmitter.emit(RELATIONS_TOGGLE_EVENT);
   }
 
   public toggleTableRelations(tableName: string): void {
