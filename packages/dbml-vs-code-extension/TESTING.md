@@ -29,6 +29,18 @@ One state, two ways in — the header icon and `H` — and **neither writes to t
 4. Watch the editor text through both — nothing is written to it, and no `Ref` line is commented out.
 5. Reload the diagram; whatever you hid is still hidden. It is remembered per document, in the browser, not in the `.dbml`.
 
+## One table's detail level
+
+The diagram's own level and a single table's, side by side — and **neither writes to the file**.
+
+1. Hover a table and press **T** three times: it goes to headers, then to key columns, then back to full detail. No other table changes.
+2. Double-click that table's header: the same step again, and the table is neither dragged nor selected by the double click.
+3. Set two tables apart, then press **D**: every other table changes level and those two stay where you put them.
+4. Press **U**: both rejoin the rest. Press it again — nothing happens and nothing flickers.
+5. With one table collapsed, press **F**: the diagram is framed for what is on screen, with no empty band where the table used to reach.
+6. Collapse one end of a relation: the line meets that table at its header and its other end still at the right column.
+7. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
+
 ## Colored relations
 
 1. With **Colored relations** off, relations are grey; hovering a table colours only its own relations.
@@ -152,10 +164,15 @@ than the dev server, so what is tested is what would be deployed.
    disappear and the table gets a dashed outline — the same as clicking the link
    icon in its header. The editor text does not change: this is a view
    preference, kept per document, and Ctrl/Cmd+Z has nothing to undo.
-9. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
-   opens the editor's own find. With focus anywhere else on the page, it puts the
-   caret in the diagram's table search.
-10. **Nothing leaves the browser.** With the browser's network panel open and
+9. **T and U.** Hover a table and press T: that table alone cycles full
+   detail, headers, key columns. Press D and the rest of the diagram moves
+   around it while it stays as you left it; press U and it rejoins them. Like
+   H, this is a view preference kept per document, and the editor text does not
+   change.
+10. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
+    opens the editor's own find. With focus anywhere else on the page, it puts the
+    caret in the diagram's table search.
+11. **Nothing leaves the browser.** With the browser's network panel open and
     recording, load the page and use it: open a file, type, download. Every
     request is to the site's own origin. Then disconnect the machine from the
     network entirely and reload — the page still works.

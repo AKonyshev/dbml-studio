@@ -42,6 +42,8 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 | `F` | Fit to view                             |
 | `H` | Hide/show the hovered table's relations |
 | `R` | Show all hidden relations               |
+| `T` | Cycle the hovered table's detail level  |
+| `U` | Give every table the shared level back  |
 | `?` | Show the shortcuts legend               |
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.

@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **Set one table's detail level apart from the rest.** `D` has always moved the whole diagram at once, so following one table through a large schema meant reading every table in full or none of them. Hover a table and press `T`, or double-click its header, and that table alone cycles full detail, header only, key columns only. It then keeps the level you gave it while `D` moves everything around it, so you can leave one table open in a diagram of headers. `U`, or **DBML: Give every table the shared detail level back** in the palette, returns them all. The levels are remembered with the file and nothing is written to the `.dbml`, the same as hiding a table's relations. Cycling the hovered table is kept out of the palette for the reason hiding relations is: from there the pointer is not on a table.
+
 - **Bring every hidden relation back at once.** Relations are hidden one table at a time, from the link glyph in the table's own header, so the way back was as many clicks as the way in — and you had to remember which tables you had silenced, which is the thing a diagram is meant to save you from. A button in the toolbar, **DBML: Show all hidden relations** in the palette, and `R` while a diagram has focus each undo all of it in one go. The button is dimmed while nothing is hidden, so it also tells you whether anything is. Nothing is written to the `.dbml` file, the same as hiding.
 
 ### Changed
