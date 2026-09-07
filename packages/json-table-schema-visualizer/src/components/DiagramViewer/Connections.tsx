@@ -3,7 +3,10 @@ import { type JSONTableRef } from "shared/types/tableSchema";
 
 import RelationConnection from "../RelationConnection/RelationConnection";
 
-import { tableRelationsVisibilityStore } from "@/stores/tableRelationsVisibilityStore";
+import {
+  RELATIONS_TOGGLE_EVENT,
+  tableRelationsVisibilityStore,
+} from "@/stores/tableRelationsVisibilityStore";
 import eventEmitter from "@/events-emitter";
 
 interface RelationsConnectionsProps {
@@ -30,9 +33,9 @@ const RelationsConnections = ({
       updateHiddenTables();
       setForceUpdate((n) => n + 1);
     };
-    eventEmitter.on("on:table:relations:toggle", handleRelationsToggle);
+    eventEmitter.on(RELATIONS_TOGGLE_EVENT, handleRelationsToggle);
     return () => {
-      eventEmitter.off("on:table:relations:toggle", handleRelationsToggle);
+      eventEmitter.off(RELATIONS_TOGGLE_EVENT, handleRelationsToggle);
     };
   }, [refs, documentKey]);
 

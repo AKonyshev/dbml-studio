@@ -2,6 +2,11 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { WEB_VIEW_NAME } from "../constants";
+import { EXTENSION_CONFIG_SESSION } from "../constants";
+import { diagramInputFocusKey } from "extension-shared/extension/views/diagramInputFocus";
+import { DIAGRAM_ACTION_IDS } from "json-table-schema-visualizer/src/stores/diagramActions";
+
+import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
 
 interface Manifest {
   contributes: {
@@ -55,10 +60,89 @@ describe("custom editor contribution", () => {
     expect(preview?.alt).toBe("dbmlStudio.previewDiagramsInPlace");
   });
 
-  test("the workbench contributes no Alt+H binding", () => {
-    // Hiding a table's relations is a view preference the diagram owns; a
-    // workbench binding would only steal the chord from the page that handles it.
-    expect(manifest().contributes.keybindings ?? []).toEqual([]);
+  // Three clauses, and the diagram is unusable without any one of them. The
+  // keys are bare letters: the first says they belong to the diagram, the
+  // second keeps them off the workbench's own boxes, and the third off the
+  // fields inside the webview — which the workbench cannot see into, because a
+  // webview forwards a keystroke without saying what it landed in.
+  const KEYBINDING_WHEN =
+    `activeCustomEditorId == '${WEB_VIEW_NAME}'` +
+    ` && !inputFocus && !${diagramInputFocusKey(EXTENSION_CONFIG_SESSION)}`;
+
+  test("every diagram action is a command bound to the diagram alone", () => {
+    const { commands, keybindings = [] } = manifest().contributes;
+    const declared = new Set(commands.map((command) => command.command));
+
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      expect(declared.has(command)).toBe(true);
+
+      const binding = keybindings.find((item) => item.command === command);
+      expect(binding?.when).toBe(KEYBINDING_WHEN);
+      expect(binding?.key).toBeTruthy();
+    }
+  });
+
+  test("no key fires while a field has the keyboard", () => {
+    // Named on its own because it is the guard nothing else would notice
+    // missing: without it, typing a table name into the diagram's search box
+    // toggles colours, short names and the rest as it goes.
+    for (const binding of manifest().contributes.keybindings ?? []) {
+      expect(binding.when).toContain("!inputFocus");
+      expect(binding.when).toContain(
+        `!${diagramInputFocusKey(EXTENSION_CONFIG_SESSION)}`,
+      );
+    }
+  });
+
+  test("every action the diagram answers to has a command", () => {
+    // The two lists are written apart — one in the visualizer, one here — and
+    // nothing at runtime would notice them drifting: the webview keeps no
+    // keyboard of its own inside VS Code, so an action with no command is
+    // simply unreachable, silently. This is the check that notices.
+    const relayed = new Set(
+      DIAGRAM_ACTION_COMMANDS.map(([, action]) => action),
+    );
+
+    expect([...relayed].sort()).toEqual([...DIAGRAM_ACTION_IDS].sort());
+  });
+
+  test("no two diagram actions want the same key", () => {
+    const keys = (manifest().contributes.keybindings ?? []).map(
+      (binding) => binding.key,
+    );
+
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  // Both act on the table under the pointer, and opening the palette takes both
+  // the focus and the pointer away from the diagram — so from there they would
+  // always find nothing to act on. The key still reaches them, and so does a
+  // key the reader rebinds, which is what the commands exist for.
+  const HIDDEN_FROM_PALETTE = new Set([
+    "dbmlStudio.toggleTableRelations",
+    "dbmlStudio.tableDetailLevel",
+  ]);
+
+  test("the diagram actions reach the palette only with a diagram open", () => {
+    const palette = manifest().contributes.menus.commandPalette;
+
+    for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      if (HIDDEN_FROM_PALETTE.has(command)) {
+        continue;
+      }
+
+      const item = palette.find((entry) => entry.command === command);
+      expect(item?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
+    }
+  });
+
+  test("an action the palette cannot serve is kept out of it", () => {
+    const palette = manifest().contributes.menus.commandPalette;
+
+    for (const command of HIDDEN_FROM_PALETTE) {
+      const item = palette.find((entry) => entry.command === command);
+      expect(item?.when).toBe("false");
+    }
   });
 
   test("every menu command is a contributed command", () => {

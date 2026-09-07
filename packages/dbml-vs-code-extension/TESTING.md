@@ -21,13 +21,27 @@ The tab bookkeeping is covered automatically — `yarn workspace dbml-studio tes
 
 ## Relation visibility
 
-One state, two ways in — the header icon and `Alt+H` — and **neither writes to the file**.
+One state, two ways in — the header icon and `H` — and **neither writes to the file**.
 
 1. Hover a table that has relations; click the link icon in the **table header**. Its relations hide on the canvas, the icon gains a strike-through, and the table gets a dashed outline.
 2. Click again; relations reappear and the outline goes.
-3. Hover a table and press **Alt+H**: exactly the same as clicking the icon, outline included.
+3. Hover a table and press **H**: exactly the same as clicking the icon, outline included.
 4. Watch the editor text through both — nothing is written to it, and no `Ref` line is commented out.
 5. Reload the diagram; whatever you hid is still hidden. It is remembered per document, in the browser, not in the `.dbml`.
+
+## One table's detail level
+
+The diagram's own level and a single table's, side by side — and **neither writes to the file**.
+
+1. Hover a table and press **T** three times: it goes to headers, then to key columns, then back to full detail. No other table changes.
+2. Double-click that table's header: the same step again, and the table is neither dragged nor selected by the double click.
+3. Set two tables apart, then press **D**: every other table changes level and those two stay where you put them.
+4. Press **U**, or click the button beside the detail-level toggle in the toolbar: both rejoin the rest. The button is dimmed while nothing is set apart. Press **U** again — nothing happens and nothing flickers.
+5. With one table collapsed, press **F**: the diagram is framed for what is on screen, with no empty band where the table used to reach.
+6. Collapse one end of a relation: the line meets that table at its header and its other end still at the right column.
+7. Collapse a tall table and drag a marquee through the space it used to fill: it is not selected. Expand it and the same drag catches it.
+8. Open the legend with **?**: the notation list names the double-click gesture, and the shortcut list has **T** and **U**.
+9. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
 
 ## Colored relations
 
@@ -44,10 +58,17 @@ One state, two ways in — the header icon and `Alt+H` — and **neither writes 
 
 ## Keyboard shortcuts and legend
 
-1. Press `C`, `A`, `S`, `D`, `L`, `F` with the webview focused — each produces the same result as its toolbar button.
-2. Open the search with `Ctrl/Cmd+F` and type text containing `c`, `a`, `s` — the view modes must **not** toggle and the text must type normally.
-3. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
-4. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+Every one of these is a command now, so each key is a default the reader can change, and none of them may fire while anyone is typing.
+
+1. Press `C`, `A`, `S`, `D`, `V`, `L`, `F`, `H`, `R` with the diagram focused — each produces the same result as its toolbar button, and each acts **once**. Two toggles that cancel out is the failure this arrangement exists to prevent.
+2. Open the search with `Ctrl/Cmd+F` and type `casual` — the view modes must **not** toggle and the text must type normally. Clear the box, click the canvas, press `C`: it toggles again. This is the one the workbench cannot work out for itself, because a webview forwards a keystroke without saying what it landed in.
+3. Click into the filter box of the DBML side bar while a diagram is the active editor and type the same letters — again nothing may toggle.
+4. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
+5. Type in the search box, then close the diagram tab without clicking anywhere else. Open a diagram again and press `C`: it must toggle. A guard left standing would kill every shortcut for the rest of the session.
+6. Press `?` — the legend opens, lists every shortcut and says the keys are defaults the editor owns. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
+7. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+8. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Hiding the hovered table's relations is deliberately **not** there: the palette takes the pointer off the diagram, so it would have nothing to act on. Close the diagram and look again: the rest are gone.
+9. In **Preferences: Open Keyboard Shortcuts**, search `DBML`, rebind **Fit to view** to something else, and check that the new key works and `F` no longer does.
 
 ## Toolbar tooltips
 
@@ -141,14 +162,19 @@ than the dev server, so what is tested is what would be deployed.
    open the file on the site — again, where you left them. This is the whole
    point of the shared metadata format, and it is the one thing no automated
    check in this repository covers.
-8. **Alt+H.** Hover a table on the diagram and press Alt+H. The lines it drew
+8. **H.** Hover a table on the diagram and press H. The lines it drew
    disappear and the table gets a dashed outline — the same as clicking the link
    icon in its header. The editor text does not change: this is a view
    preference, kept per document, and Ctrl/Cmd+Z has nothing to undo.
-9. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
-   opens the editor's own find. With focus anywhere else on the page, it puts the
-   caret in the diagram's table search.
-10. **Nothing leaves the browser.** With the browser's network panel open and
+9. **T and U.** Hover a table and press T: that table alone cycles full
+   detail, headers, key columns. Press D and the rest of the diagram moves
+   around it while it stays as you left it; press U and it rejoins them. Like
+   H, this is a view preference kept per document, and the editor text does not
+   change.
+10. **Ctrl/Cmd+F belongs to whatever has focus.** With the caret in the editor, it
+    opens the editor's own find. With focus anywhere else on the page, it puts the
+    caret in the diagram's table search.
+11. **Nothing leaves the browser.** With the browser's network panel open and
     recording, load the page and use it: open a file, type, download. Every
     request is to the site's own origin. Then disconnect the machine from the
     network entirely and reload — the page still works.

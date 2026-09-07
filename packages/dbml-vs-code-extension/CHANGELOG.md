@@ -6,6 +6,16 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+
+- **Set one table's detail level apart from the rest.** `D` has always moved the whole diagram at once, so following one table through a large schema meant reading every table in full or none of them. Hover a table and press `T`, or double-click its header, and that table alone cycles full detail, header only, key columns only. It then keeps the level you gave it while `D` moves everything around it, so you can leave one table open in a diagram of headers. `U`, the button beside the detail-level toggle in the toolbar, or **DBML: Give every table the shared detail level back** in the palette returns them all; the button is dimmed while there is nothing to return. The levels are remembered with the file and nothing is written to the `.dbml`, the same as hiding a table's relations. Cycling the hovered table is kept out of the palette for the reason hiding relations is: from there the pointer is not on a table.
+
+- **Bring every hidden relation back at once.** Relations are hidden one table at a time, from the link glyph in the table's own header, so the way back was as many clicks as the way in — and you had to remember which tables you had silenced, which is the thing a diagram is meant to save you from. A button in the toolbar, **DBML: Show all hidden relations** in the palette, and `R` while a diagram has focus each undo all of it in one go. The button is dimmed while nothing is hidden, so it also tells you whether anything is. Nothing is written to the `.dbml` file, the same as hiding.
+
+### Changed
+
+- **Every diagram shortcut is a command now, and every key can be rebound.** The keys used to live inside the webview, where VS Code could not see them: nothing appeared in Keyboard Shortcuts, nothing appeared in the palette, and `Alt+H` — the one chord among them — collided with the menu bar on Windows and Linux and typed a stray character on a Mac. Colouring relations, animating them, short names, detail level, pan or select, auto-arrange, fit to view, the legend, and hiding a table's relations are now ten commands under **DBML**, each with a default key that applies only while a diagram has focus. Search for `DBML` in **Preferences: Open Keyboard Shortcuts** to change any of them. Hiding the hovered table's relations moves from `Alt+H` to `H`, in one row with the rest. The legend still lists the defaults and now says so; a key you rebind is shown by VS Code, not by the diagram. Two smaller consequences: none of these keys fires while you are typing, including in the diagram's own search box, and `H` no longer works while the legend is open — it is an overlay, and the diagram behind it is not being pointed at. One of the ten is deliberately kept out of the command palette: hiding the hovered table's relations acts on whatever the pointer is over, and opening the palette takes the pointer away, so from there it would always find nothing.
+
 ## [1.1.1] - 2026-09-04
 
 ### Fixed

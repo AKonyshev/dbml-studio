@@ -1,7 +1,9 @@
+import { commands } from "vscode";
 import {
   DiagramView,
   type DiagramViewDeps,
 } from "extension-shared/extension/views/diagramView";
+import { diagramInputFocusKey } from "extension-shared/extension/views/diagramInputFocus";
 import { DiagnosticError } from "shared/types/diagnostic";
 import type { JSONTableSchema } from "shared/types/tableSchema";
 
@@ -24,7 +26,10 @@ const makePanel = () => {
         return { dispose: jest.fn() };
       }),
     },
-    onDidChangeViewState: jest.fn(),
+    onDidChangeViewState: jest.fn((handler: () => void) => {
+      listeners.viewState = handler;
+      return { dispose: jest.fn() };
+    }),
     onDidDispose: jest.fn(),
     dispose: jest.fn(),
     listeners,
@@ -56,6 +61,16 @@ beforeAll(() => {
   // The real one is injected by the webview build; only its return value matters.
   (globalThis as Record<string, unknown>).__getWebviewHtml__ = () =>
     "<html></html>";
+});
+
+/** What the context key was set to, in order. */
+const setContextCalls = (): unknown[] =>
+  (commands.executeCommand as jest.Mock).mock.calls
+    .filter(([command]) => command === "setContext")
+    .map(([, , value]) => value);
+
+beforeEach(() => {
+  (commands.executeCommand as jest.Mock).mockClear();
 });
 
 describe("DiagramView", () => {
@@ -113,6 +128,116 @@ describe("DiagramView", () => {
     );
 
     view.dispose();
+  });
+
+  test("relays an action to a webview that is up", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    view.runAction("toggleRefs");
+
+    expect(panel.webview.postMessage).toHaveBeenCalledWith({
+      type: "runDiagramAction",
+      action: "toggleRefs",
+    });
+
+    view.dispose();
+  });
+
+  test("drops an action aimed at a webview that is not up yet", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+
+    view.runAction("toggleRefs");
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    // Unlike the schema, a keypress is worth nothing once it is late: replaying
+    // it here would toggle something the reader has since left alone.
+    expect(panel.webview.postMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "runDiagramAction" }),
+    );
+
+    view.dispose();
+  });
+
+  test("tells the workbench when a field in the page takes the keyboard", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+
+    panel.listeners.message({ command: "SET_TYPING_FOCUS", typing: true });
+
+    // Without this the workbench cannot tell a bare letter aimed at the
+    // diagram from one typed into the diagram's own search box: a webview
+    // forwards the keystroke either way and says nothing about where it landed.
+    expect(commands.executeCommand).toHaveBeenCalledWith(
+      "setContext",
+      diagramInputFocusKey("dbmlStudio"),
+      true,
+    );
+
+    view.dispose();
+  });
+
+  test("says so once, however many times the page repeats itself", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+
+    panel.listeners.message({ command: "SET_TYPING_FOCUS", typing: true });
+    panel.listeners.message({ command: "SET_TYPING_FOCUS", typing: true });
+
+    expect(setContextCalls()).toEqual([true]);
+
+    view.dispose();
+  });
+
+  test("takes the keyboard back when the diagram stops being active", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "SET_TYPING_FOCUS", typing: true });
+
+    panel.active = false;
+    panel.listeners.viewState();
+
+    // Focus can leave a webview without the page seeing a `focusout`, and a key
+    // left true would disable every shortcut for the rest of the session.
+    expect(setContextCalls()).toEqual([true, false]);
+
+    view.dispose();
+  });
+
+  test("takes the keyboard back when the diagram closes", () => {
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "SET_TYPING_FOCUS", typing: true });
+
+    view.dispose();
+
+    expect(setContextCalls()).toEqual([true, false]);
   });
 
   test("does not dispose the panel it was given", () => {

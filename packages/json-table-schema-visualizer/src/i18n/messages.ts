@@ -31,7 +31,10 @@ export const MESSAGES_EN = {
   "action.showLegend": "Show this legend",
   "action.closeLegend": "Close the legend",
   "action.search": "Search tables",
-  "action.toggleRefs": "Toggle refs in DBML",
+  "action.toggleRefs": "Hide or show a table's relations",
+  "action.showAllRefs": "Show all hidden relations",
+  "action.tableDetailLevel": "Detail level of the table under the cursor",
+  "action.resetTableDetailLevels": "Give every table the shared level back",
   "action.openFile": "Open",
   "action.openFile.hint": "Open a .dbml file, or drop one anywhere on the page",
   "action.downloadFile": "Download",
@@ -54,6 +57,9 @@ export const MESSAGES_EN = {
   "files.openFailed": "Could not open this file",
   "legend.title": "Legend",
   "legend.shortcuts": "Keyboard shortcuts",
+  "legend.keysAreDefaults":
+    "These are the defaults. The editor owns these keys, so any you rebind are shown there rather than here.",
+  "gesture.doubleClick": "Double click",
   "legend.notation": "Notation",
   "notation.primaryKey": "Primary key",
   "notation.foreignKey": "Foreign key",
@@ -62,6 +68,8 @@ export const MESSAGES_EN = {
   "notation.nullable": "No mark: may be null",
   "notation.tableColor":
     "The table's colour, set in the model or taken from its name",
+  "notation.tableDetailLevel":
+    "Double-click a header to change that table's detail level",
   "notation.toggleRelations": "Hide or show this table's relations",
   "notation.relationEnd": "Jump to the other end of the relation",
   "notation.marquee":

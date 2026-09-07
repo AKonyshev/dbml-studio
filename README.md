@@ -12,8 +12,9 @@ _A fictional library schema — the model is in [`examples/library.dbml`](./exam
 
 - Create entity-relationship diagrams from DBML code
 - Light and dark themes
-- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility (icon or Alt+H)
-- Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`)
+- DBML extension: text/diagram switching in one tab, MetaInfo layout persistence, SVG/AsciiDoc export, per-table relation visibility (icon or H)
+- Colored and animated relations, plus keyboard shortcuts for the view actions with a built-in legend (`?`). The shortcuts are bare letters, so they act while the diagram has focus and stay out of the way while you are typing: click the canvas first if the caret is in the editor beside it. In the extension every one of them is a command you can rebind
+- Bring back every relation you have hidden at once, from the toolbar or with `R`
 - **Fork additions (DBML):** import a PostgreSQL schema to DBML, compare an open `.dbml` file with a live database
 
 ## Install

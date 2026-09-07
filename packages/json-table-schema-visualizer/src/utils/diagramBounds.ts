@@ -1,10 +1,10 @@
-import { drawnTableHeight } from "./drawnTableHeight";
+import { drawnBoxes } from "./drawnBoxes";
 
 import type { JSONTableTable } from "shared/types/tableSchema";
 import type { XYWHPosition } from "@/types/positions";
 
 import { DIAGRAM_PADDING } from "@/constants/sizing";
-import { type TableDetailLevel } from "@/types/tableDetailLevel";
+import { type DetailLevelResolver } from "@/types/tableDetailLevel";
 
 /**
  * The box every table sits in, drawn or not, in stage coordinates.
@@ -23,6 +23,10 @@ import { type TableDetailLevel } from "@/types/tableDetailLevel";
  * level's scale: the reader asks for headers, gets them, presses fit-to-view
  * and nothing moves.
  *
+ * The level is asked for per table rather than given once: a table set apart
+ * from the diagram is drawn at its own level, and framing it at the diagram's
+ * would leave it half out of the view it was just fitted into.
+ *
  * A box whose table is not in `tables` keeps its stored height. That is a
  * layout recovered from storage for a table this document no longer has, and
  * there are no columns to count for it.
@@ -30,29 +34,9 @@ import { type TableDetailLevel } from "@/types/tableDetailLevel";
 export const computeDiagramBounds = (
   coords: ReadonlyMap<string, XYWHPosition>,
   tables: JSONTableTable[],
-  detailLevel: TableDetailLevel,
+  levelFor: DetailLevelResolver,
 ): { x: number; y: number; width: number; height: number } | null => {
-  const fieldsByName = new Map(
-    tables.map((table) => [table.name, table.fields]),
-  );
-
-  const boxes = [...coords.entries()]
-    // A table that has never been measured has no box to contribute, and
-    // treating its zeroes as a corner would drag the bounds to the origin.
-    .filter(([, coord]) => coord.w > 0 && coord.h > 0)
-    .map(([name, coord]) => {
-      const fields = fieldsByName.get(name);
-
-      return {
-        x: coord.x,
-        y: coord.y,
-        w: coord.w,
-        h:
-          fields === undefined
-            ? coord.h
-            : drawnTableHeight(fields, detailLevel),
-      };
-    });
+  const boxes = [...drawnBoxes(coords, tables, levelFor).values()];
 
   if (boxes.length === 0) {
     return null;

@@ -29,6 +29,7 @@ import { stageStateStore } from "@/stores/stagesState";
 import { useScrollDirectionContext } from "@/hooks/scrollDirection";
 import eventEmitter from "@/events-emitter";
 import { tableCoordsStore } from "@/stores/tableCoords";
+import { tableDetailLevelStore } from "@/stores/tableDetailLevelStore";
 import { useTablePositionContext } from "@/hooks/table";
 import {
   getHighlightedColumns,
@@ -40,12 +41,21 @@ import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
-import { useKeyboardShortcuts } from "@/hooks/keyboardShortcuts";
+import {
+  useDiagramActions,
+  useKeyboardShortcuts,
+} from "@/hooks/keyboardShortcuts";
 import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { type TableDetailLevel } from "@/types/tableDetailLevel";
 import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
+import { drawnBoxes } from "@/utils/drawnBoxes";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
+import {
+  showAllTableRelations,
+  toggleTableRelations,
+} from "@/stores/toggleTableRelations";
 import { useMarqueeSelection } from "@/hooks/marqueeSelection";
 
 interface DiagramWrapperProps {
@@ -87,6 +97,14 @@ interface DiagramWrapperProps {
    * search bar hides with the toolbar and is not inside this component.
    */
   revealControlsOnHover?: boolean;
+  /**
+   * Whether a bare letter on the document runs the action bound to it.
+   *
+   * False inside VS Code, where the workbench owns the chords so that a reader
+   * can rebind them, and hands them back as commands. The actions themselves
+   * stay registered either way; only this listener goes.
+   */
+  keyboardShortcuts?: boolean;
 }
 
 interface PendingWheelEvent {
@@ -104,17 +122,42 @@ const DiagramWrapper = ({
   hostActions = null,
   autoFit = false,
   revealControlsOnHover = false,
+  keyboardShortcuts = true,
 }: DiagramWrapperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<null | CoreStage>(null);
   const tablesGroupRef = useRef<null | CoreGroup>(null);
+
+  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
+  // Read through a ref rather than closed over: `fitToView` is captured once,
+  // by the mount-time subscription below, and a captured detail level would be
+  // whatever it was when the document opened for the rest of the document's
+  // life.
+  const detailLevelRef = useRef(detailLevel);
+  detailLevelRef.current = detailLevel;
+
+  // One resolver for everything on this component that measures tables. Built
+  // here rather than taken from `useDetailLevelResolver`, because the callers
+  // below are captured at mount: the ref is why the global level it reads is
+  // the current one, and the store is read the same way, at the call.
+  const levelFor = (tableName: string): TableDetailLevel =>
+    tableDetailLevelStore.levelFor(tableName) ?? detailLevelRef.current;
+
   const {
     marquee,
     stageIsDraggable,
     isPanning,
     onMouseDown: onMarqueeMouseDown,
     onMouseMove: onMarqueeMouseMove,
-  } = useMarqueeSelection({ stageRef, tablesGroupRef });
+  } = useMarqueeSelection({
+    stageRef,
+    tablesGroupRef,
+    // Read at the end of the gesture, not now: `drawnBoxes` asks each table's
+    // level, and a table set apart between mousedown and mouseup should be
+    // caught as it is drawn when the reader lets go.
+    boxes: () =>
+      drawnBoxes(tableCoordsStore.getCurrentStore(), tablesMeta, levelFor),
+  });
   const { height: viewHeight, width: viewWidth } = useElementSize(containerRef);
   const { scrollDirection } = useScrollDirectionContext();
   // Konva is written to directly on pan and zoom, so this is the only thing
@@ -138,14 +181,6 @@ const DiagramWrapper = ({
     useCursorChanger("grabbing");
   const themeColors = useThemeColors();
 
-  const { detailLevel, next: nextDetailLevel } = useTableDetailLevel();
-  // Read through a ref rather than closed over: `fitToView` is captured once,
-  // by the mount-time subscription below, and a captured detail level would be
-  // whatever it was when the document opened for the rest of the document's
-  // life.
-  const detailLevelRef = useRef(detailLevel);
-  detailLevelRef.current = detailLevel;
-
   const diagramBounds = (): {
     x: number;
     y: number;
@@ -155,7 +190,7 @@ const DiagramWrapper = ({
     computeDiagramBounds(
       tableCoordsStore.getCurrentStore(),
       tablesMeta,
-      detailLevelRef.current,
+      levelFor,
     );
 
   const fitToView = () => {
@@ -434,7 +469,7 @@ const DiagramWrapper = ({
   const { resetPositions } = useTablePositionContext();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
-  useKeyboardShortcuts(
+  useDiagramActions(
     {
       colorRelations: () => {
         setColorRelations((prev) => !prev);
@@ -452,9 +487,26 @@ const DiagramWrapper = ({
       legend: () => {
         setIsLegendOpen(true);
       },
+      // Reading the hovered table at the keypress rather than subscribing to
+      // it: this component has no reason to re-render as the pointer moves.
+      toggleRefs: () => {
+        toggleTableRelations(getHoveredTableName() ?? "");
+      },
+      showAllRefs: showAllTableRelations,
+      // The hovered table read at the keypress, for the reason `toggleRefs`
+      // gives just above: the pointer moving is no reason to re-render this.
+      // An empty name is not a table and the store ignores it.
+      tableDetailLevel: () => {
+        tableDetailLevelStore.cycle(getHoveredTableName() ?? "");
+      },
+      resetTableDetailLevels: () => {
+        tableDetailLevelStore.resetAll();
+      },
     },
     !isLegendOpen,
   );
+
+  useKeyboardShortcuts(keyboardShortcuts);
 
   /**
    * Center handler: listen for requests to center the stage on a given table
@@ -675,6 +727,7 @@ const DiagramWrapper = ({
 
       {isLegendOpen && (
         <ShortcutsLegend
+          keysAreDefaults={!keyboardShortcuts}
           onClose={() => {
             setIsLegendOpen(false);
           }}

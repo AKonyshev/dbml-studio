@@ -7,9 +7,22 @@ import { SHORTCUTS } from "@/constants/shortcuts";
 
 interface ShortcutsLegendProps {
   onClose: () => void;
+  /**
+   * Whether the keys below are defaults the host owns rather than what the page
+   * itself listens for.
+   *
+   * True inside VS Code, where every one of them is a command the reader can
+   * rebind and there is no API to ask what they rebound it to. Saying so is the
+   * honest version of a list that would otherwise quietly claim a key that no
+   * longer does anything.
+   */
+  keysAreDefaults?: boolean;
 }
 
-const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
+const ShortcutsLegend = ({
+  onClose,
+  keysAreDefaults = false,
+}: ShortcutsLegendProps) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
@@ -67,6 +80,12 @@ const ShortcutsLegend = ({ onClose }: ShortcutsLegendProps) => {
               </li>
             ))}
           </ul>
+
+          {keysAreDefaults && (
+            <p className="mt-4 text-xs text-content-muted">
+              {t("legend.keysAreDefaults")}
+            </p>
+          )}
         </section>
       </div>
     </div>

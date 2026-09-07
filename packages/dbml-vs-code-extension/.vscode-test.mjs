@@ -18,11 +18,5 @@ export default defineConfig({
   // Short, and outside the repo, because VS Code puts its IPC socket in here and
   // a unix socket path cannot exceed 104 bytes on macOS — the default
   // `.vscode-test/user-data` under this package is already over that.
-  launchArgs: [
-    "--user-data-dir",
-    "/tmp/dbml-vscode-test",
-    // Lets the Alt+H integration test dispatch a keydown inside the webview.
-    "--remote-debugging-port=9333",
-    "--disable-site-isolation-trials",
-  ],
+  launchArgs: ["--user-data-dir", "/tmp/dbml-vscode-test"],
 });

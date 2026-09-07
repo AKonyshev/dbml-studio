@@ -20,6 +20,7 @@ import {
   deleteConnectionCommand,
   importFromConnection,
 } from "./panelCommands";
+import { DIAGRAM_ACTION_COMMANDS } from "./diagramActionCommands";
 import type { PanelNode } from "./panelNodes";
 
 export function activate(context: ExtensionContext): void {
@@ -146,6 +147,14 @@ export function activate(context: ExtensionContext): void {
       (node?: PanelNode) => {
         void compareWithConnection(context, node);
       },
+    ),
+    // Addressed at the diagram holding focus, which is also what the `when`
+    // clause on each keybinding says: with no diagram in front of the reader
+    // there is nothing for these to act on, and they do nothing.
+    ...DIAGRAM_ACTION_COMMANDS.map(([command, action]) =>
+      commands.registerCommand(command, () => {
+        provider.getActiveView()?.runAction(action);
+      }),
     ),
   );
 }

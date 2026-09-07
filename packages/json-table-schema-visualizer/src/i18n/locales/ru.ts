@@ -33,7 +33,10 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.showLegend": "Показать эту легенду",
   "action.closeLegend": "Закрыть легенду",
   "action.search": "Поиск по таблицам",
-  "action.toggleRefs": "Переключить Ref в DBML",
+  "action.toggleRefs": "Скрыть или показать связи таблицы",
+  "action.showAllRefs": "Показать все скрытые связи",
+  "action.tableDetailLevel": "Уровень детализации таблицы под курсором",
+  "action.resetTableDetailLevels": "Вернуть всем таблицам общий уровень",
   "action.openFile": "Открыть",
   "action.openFile.hint": "Откройте файл .dbml или перетащите его на страницу",
   "action.downloadFile": "Скачать",
@@ -56,6 +59,9 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "files.openFailed": "Не удалось открыть файл",
   "legend.title": "Легенда",
   "legend.shortcuts": "Горячие клавиши",
+  "legend.keysAreDefaults":
+    "Это клавиши по умолчанию. Ими владеет редактор, поэтому переназначенные показывает он, а не диаграмма.",
+  "gesture.doubleClick": "Двойной клик",
   "legend.notation": "Обозначения",
   "notation.primaryKey": "Первичный ключ",
   "notation.foreignKey": "Внешний ключ",
@@ -64,6 +70,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "notation.nullable": "Без метки: может быть NULL",
   "notation.tableColor":
     "Цвет таблицы: из модели, а без него — производный от имени",
+  "notation.tableDetailLevel":
+    "Двойной клик по шапке меняет уровень детализации этой таблицы",
   "notation.toggleRelations": "Скрыть или показать связи таблицы",
   "notation.relationEnd": "Перейти к другому концу связи",
   "notation.marquee":

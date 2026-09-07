@@ -35,7 +35,7 @@ describe("computeDiagramBounds", () => {
       computeDiagramBounds(
         coordsOf([["a", { x: 0, y: 0, w: 0, h: 0 }]]),
         [tableWith("a", 10)],
-        TableDetailLevel.FullDetails,
+        () => TableDetailLevel.FullDetails,
       ),
     ).toBeNull();
   });
@@ -47,7 +47,7 @@ describe("computeDiagramBounds", () => {
         ["b", { x: 500, y: 100, w: 300, h: 336 }],
       ]),
       [tableWith("a", 10), tableWith("b", 10)],
-      TableDetailLevel.FullDetails,
+      () => TableDetailLevel.FullDetails,
     );
 
     // The tables are drawn inside a group offset by `DIAGRAM_PADDING`, so the
@@ -68,7 +68,7 @@ describe("computeDiagramBounds", () => {
     const framed = computeDiagramBounds(
       coords,
       tables,
-      TableDetailLevel.HeaderOnly,
+      () => TableDetailLevel.HeaderOnly,
     );
 
     // The stored height is the layout's, and the layout never changes with the
@@ -77,7 +77,7 @@ describe("computeDiagramBounds", () => {
     // fit-to-view came out at the old level's scale.
     expect(framed?.height).toBe(44);
     expect(
-      computeDiagramBounds(coords, tables, TableDetailLevel.FullDetails)
+      computeDiagramBounds(coords, tables, () => TableDetailLevel.FullDetails)
         ?.height,
     ).toBe(344);
   });
@@ -89,9 +89,27 @@ describe("computeDiagramBounds", () => {
     const bounds = computeDiagramBounds(
       coordsOf([["gone", { x: 0, y: 0, w: 200, h: 336 }]]),
       [],
-      TableDetailLevel.HeaderOnly,
+      () => TableDetailLevel.HeaderOnly,
     );
 
     expect(bounds?.height).toBe(336);
+  });
+  test("two tables at different levels are each measured at their own", () => {
+    const coords = coordsOf([
+      ["tall", { x: 0, y: 0, w: 200, h: 336 }],
+      ["short", { x: 0, y: 0, w: 200, h: 336 }],
+    ]);
+    const tables = [tableWith("tall", 10), tableWith("short", 10)];
+
+    const mixed = computeDiagramBounds(coords, tables, (name) =>
+      name === "short"
+        ? TableDetailLevel.HeaderOnly
+        : TableDetailLevel.FullDetails,
+    );
+
+    // The collapsed table stops 44 below the top while the other still runs to
+    // 344, so the box is the taller of the two — which is the point: one table
+    // set apart must not drag the frame back to the level it left.
+    expect(mixed?.height).toBe(344);
   });
 });

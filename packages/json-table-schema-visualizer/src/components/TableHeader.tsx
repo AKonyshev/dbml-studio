@@ -17,6 +17,7 @@ import { useTableWidth } from "@/hooks/table";
 import { useIsTableHovered } from "@/hooks/hover";
 import useLocalStorage from "@/hooks/localStorage";
 import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
+import { tableDetailLevelStore } from "@/stores/tableDetailLevelStore";
 import { shouldShowRelationsIcon } from "@/utils/shouldShowRelationsIcon";
 
 interface TableHeaderProps {
@@ -59,6 +60,16 @@ const TableHeader = ({ title }: TableHeaderProps) => {
   const iconCenterX = tablePreferredWidth - RELATIONS_ICON_GUTTER / 2;
   const glyphColor = themeColors.tableHeader.fg;
 
+  // The mouse's way to the key's action, through the same store, so the two
+  // cannot drift. `cancelBubble` for the reason the icon sets it: without it
+  // the second click also reaches the table's drag and selection handling.
+  const handleHeaderDoubleClick = (
+    event: KonvaEventObject<MouseEvent | TouchEvent>,
+  ): void => {
+    event.cancelBubble = true;
+    tableDetailLevelStore.cycle(title);
+  };
+
   const handleIconClick = (
     event: KonvaEventObject<MouseEvent | TouchEvent>,
   ): void => {
@@ -67,7 +78,10 @@ const TableHeader = ({ title }: TableHeaderProps) => {
   };
 
   return (
-    <Group>
+    <Group
+      onDblClick={handleHeaderDoubleClick}
+      onDblTap={handleHeaderDoubleClick}
+    >
       <Rect
         cornerRadius={[PADDINGS.sm, PADDINGS.sm]}
         fill={tableMarkerColor}

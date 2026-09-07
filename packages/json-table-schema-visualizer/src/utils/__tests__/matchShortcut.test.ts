@@ -28,6 +28,10 @@ describe("matchShortcut", () => {
     expect(matchShortcut(event("?"))).toBe("legend");
   });
 
+  test("matches the relation toggle on a bare 'h'", () => {
+    expect(matchShortcut(event("h"))).toBe("toggleRefs");
+  });
+
   test("ignores keys while typing in an input", () => {
     expect(
       matchShortcut(event("c", { target: { tagName: "INPUT" } })),
@@ -40,7 +44,7 @@ describe("matchShortcut", () => {
     ).toBeNull();
   });
 
-  test("does not hijack Ctrl+F, Cmd+F or Alt+H", () => {
+  test("does not hijack a chord built on a bound letter", () => {
     expect(matchShortcut(event("f", { ctrlKey: true }))).toBeNull();
     expect(matchShortcut(event("f", { metaKey: true }))).toBeNull();
     expect(matchShortcut(event("h", { altKey: true }))).toBeNull();
@@ -71,5 +75,26 @@ describe("SHORTCUTS registry", () => {
     SHORTCUTS.forEach((entry) => {
       expect(entry.labelKey.length).toBeGreaterThan(0);
     });
+  });
+  test("t and u reach the per-table detail actions", () => {
+    expect(
+      matchShortcut({
+        key: "t",
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        target: null,
+      }),
+    ).toBe("tableDetailLevel");
+
+    expect(
+      matchShortcut({
+        key: "u",
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        target: null,
+      }),
+    ).toBe("resetTableDetailLevels");
   });
 });

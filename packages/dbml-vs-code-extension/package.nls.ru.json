@@ -11,5 +11,17 @@
   "command.deleteConnection": "DBML: Удалить подключение",
   "command.importFromConnection": "DBML: Импорт из базы данных",
   "command.compareWithConnection": "DBML: Сравнить с базой данных",
+  "command.colorRelations": "DBML: Цветные связи",
+  "command.animateRelations": "DBML: Анимация связей",
+  "command.shortTableName": "DBML: Короткие имена таблиц",
+  "command.detailLevel": "DBML: Сменить уровень детализации",
+  "command.interactionMode": "DBML: Переключить режим: панорама или выделение",
+  "command.autoArrange": "DBML: Разложить таблицы автоматически",
+  "command.fitToView": "DBML: Вписать диаграмму в экран",
+  "command.toggleTableRelations": "DBML: Скрыть или показать связи таблицы под курсором",
+  "command.showAllTableRelations": "DBML: Показать все скрытые связи",
+  "command.tableDetailLevel": "DBML: Сменить уровень детализации таблицы под курсором",
+  "command.resetTableDetailLevels": "DBML: Вернуть всем таблицам общий уровень детализации",
+  "command.showShortcuts": "DBML: Показать легенду диаграммы",
   "configuration.title": "DBML Studio"
 }

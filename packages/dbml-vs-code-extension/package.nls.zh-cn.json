@@ -11,5 +11,17 @@
   "command.deleteConnection": "DBML：删除连接",
   "command.importFromConnection": "DBML：从数据库导入",
   "command.compareWithConnection": "DBML：与数据库比较",
+  "command.colorRelations": "DBML：彩色关系线",
+  "command.animateRelations": "DBML：关系线动画",
+  "command.shortTableName": "DBML：短表名",
+  "command.detailLevel": "DBML：切换详细程度",
+  "command.interactionMode": "DBML：在平移与选择之间切换",
+  "command.autoArrange": "DBML：自动排列表",
+  "command.fitToView": "DBML：使关系图适应视图",
+  "command.toggleTableRelations": "DBML：隐藏或显示指针所指表的关系",
+  "command.showAllTableRelations": "DBML：显示所有隐藏的关系",
+  "command.tableDetailLevel": "DBML：切换指针所指表的详细程度",
+  "command.resetTableDetailLevels": "DBML：让所有表恢复统一详细程度",
+  "command.showShortcuts": "DBML：显示关系图图例",
   "configuration.title": "DBML Studio"
 }
