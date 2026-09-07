@@ -266,7 +266,7 @@
         },
         {
           "command": "dbmlStudio.toggleTableRelations",
-          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+          "when": "false"
         },
         {
           "command": "dbmlStudio.showShortcuts",

@@ -51,7 +51,7 @@ Every one of these is a command now, so each key is a default the reader can cha
 3. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
 4. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
 5. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
-6. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Close the diagram and look again: they are gone.
+6. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Hiding the hovered table's relations is deliberately **not** there: the palette takes the pointer off the diagram, so it would have nothing to act on. Close the diagram and look again: the rest are gone.
 7. In **Preferences: Open Keyboard Shortcuts**, search `DBML`, rebind **Fit to view** to something else, and check that the new key works and `F` no longer does.
 
 ## Toolbar tooltips

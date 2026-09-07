@@ -2,6 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { WEB_VIEW_NAME } from "../constants";
+import { DIAGRAM_ACTION_IDS } from "json-table-schema-visualizer/src/stores/diagramActions";
+
 import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
 
 interface Manifest {
@@ -72,6 +74,18 @@ describe("custom editor contribution", () => {
     }
   });
 
+  test("every action the diagram answers to has a command", () => {
+    // The two lists are written apart — one in the visualizer, one here — and
+    // nothing at runtime would notice them drifting: the webview keeps no
+    // keyboard of its own inside VS Code, so an action with no command is
+    // simply unreachable, silently. This is the check that notices.
+    const relayed = new Set(
+      DIAGRAM_ACTION_COMMANDS.map(([, action]) => action),
+    );
+
+    expect([...relayed].sort()).toEqual([...DIAGRAM_ACTION_IDS].sort());
+  });
+
   test("no two diagram actions want the same key", () => {
     const keys = (manifest().contributes.keybindings ?? []).map(
       (binding) => binding.key,
@@ -80,12 +94,31 @@ describe("custom editor contribution", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
+  // It acts on the table under the pointer, and opening the palette takes both
+  // the focus and the pointer away from the diagram — so from there it would
+  // always find nothing to act on. The key still reaches it, and so does a key
+  // the reader rebinds, which is what the command exists for.
+  const HIDDEN_FROM_PALETTE = new Set(["dbmlStudio.toggleTableRelations"]);
+
   test("the diagram actions reach the palette only with a diagram open", () => {
     const palette = manifest().contributes.menus.commandPalette;
 
     for (const [command] of DIAGRAM_ACTION_COMMANDS) {
+      if (HIDDEN_FROM_PALETTE.has(command)) {
+        continue;
+      }
+
       const item = palette.find((entry) => entry.command === command);
       expect(item?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
+    }
+  });
+
+  test("an action the palette cannot serve is kept out of it", () => {
+    const palette = manifest().contributes.menus.commandPalette;
+
+    for (const command of HIDDEN_FROM_PALETTE) {
+      const item = palette.find((entry) => entry.command === command);
+      expect(item?.when).toBe("false");
     }
   });
 

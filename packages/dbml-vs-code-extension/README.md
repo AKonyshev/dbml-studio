@@ -23,6 +23,7 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 - Light and dark themes
 - Display modes: all columns, relational columns only, or table headers only
 - Hide/show relations per table via the icon in the table header, or **H** for the table under the pointer; it is a view preference and nothing is written to the file
+- Bring every hidden relation back at once, from the toolbar button or **R**
 - Colored relations: either one neutral colour for all of them, or each relation painted in its source table's colour
 - Relation animation: the relations of the table under the cursor animate to show their direction
 
@@ -44,6 +45,8 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 | `?` | Show the shortcuts legend               |
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search. Both are ignored while you are typing in a field.
+
+Every command is also in the palette, with one exception: hiding the hovered table's relations acts on whatever the pointer is over, and opening the palette takes the pointer away, so it would always find nothing. Use the key for that one, or rebind it.
 
 The same list is available in the app: press `?` or use the keyboard button in the toolbar. It shows the defaults, not a key you have rebound.
 

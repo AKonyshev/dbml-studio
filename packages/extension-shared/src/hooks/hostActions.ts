@@ -15,6 +15,15 @@ import { RUN_DIAGRAM_ACTION } from "../../extension/types/webviewCommand";
 export const useHostActions = (): void => {
   useEffect(() => {
     const onMessage = (event: MessageEvent): void => {
+      // The extension reaches this page through the frame above it, so a sender
+      // we can identify as anything else is not the host and has no business
+      // driving the diagram. Deliberately permissive where the sender cannot be
+      // identified at all: several hosts deliver an extension message with no
+      // `source`, and refusing those would break the only way in.
+      if (event.source != null && event.source !== window.parent) {
+        return;
+      }
+
       const message = event.data as { type?: string; action?: string };
       if (message?.type !== RUN_DIAGRAM_ACTION) {
         return;
