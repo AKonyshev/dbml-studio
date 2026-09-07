@@ -699,6 +699,7 @@ const DiagramWrapper = ({
 
       {isLegendOpen && (
         <ShortcutsLegend
+          keysAreDefaults={!keyboardShortcuts}
           onClose={() => {
             setIsLegendOpen(false);
           }}

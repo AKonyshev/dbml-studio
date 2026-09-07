@@ -1,3 +1,5 @@
+import type { DiagramActionId } from "json-table-schema-visualizer/src/stores/diagramActions";
+
 /**
  * The diagram's own actions, as commands the workbench owns.
  *
@@ -8,7 +10,7 @@
  * — `SHORTCUTS` in the visualizer is the other end of this table.
  */
 export const DIAGRAM_ACTION_COMMANDS: ReadonlyArray<
-  readonly [command: string, action: string]
+  readonly [command: string, action: DiagramActionId]
 > = [
   ["dbmlStudio.colorRelations", "colorRelations"],
   ["dbmlStudio.animateRelations", "animateRelations"],

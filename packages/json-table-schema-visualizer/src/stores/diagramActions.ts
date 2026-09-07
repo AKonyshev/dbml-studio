@@ -48,11 +48,6 @@ export const runDiagramAction = (id: string): boolean => {
     return false;
   }
 
-  const handler = handlers[id];
-  if (handler === undefined) {
-    return false;
-  }
-
-  handler();
+  handlers[id]();
   return true;
 };

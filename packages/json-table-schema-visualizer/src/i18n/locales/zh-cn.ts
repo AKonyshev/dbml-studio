@@ -57,6 +57,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "files.openFailed": "无法打开该文件",
   "legend.title": "图例",
   "legend.shortcuts": "键盘快捷键",
+  "legend.keysAreDefaults":
+    "此处为默认按键。这些键由编辑器管理，重新绑定后请在编辑器中查看。",
   "legend.notation": "图例符号",
   "notation.primaryKey": "主键",
   "notation.foreignKey": "外键",

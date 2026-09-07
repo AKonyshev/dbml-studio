@@ -44,7 +44,11 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 | `R` | Show all hidden relations               |
 | `?` | Show the shortcuts legend               |
 
-Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search. Both are ignored while you are typing in a field.
+Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.
+
+None of these keys fires while you are typing, in the diagram's own search box or anywhere else in the editor.
+
+`?` is where a US layout puts it. On a layout that puts it elsewhere, use the keyboard button in the toolbar or rebind the command.
 
 Every command is also in the palette, with one exception: hiding the hovered table's relations acts on whatever the pointer is over, and opening the palette takes the pointer away, so it would always find nothing. Use the key for that one, or rebind it.
 

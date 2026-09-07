@@ -2,6 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { WEB_VIEW_NAME } from "../constants";
+import { EXTENSION_CONFIG_SESSION } from "../constants";
+import { diagramInputFocusKey } from "extension-shared/extension/views/diagramInputFocus";
 import { DIAGRAM_ACTION_IDS } from "json-table-schema-visualizer/src/stores/diagramActions";
 
 import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
@@ -58,10 +60,16 @@ describe("custom editor contribution", () => {
     expect(preview?.alt).toBe("dbmlStudio.previewDiagramsInPlace");
   });
 
+  // Three clauses, and the diagram is unusable without any one of them. The
+  // keys are bare letters: the first says they belong to the diagram, the
+  // second keeps them off the workbench's own boxes, and the third off the
+  // fields inside the webview — which the workbench cannot see into, because a
+  // webview forwards a keystroke without saying what it landed in.
+  const KEYBINDING_WHEN =
+    `activeCustomEditorId == '${WEB_VIEW_NAME}'` +
+    ` && !inputFocus && !${diagramInputFocusKey(EXTENSION_CONFIG_SESSION)}`;
+
   test("every diagram action is a command bound to the diagram alone", () => {
-    // The keys are the reader's to change, so each has to arrive as a command;
-    // the `when` clause is what keeps a bare letter from firing while they are
-    // typing anywhere else in the workbench.
     const { commands, keybindings = [] } = manifest().contributes;
     const declared = new Set(commands.map((command) => command.command));
 
@@ -69,8 +77,20 @@ describe("custom editor contribution", () => {
       expect(declared.has(command)).toBe(true);
 
       const binding = keybindings.find((item) => item.command === command);
-      expect(binding?.when).toBe(`activeCustomEditorId == '${WEB_VIEW_NAME}'`);
+      expect(binding?.when).toBe(KEYBINDING_WHEN);
       expect(binding?.key).toBeTruthy();
+    }
+  });
+
+  test("no key fires while a field has the keyboard", () => {
+    // Named on its own because it is the guard nothing else would notice
+    // missing: without it, typing a table name into the diagram's search box
+    // toggles colours, short names and the rest as it goes.
+    for (const binding of manifest().contributes.keybindings ?? []) {
+      expect(binding.when).toContain("!inputFocus");
+      expect(binding.when).toContain(
+        `!${diagramInputFocusKey(EXTENSION_CONFIG_SESSION)}`,
+      );
     }
   });
 

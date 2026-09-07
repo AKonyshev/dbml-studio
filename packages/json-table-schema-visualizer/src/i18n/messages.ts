@@ -55,6 +55,8 @@ export const MESSAGES_EN = {
   "files.openFailed": "Could not open this file",
   "legend.title": "Legend",
   "legend.shortcuts": "Keyboard shortcuts",
+  "legend.keysAreDefaults":
+    "These are the defaults. The editor owns these keys, so any you rebind are shown there rather than here.",
   "legend.notation": "Notation",
   "notation.primaryKey": "Primary key",
   "notation.foreignKey": "Foreign key",

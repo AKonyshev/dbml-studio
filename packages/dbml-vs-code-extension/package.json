@@ -174,52 +174,52 @@
       {
         "command": "dbmlStudio.colorRelations",
         "key": "c",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.animateRelations",
         "key": "a",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.shortTableName",
         "key": "s",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.detailLevel",
         "key": "d",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.interactionMode",
         "key": "v",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.autoArrange",
         "key": "l",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.fitToView",
         "key": "f",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.toggleTableRelations",
         "key": "h",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.showAllTableRelations",
         "key": "r",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
         "command": "dbmlStudio.showShortcuts",
         "key": "shift+/",
-        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       }
     ],
     "menus": {

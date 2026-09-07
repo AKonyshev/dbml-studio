@@ -57,6 +57,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "files.openFailed": "Не удалось открыть файл",
   "legend.title": "Легенда",
   "legend.shortcuts": "Горячие клавиши",
+  "legend.keysAreDefaults":
+    "Это клавиши по умолчанию. Ими владеет редактор, поэтому переназначенные показывает он, а не диаграмма.",
   "legend.notation": "Обозначения",
   "notation.primaryKey": "Первичный ключ",
   "notation.foreignKey": "Внешний ключ",

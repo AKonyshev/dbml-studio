@@ -44,15 +44,17 @@ One state, two ways in — the header icon and `H` — and **neither writes to t
 
 ## Keyboard shortcuts and legend
 
-Every one of these is a command now, so each key is a default the reader can change.
+Every one of these is a command now, so each key is a default the reader can change, and none of them may fire while anyone is typing.
 
 1. Press `C`, `A`, `S`, `D`, `V`, `L`, `F`, `H`, `R` with the diagram focused — each produces the same result as its toolbar button, and each acts **once**. Two toggles that cancel out is the failure this arrangement exists to prevent.
-2. Open the search with `Ctrl/Cmd+F` and type text containing `c`, `a`, `s` — the view modes must **not** toggle and the text must type normally.
-3. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
-4. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
-5. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
-6. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Hiding the hovered table's relations is deliberately **not** there: the palette takes the pointer off the diagram, so it would have nothing to act on. Close the diagram and look again: the rest are gone.
-7. In **Preferences: Open Keyboard Shortcuts**, search `DBML`, rebind **Fit to view** to something else, and check that the new key works and `F` no longer does.
+2. Open the search with `Ctrl/Cmd+F` and type `casual` — the view modes must **not** toggle and the text must type normally. Clear the box, click the canvas, press `C`: it toggles again. This is the one the workbench cannot work out for itself, because a webview forwards a keystroke without saying what it landed in.
+3. Click into the filter box of the DBML side bar while a diagram is the active editor and type the same letters — again nothing may toggle.
+4. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
+5. Type in the search box, then close the diagram tab without clicking anywhere else. Open a diagram again and press `C`: it must toggle. A guard left standing would kill every shortcut for the rest of the session.
+6. Press `?` — the legend opens, lists every shortcut and says the keys are defaults the editor owns. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.
+7. While the legend is open, press `L` and `D` — nothing behind the overlay may change.
+8. Open the command palette with the diagram focused and type `DBML` — every view action is listed and running one works. Hiding the hovered table's relations is deliberately **not** there: the palette takes the pointer off the diagram, so it would have nothing to act on. Close the diagram and look again: the rest are gone.
+9. In **Preferences: Open Keyboard Shortcuts**, search `DBML`, rebind **Fit to view** to something else, and check that the new key works and `F` no longer does.
 
 ## Toolbar tooltips
 

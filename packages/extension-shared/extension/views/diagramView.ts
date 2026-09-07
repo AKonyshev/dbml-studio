@@ -17,10 +17,11 @@ import { type JSONTableSchema } from "shared/types/tableSchema";
 import { DiagnosticError } from "shared/types/diagnostic";
 
 import { DIAGRAM_UPDATER_DEBOUNCE_TIME } from "../constants";
-import { RUN_DIAGRAM_ACTION } from "../types/webviewCommand";
+import { runDiagramActionMessage } from "../types/webviewCommand";
 import { ExtensionConfig } from "../helper/extensionConfigs";
 
 import { WebviewHelper } from "./helper";
+import { DiagramInputFocus } from "./diagramInputFocus";
 
 /** What a host extension declares about itself, once, in `activate`. */
 export interface DiagramHostConfig {
@@ -50,6 +51,7 @@ export class DiagramView implements Disposable {
   private outbound: unknown[] = [];
   private updateTimeout: NodeJS.Timeout | null = null;
   private applyingOwnEdit = false;
+  private readonly inputFocus: DiagramInputFocus;
 
   constructor(
     private readonly panel: WebviewPanel,
@@ -58,6 +60,7 @@ export class DiagramView implements Disposable {
   ) {
     this.documentUri = document.uri.toString();
     this.uri = document.uri;
+    this.inputFocus = new DiagramInputFocus(deps.extensionConfigSession);
 
     // Registration options carry WebviewPanelOptions only, so these two have to
     // be set on the panel itself.
@@ -92,6 +95,9 @@ export class DiagramView implements Disposable {
         onWebviewReady: () => {
           this.markReady();
         },
+        onTypingFocusChanged: (typing) => {
+          this.inputFocus.set(typing);
+        },
       },
     );
 
@@ -99,6 +105,12 @@ export class DiagramView implements Disposable {
       () => {
         if (panel.visible) {
           this.refresh();
+        }
+        // A diagram that no longer holds focus holds no field either, and the
+        // page cannot always say so: focus can leave it without a `focusout`
+        // the page sees. A key left true disables the shortcuts for good.
+        if (!panel.active) {
+          this.inputFocus.clear();
         }
       },
       null,
@@ -148,7 +160,7 @@ export class DiagramView implements Disposable {
       return;
     }
 
-    void this.panel.webview.postMessage({ type: RUN_DIAGRAM_ACTION, action });
+    void this.panel.webview.postMessage(runDiagramActionMessage(action));
   }
 
   public refresh(): void {
@@ -218,6 +230,8 @@ export class DiagramView implements Disposable {
 
   /** Drops our own subscriptions. The panel belongs to VS Code — leave it be. */
   public dispose(): void {
+    this.inputFocus.clear();
+
     if (this.updateTimeout !== null) {
       clearTimeout(this.updateTimeout);
       this.updateTimeout = null;

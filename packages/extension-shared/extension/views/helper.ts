@@ -50,6 +50,7 @@ export interface WebviewHooksOptions {
   supportsDbmlFileSync: boolean;
   onApplyingDbmlEdit?: (applying: boolean) => void;
   onWebviewReady?: () => void;
+  onTypingFocusChanged?: (typing: boolean) => void;
 }
 
 export class WebviewHelper {
@@ -118,6 +119,11 @@ export class WebviewHelper {
         break;
       case WebviewCommand.WEBVIEW_READY:
         options.onWebviewReady?.();
+        break;
+      case WebviewCommand.SET_TYPING_FOCUS:
+        if (typeof message.typing === "boolean") {
+          options.onTypingFocusChanged?.(message.typing);
+        }
         break;
       default:
         break;

@@ -31,9 +31,9 @@ export function useTableRelationsVisibility(tableName: string): {
     };
   }, [tableName]);
 
-  // The shared toggle, so the button and the keyboard cannot diverge. The event it
-  // emits is what the effect above is listening for, which is also how a table
-  // learns that the keyboard toggled it rather than its own icon.
+  // The shared toggle, so the button and the keyboard cannot diverge. The
+  // event it emits is what the effect above is listening for, which is also how
+  // a table learns that the keyboard toggled it rather than its own icon.
   const toggle = (): void => {
     toggleTableRelations(tableName);
   };
