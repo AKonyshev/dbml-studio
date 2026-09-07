@@ -35,6 +35,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.search": "Поиск по таблицам",
   "action.toggleRefs": "Скрыть или показать связи таблицы",
   "action.showAllRefs": "Показать все скрытые связи",
+  "action.tableDetailLevel": "Уровень детализации таблицы под курсором",
+  "action.resetTableDetailLevels": "Вернуть всем таблицам общий уровень",
   "action.openFile": "Открыть",
   "action.openFile.hint": "Откройте файл .dbml или перетащите его на страницу",
   "action.downloadFile": "Скачать",

@@ -76,4 +76,25 @@ describe("SHORTCUTS registry", () => {
       expect(entry.labelKey.length).toBeGreaterThan(0);
     });
   });
+  test("t and u reach the per-table detail actions", () => {
+    expect(
+      matchShortcut({
+        key: "t",
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        target: null,
+      }),
+    ).toBe("tableDetailLevel");
+
+    expect(
+      matchShortcut({
+        key: "u",
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        target: null,
+      }),
+    ).toBe("resetTableDetailLevels");
+  });
 });

@@ -480,6 +480,15 @@ const DiagramWrapper = ({
         toggleTableRelations(getHoveredTableName() ?? "");
       },
       showAllRefs: showAllTableRelations,
+      // The hovered table read at the keypress, for the reason `toggleRefs`
+      // gives just above: the pointer moving is no reason to re-render this.
+      // An empty name is not a table and the store ignores it.
+      tableDetailLevel: () => {
+        tableDetailLevelStore.cycle(getHoveredTableName() ?? "");
+      },
+      resetTableDetailLevels: () => {
+        tableDetailLevelStore.resetAll();
+      },
     },
     !isLegendOpen,
   );

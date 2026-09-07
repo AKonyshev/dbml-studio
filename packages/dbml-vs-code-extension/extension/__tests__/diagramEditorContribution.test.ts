@@ -114,11 +114,14 @@ describe("custom editor contribution", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  // It acts on the table under the pointer, and opening the palette takes both
-  // the focus and the pointer away from the diagram — so from there it would
-  // always find nothing to act on. The key still reaches it, and so does a key
-  // the reader rebinds, which is what the command exists for.
-  const HIDDEN_FROM_PALETTE = new Set(["dbmlStudio.toggleTableRelations"]);
+  // Both act on the table under the pointer, and opening the palette takes both
+  // the focus and the pointer away from the diagram — so from there they would
+  // always find nothing to act on. The key still reaches them, and so does a
+  // key the reader rebinds, which is what the commands exist for.
+  const HIDDEN_FROM_PALETTE = new Set([
+    "dbmlStudio.toggleTableRelations",
+    "dbmlStudio.tableDetailLevel",
+  ]);
 
   test("the diagram actions reach the palette only with a diagram open", () => {
     const palette = manifest().contributes.menus.commandPalette;

@@ -21,5 +21,7 @@ export const DIAGRAM_ACTION_COMMANDS: ReadonlyArray<
   ["dbmlStudio.fitToView", "fitToView"],
   ["dbmlStudio.toggleTableRelations", "toggleRefs"],
   ["dbmlStudio.showAllTableRelations", "showAllRefs"],
+  ["dbmlStudio.tableDetailLevel", "tableDetailLevel"],
+  ["dbmlStudio.resetTableDetailLevels", "resetTableDetailLevels"],
   ["dbmlStudio.showShortcuts", "legend"],
 ];

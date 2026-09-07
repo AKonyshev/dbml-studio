@@ -71,4 +71,8 @@ describe("diagram action registry", () => {
       expect(isDiagramActionId(id)).toBe(true);
     });
   });
+  test("both per-table detail actions are ones a host can relay", () => {
+    expect(DIAGRAM_ACTION_IDS).toContain("tableDetailLevel");
+    expect(DIAGRAM_ACTION_IDS).toContain("resetTableDetailLevels");
+  });
 });

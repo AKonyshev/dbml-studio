@@ -20,6 +20,8 @@
   "command.fitToView": "DBML: Fit the diagram to the view",
   "command.toggleTableRelations": "DBML: Hide or show the hovered table's relations",
   "command.showAllTableRelations": "DBML: Show all hidden relations",
+  "command.tableDetailLevel": "DBML: Cycle the detail level of the hovered table",
+  "command.resetTableDetailLevels": "DBML: Give every table the shared detail level back",
   "command.showShortcuts": "DBML: Show the diagram legend",
   "configuration.title": "DBML Studio"
 }

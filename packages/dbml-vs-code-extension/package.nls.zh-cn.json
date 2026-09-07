@@ -20,6 +20,8 @@
   "command.fitToView": "DBML：使关系图适应视图",
   "command.toggleTableRelations": "DBML：隐藏或显示指针所指表的关系",
   "command.showAllTableRelations": "DBML：显示所有隐藏的关系",
+  "command.tableDetailLevel": "DBML：切换指针所指表的详细程度",
+  "command.resetTableDetailLevels": "DBML：让所有表恢复统一详细程度",
   "command.showShortcuts": "DBML：显示关系图图例",
   "configuration.title": "DBML Studio"
 }

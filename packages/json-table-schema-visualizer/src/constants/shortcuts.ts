@@ -67,6 +67,18 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "tableDetailLevel",
+    key: "t",
+    labelKey: "action.tableDetailLevel",
+    executable: true,
+  },
+  {
+    id: "resetTableDetailLevels",
+    key: "u",
+    labelKey: "action.resetTableDetailLevels",
+    executable: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",

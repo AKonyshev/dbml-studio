@@ -36,6 +36,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "action.search": "搜索表",
   "action.toggleRefs": "隐藏或显示表的关系",
   "action.showAllRefs": "显示所有隐藏的关系",
+  "action.tableDetailLevel": "指针所指表的显示级别",
+  "action.resetTableDetailLevels": "让所有表恢复统一显示级别",
   "action.openFile": "打开",
   "action.openFile.hint": "打开 .dbml 文件，或将文件拖到页面上",
   "action.downloadFile": "下载",

@@ -166,6 +166,14 @@
         "title": "%command.showAllTableRelations%"
       },
       {
+        "command": "dbmlStudio.tableDetailLevel",
+        "title": "%command.tableDetailLevel%"
+      },
+      {
+        "command": "dbmlStudio.resetTableDetailLevels",
+        "title": "%command.resetTableDetailLevels%"
+      },
+      {
         "command": "dbmlStudio.showShortcuts",
         "title": "%command.showShortcuts%"
       }
@@ -214,6 +222,16 @@
       {
         "command": "dbmlStudio.showAllTableRelations",
         "key": "r",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.tableDetailLevel",
+        "key": "t",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.resetTableDetailLevels",
+        "key": "u",
         "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       },
       {
@@ -274,6 +292,14 @@
         },
         {
           "command": "dbmlStudio.showAllTableRelations",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        },
+        {
+          "command": "dbmlStudio.tableDetailLevel",
+          "when": "false"
+        },
+        {
+          "command": "dbmlStudio.resetTableDetailLevels",
           "when": "activeCustomEditorId == 'dbml-studio-diagram'"
         }
       ],
