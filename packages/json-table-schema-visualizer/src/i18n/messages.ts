@@ -59,6 +59,7 @@ export const MESSAGES_EN = {
   "legend.shortcuts": "Keyboard shortcuts",
   "legend.keysAreDefaults":
     "These are the defaults. The editor owns these keys, so any you rebind are shown there rather than here.",
+  "gesture.doubleClick": "Double click",
   "legend.notation": "Notation",
   "notation.primaryKey": "Primary key",
   "notation.foreignKey": "Foreign key",
@@ -67,6 +68,8 @@ export const MESSAGES_EN = {
   "notation.nullable": "No mark: may be null",
   "notation.tableColor":
     "The table's colour, set in the model or taken from its name",
+  "notation.tableDetailLevel":
+    "Double-click a header to change that table's detail level",
   "notation.toggleRelations": "Hide or show this table's relations",
   "notation.relationEnd": "Jump to the other end of the relation",
   "notation.marquee":

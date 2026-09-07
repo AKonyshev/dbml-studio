@@ -55,3 +55,26 @@ export const useDetailLevelResolver = (): DetailLevelResolver => {
     return makeDetailLevelResolver(detailLevel);
   }, [detailLevel, version]);
 };
+
+/**
+ * Whether any table on this document is set apart — which is all the reset
+ * button needs to know.
+ *
+ * The version is the slice here, for the same reason `useDetailLevelResolver`
+ * uses it: the answer is about the store as a whole and no single table's level
+ * decides it. See `useHasHiddenRelations`, which does the same job for the
+ * button beside this one.
+ */
+export const useHasTableDetailLevelOverrides = (): boolean => {
+  const version = useSyncExternalStore(
+    tableDetailLevelStore.subscribe,
+    tableDetailLevelStore.getVersion,
+    tableDetailLevelStore.getVersion,
+  );
+
+  return useMemo(() => {
+    void version;
+
+    return tableDetailLevelStore.hasOverrides();
+  }, [version]);
+};

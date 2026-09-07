@@ -61,6 +61,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "legend.shortcuts": "键盘快捷键",
   "legend.keysAreDefaults":
     "此处为默认按键。这些键由编辑器管理，重新绑定后请在编辑器中查看。",
+  "gesture.doubleClick": "双击",
   "legend.notation": "图例符号",
   "notation.primaryKey": "主键",
   "notation.foreignKey": "外键",
@@ -68,6 +69,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "notation.mandatory": "必填：不能为 NULL",
   "notation.nullable": "无标记：可以为 NULL",
   "notation.tableColor": "表的颜色：来自模型，或由表名推导",
+  "notation.tableDetailLevel": "双击表头可更改该表的显示级别",
   "notation.toggleRelations": "隐藏或显示该表的关系",
   "notation.relationEnd": "跳转到关系的另一端",
   "notation.marquee": "框选模式下，在空白处拖动可选中表；按住 Shift 可追加选择",

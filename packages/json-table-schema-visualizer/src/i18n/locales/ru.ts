@@ -61,6 +61,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "legend.shortcuts": "Горячие клавиши",
   "legend.keysAreDefaults":
     "Это клавиши по умолчанию. Ими владеет редактор, поэтому переназначенные показывает он, а не диаграмма.",
+  "gesture.doubleClick": "Двойной клик",
   "legend.notation": "Обозначения",
   "notation.primaryKey": "Первичный ключ",
   "notation.foreignKey": "Внешний ключ",
@@ -69,6 +70,8 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "notation.nullable": "Без метки: может быть NULL",
   "notation.tableColor":
     "Цвет таблицы: из модели, а без него — производный от имени",
+  "notation.tableDetailLevel":
+    "Двойной клик по шапке меняет уровень детализации этой таблицы",
   "notation.toggleRelations": "Скрыть или показать связи таблицы",
   "notation.relationEnd": "Перейти к другому концу связи",
   "notation.marquee":

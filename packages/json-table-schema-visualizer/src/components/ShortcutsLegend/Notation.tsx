@@ -72,6 +72,13 @@ const MarqueeGlyph = () => (
   </svg>
 );
 
+/** The pointer gesture that changes one table's detail level. */
+const DoubleClickGlyph = () => (
+  <span className="font-mono text-content-muted">
+    {t("gesture.doubleClick")}
+  </span>
+);
+
 interface NotationRow {
   id: string;
   labelKey: MessageKey;
@@ -103,6 +110,11 @@ const NOTATION: NotationRow[] = [
     id: "nullable",
     labelKey: "notation.nullable",
     sample: <Line type="uuid" />,
+  },
+  {
+    id: "tableDetailLevel",
+    labelKey: "notation.tableDetailLevel",
+    sample: <DoubleClickGlyph />,
   },
   {
     id: "tableColor",

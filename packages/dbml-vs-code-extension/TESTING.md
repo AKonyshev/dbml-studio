@@ -36,10 +36,12 @@ The diagram's own level and a single table's, side by side — and **neither wri
 1. Hover a table and press **T** three times: it goes to headers, then to key columns, then back to full detail. No other table changes.
 2. Double-click that table's header: the same step again, and the table is neither dragged nor selected by the double click.
 3. Set two tables apart, then press **D**: every other table changes level and those two stay where you put them.
-4. Press **U**: both rejoin the rest. Press it again — nothing happens and nothing flickers.
+4. Press **U**, or click the button beside the detail-level toggle in the toolbar: both rejoin the rest. The button is dimmed while nothing is set apart. Press **U** again — nothing happens and nothing flickers.
 5. With one table collapsed, press **F**: the diagram is framed for what is on screen, with no empty band where the table used to reach.
 6. Collapse one end of a relation: the line meets that table at its header and its other end still at the right column.
-7. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
+7. Collapse a tall table and drag a marquee through the space it used to fill: it is not selected. Expand it and the same drag catches it.
+8. Open the legend with **?**: the notation list names the double-click gesture, and the shortcut list has **T** and **U**.
+9. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
 
 ## Colored relations
 
