@@ -5,6 +5,7 @@ import {
   TableDetailLevel,
 } from "@/types/tableDetailLevel";
 import { detailLevelStore } from "@/stores/detailLevelStore";
+import { levelAfter } from "@/utils/levelAfter";
 
 export const TableDetailLevelContext = createContext<TableDetailLevelValue>({
   detailLevel: TableDetailLevel.FullDetails,
@@ -15,16 +16,6 @@ interface TableLevelDetailProviderProps {
   children: ReactNode;
   level?: TableDetailLevel;
 }
-
-const levelAfter = (level: TableDetailLevel): TableDetailLevel => {
-  if (level === TableDetailLevel.FullDetails) {
-    return TableDetailLevel.HeaderOnly;
-  }
-
-  return level === TableDetailLevel.HeaderOnly
-    ? TableDetailLevel.KeyOnly
-    : TableDetailLevel.FullDetails;
-};
 
 const TableLevelDetailProvider = ({
   children,
