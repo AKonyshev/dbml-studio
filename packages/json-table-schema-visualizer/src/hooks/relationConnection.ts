@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useTablesInfo } from "./table";
 import { useTableWidthStoredValue } from "./tableWidthStore";
-import { useTableDetailLevel } from "./tableDetailLevel";
+import { useResolvedTableDetailLevel } from "./tableDetailLevelOverride";
 
 import type { RelationItem } from "@/types/relation";
 import type { Position, XYPosition } from "@/types/positions";
@@ -58,7 +58,8 @@ export const useRelationsCoords = (
 
   const sourceTableDragEventName = computeTableDragEventName(source?.tableName);
   const targetTableDragEventName = computeTableDragEventName(target?.tableName);
-  const { detailLevel } = useTableDetailLevel();
+  const sourceDetailLevel = useResolvedTableDetailLevel(source.tableName);
+  const targetDetailLevel = useResolvedTableDetailLevel(target.tableName);
   // update source table coordinates on the source table drag event
   useEffect(() => {
     const coordsUpdater = (coords: XYPosition): void => {
@@ -94,23 +95,19 @@ export const useRelationsCoords = (
     });
 
   // addition of the coordX to the cordXq to obtain the including
-  // the real position of the table in the scene
-  if (detailLevel === TableDetailLevel.HeaderOnly) {
-    return {
-      sourcePosition,
-      targetPosition,
-      sourceXY: {
-        x: finalSourceX,
-        y: sourceTableCoords.y + TABLE_HEADER_HEIGHT / 2,
-      },
-      targetXY: {
-        x: finalTargetX,
-        y: targetTableCoords.y + TABLE_HEADER_HEIGHT / 2,
-      },
-    };
-  }
-  const finalSourceY = sourceColY + sourceTableCoords.y;
-  const finalTargetY = targetColY + targetTableCoords.y;
+  // the real position of the table in the scene.
+  //
+  // Each end is measured at its own table's level. One test for both ends was
+  // enough while the whole diagram moved together; with a table free to be
+  // collapsed on its own, a line can run from a header to a column.
+  const finalSourceY =
+    sourceDetailLevel === TableDetailLevel.HeaderOnly
+      ? sourceTableCoords.y + TABLE_HEADER_HEIGHT / 2
+      : sourceColY + sourceTableCoords.y;
+  const finalTargetY =
+    targetDetailLevel === TableDetailLevel.HeaderOnly
+      ? targetTableCoords.y + TABLE_HEADER_HEIGHT / 2
+      : targetColY + targetTableCoords.y;
 
   return {
     sourcePosition,

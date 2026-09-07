@@ -23,7 +23,7 @@ import { useTableDefaultPosition, useTableWidth } from "@/hooks/table";
 import { setHoveredTableName } from "@/stores/hoverStore";
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { useTableRelationsVisibility } from "@/hooks/tableRelationsVisibility";
-import { useTableDetailLevel } from "@/hooks/tableDetailLevel";
+import { useResolvedTableDetailLevel } from "@/hooks/tableDetailLevelOverride";
 import { useAreRowsWorthDrawing } from "@/hooks/viewport";
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
@@ -58,7 +58,10 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   const { isHidden: hasHiddenRefs } = useTableRelationsVisibility(name);
   const isSelected = useIsTableSelected(name);
   const isSelectMode = useIsSelectMode();
-  const { detailLevel } = useTableDetailLevel();
+  // Its own level if the reader set one, the diagram's otherwise. Everything
+  // below — the visible rows, and the height the connections and fit-to-view
+  // are computed from — follows from this one value.
+  const detailLevel = useResolvedTableDetailLevel(name);
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
   const { theme } = useThemeContext();
