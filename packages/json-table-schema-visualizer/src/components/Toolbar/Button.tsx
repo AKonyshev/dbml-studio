@@ -28,7 +28,7 @@ const ToolbarButton = ({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex items-center rounded-lg p-1.5 text-content-muted transition-colors hover:bg-accent/10 hover:text-content focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${className}`}
+      className={`group relative flex items-center rounded-lg p-1.5 text-content-muted transition-colors hover:bg-accent/10 hover:text-content focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-content-muted ${className}`}
       {...props}
       // Deliberately AFTER the spread: later JSX attributes win, so a caller
       // cannot replace the computed accessible name. There is no `title` — the

@@ -61,6 +61,12 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "showAllRefs",
+    key: "r",
+    labelKey: "action.showAllRefs",
+    executable: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",

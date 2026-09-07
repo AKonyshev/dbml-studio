@@ -40,3 +40,31 @@ export function useTableRelationsVisibility(tableName: string): {
 
   return { isHidden, toggle };
 }
+
+/**
+ * Whether anything on this document is hidden — which is all the reset button
+ * needs to know about the store.
+ *
+ * The same event as above, because a reset is announced the same way a single
+ * toggle is. The initial read happens at mount, after `Connections` has
+ * switched the store to the document, so a diagram opened with tables already
+ * hidden shows the button live rather than greyed out.
+ */
+export function useHasHiddenRelations(): boolean {
+  const [hasHidden, setHasHidden] = useState(() =>
+    tableRelationsVisibilityStore.hasHiddenRelations(),
+  );
+
+  useEffect(() => {
+    const sync = (): void => {
+      setHasHidden(tableRelationsVisibilityStore.hasHiddenRelations());
+    };
+    sync();
+    eventEmitter.on(RELATIONS_TOGGLE_EVENT, sync);
+    return () => {
+      eventEmitter.off(RELATIONS_TOGGLE_EVENT, sync);
+    };
+  }, []);
+
+  return hasHidden;
+}

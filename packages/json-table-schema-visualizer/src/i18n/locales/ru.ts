@@ -34,6 +34,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "action.closeLegend": "Закрыть легенду",
   "action.search": "Поиск по таблицам",
   "action.toggleRefs": "Скрыть или показать связи таблицы",
+  "action.showAllRefs": "Показать все скрытые связи",
   "action.openFile": "Открыть",
   "action.openFile.hint": "Откройте файл .dbml или перетащите его на страницу",
   "action.downloadFile": "Скачать",

@@ -32,6 +32,7 @@ export const MESSAGES_EN = {
   "action.closeLegend": "Close the legend",
   "action.search": "Search tables",
   "action.toggleRefs": "Hide or show a table's relations",
+  "action.showAllRefs": "Show all hidden relations",
   "action.openFile": "Open",
   "action.openFile.hint": "Open a .dbml file, or drop one anywhere on the page",
   "action.downloadFile": "Download",

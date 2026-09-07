@@ -162,6 +162,10 @@
         "title": "%command.toggleTableRelations%"
       },
       {
+        "command": "dbmlStudio.showAllTableRelations",
+        "title": "%command.showAllTableRelations%"
+      },
+      {
         "command": "dbmlStudio.showShortcuts",
         "title": "%command.showShortcuts%"
       }
@@ -205,6 +209,11 @@
       {
         "command": "dbmlStudio.toggleTableRelations",
         "key": "h",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+      },
+      {
+        "command": "dbmlStudio.showAllTableRelations",
+        "key": "r",
         "when": "activeCustomEditorId == 'dbml-studio-diagram'"
       },
       {
@@ -261,6 +270,10 @@
         },
         {
           "command": "dbmlStudio.showShortcuts",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        },
+        {
+          "command": "dbmlStudio.showAllTableRelations",
           "when": "activeCustomEditorId == 'dbml-studio-diagram'"
         }
       ],

@@ -18,5 +18,6 @@ export const DIAGRAM_ACTION_COMMANDS: ReadonlyArray<
   ["dbmlStudio.autoArrange", "autoArrange"],
   ["dbmlStudio.fitToView", "fitToView"],
   ["dbmlStudio.toggleTableRelations", "toggleRefs"],
+  ["dbmlStudio.showAllTableRelations", "showAllRefs"],
   ["dbmlStudio.showShortcuts", "legend"],
 ];

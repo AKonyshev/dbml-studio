@@ -46,7 +46,7 @@ One state, two ways in — the header icon and `H` — and **neither writes to t
 
 Every one of these is a command now, so each key is a default the reader can change.
 
-1. Press `C`, `A`, `S`, `D`, `V`, `L`, `F`, `H` with the diagram focused — each produces the same result as its toolbar button, and each acts **once**. Two toggles that cancel out is the failure this arrangement exists to prevent.
+1. Press `C`, `A`, `S`, `D`, `V`, `L`, `F`, `H`, `R` with the diagram focused — each produces the same result as its toolbar button, and each acts **once**. Two toggles that cancel out is the failure this arrangement exists to prevent.
 2. Open the search with `Ctrl/Cmd+F` and type text containing `c`, `a`, `s` — the view modes must **not** toggle and the text must type normally.
 3. Put the caret in a `.dbml` text editor and type those same letters — nothing on any open diagram may change.
 4. Press `?` — the legend opens and lists every shortcut. Close it with `Esc`, then reopen it with the keyboard button in the toolbar and close it by clicking the dimmed backdrop.

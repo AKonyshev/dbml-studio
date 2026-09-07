@@ -19,6 +19,7 @@
   "command.autoArrange": "DBML: Разложить таблицы автоматически",
   "command.fitToView": "DBML: Вписать диаграмму в экран",
   "command.toggleTableRelations": "DBML: Скрыть или показать связи таблицы под курсором",
+  "command.showAllTableRelations": "DBML: Показать все скрытые связи",
   "command.showShortcuts": "DBML: Показать легенду диаграммы",
   "configuration.title": "DBML Studio"
 }

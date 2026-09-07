@@ -49,7 +49,10 @@ import { computeWheelZoom } from "@/utils/computeWheelZoom";
 import { computeDiagramBounds } from "@/utils/diagramBounds";
 import { viewportStore } from "@/stores/viewportStore";
 import { toggleInteractionMode } from "@/stores/interactionModeStore";
-import { toggleTableRelations } from "@/stores/toggleTableRelations";
+import {
+  showAllTableRelations,
+  toggleTableRelations,
+} from "@/stores/toggleTableRelations";
 import { useMarqueeSelection } from "@/hooks/marqueeSelection";
 
 interface DiagramWrapperProps {
@@ -470,6 +473,7 @@ const DiagramWrapper = ({
       toggleRefs: () => {
         toggleTableRelations(getHoveredTableName() ?? "");
       },
+      showAllRefs: showAllTableRelations,
     },
     !isLegendOpen,
   );

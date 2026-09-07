@@ -19,6 +19,7 @@
   "command.autoArrange": "DBML：自动排列表",
   "command.fitToView": "DBML：使关系图适应视图",
   "command.toggleTableRelations": "DBML：隐藏或显示指针所指表的关系",
+  "command.showAllTableRelations": "DBML：显示所有隐藏的关系",
   "command.showShortcuts": "DBML：显示关系图图例",
   "configuration.title": "DBML Studio"
 }

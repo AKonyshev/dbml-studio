@@ -12,6 +12,7 @@ import ExportMenu from "./Export/ExportMenu";
 import ShortTableNameSetting from "./ShortTableNameSetting/ShortTableNameSetting";
 import EnableAlwaysHover from "./EnableAlwaysHover/EnableAlwaysHover";
 import AnimateRelations from "./AnimateRelations/AnimateRelations";
+import ShowAllRelations from "./ShowAllRelations/ShowAllRelations";
 import ToolbarButton from "./Button";
 
 import { shortcutKeyFor } from "@/constants/shortcuts";
@@ -82,6 +83,9 @@ const Toolbar = ({
       <ShortTableNameSetting />
       <EnableAlwaysHover />
       <AnimateRelations />
+      {/* Beside the other relation settings, and last of them because it is
+          the one that undoes something rather than sets it. */}
+      <ShowAllRelations />
       <hr className="mx-1.5 my-1 h-6 w-px bg-subtle" />
       <ToolbarButton
         label={t("legend.title")}

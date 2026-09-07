@@ -40,6 +40,7 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 | `L` | Auto-arrange                            |
 | `F` | Fit to view                             |
 | `H` | Hide/show the hovered table's relations |
+| `R` | Show all hidden relations               |
 | `?` | Show the shortcuts legend               |
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search. Both are ignored while you are typing in a field.

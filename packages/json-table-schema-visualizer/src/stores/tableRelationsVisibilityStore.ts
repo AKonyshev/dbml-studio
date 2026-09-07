@@ -40,6 +40,30 @@ class TableRelationsVisibilityStore extends PersistableStore<
     this.persist(key, this.getCurrentState());
   }
 
+  /**
+   * Bring every table's relations back, and say whether that changed anything.
+   *
+   * The caller uses the answer to decide about announcing: a reset over a
+   * document with nothing hidden should not make the whole diagram resync.
+   */
+  public showAllTableRelations(): boolean {
+    const key = this.activeKey ?? "default";
+    const hiddenSet = this.hiddenRelationsByKey.get(key);
+    if (hiddenSet == null || hiddenSet.size === 0) {
+      return false;
+    }
+
+    hiddenSet.clear();
+    this.persist(key, this.getCurrentState());
+    return true;
+  }
+
+  /** Whether the reset button has anything to do. */
+  public hasHiddenRelations(): boolean {
+    const key = this.activeKey ?? "default";
+    return (this.hiddenRelationsByKey.get(key)?.size ?? 0) > 0;
+  }
+
   public areTableRelationsHidden(tableName: string): boolean {
     const key = this.activeKey ?? "default";
     const hiddenSet = this.hiddenRelationsByKey.get(key);
