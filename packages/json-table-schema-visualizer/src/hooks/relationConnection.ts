@@ -8,12 +8,11 @@ import type { RelationItem } from "@/types/relation";
 import type { Position, XYPosition } from "@/types/positions";
 
 import { computeColY } from "@/utils/computeColY";
+import { relationEndY } from "@/utils/relationEndY";
 import { computeTableDragEventName } from "@/utils/eventName";
 import eventEmitter from "@/events-emitter";
 import { computeConnectionHandlePos } from "@/utils/computeConnectionHandlePositions";
 import { tableCoordsStore } from "@/stores/tableCoords";
-import { TableDetailLevel } from "@/types/tableDetailLevel";
-import { TABLE_HEADER_HEIGHT } from "@/constants/sizing";
 
 interface UseRelationTablesCoordsReturn {
   sourceXY: XYPosition;
@@ -97,17 +96,20 @@ export const useRelationsCoords = (
   // addition of the coordX to the cordXq to obtain the including
   // the real position of the table in the scene.
   //
-  // Each end is measured at its own table's level. One test for both ends was
-  // enough while the whole diagram moved together; with a table free to be
-  // collapsed on its own, a line can run from a header to a column.
-  const finalSourceY =
-    sourceDetailLevel === TableDetailLevel.HeaderOnly
-      ? sourceTableCoords.y + TABLE_HEADER_HEIGHT / 2
-      : sourceColY + sourceTableCoords.y;
-  const finalTargetY =
-    targetDetailLevel === TableDetailLevel.HeaderOnly
-      ? targetTableCoords.y + TABLE_HEADER_HEIGHT / 2
-      : targetColY + targetTableCoords.y;
+  // Each end is asked separately, and the answer lives in `relationEndY` rather
+  // than here: it is the one part of this hook that can be tested without a
+  // browser, and getting it wrong lands a line on the wrong row without
+  // failing anywhere.
+  const finalSourceY = relationEndY(
+    sourceDetailLevel,
+    sourceTableCoords.y,
+    sourceColY,
+  );
+  const finalTargetY = relationEndY(
+    targetDetailLevel,
+    targetTableCoords.y,
+    targetColY,
+  );
 
   return {
     sourcePosition,
