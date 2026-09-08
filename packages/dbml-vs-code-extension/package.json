@@ -2,7 +2,7 @@
   "name": "dbml-studio",
   "displayName": "DBML Studio",
   "description": "Diagram, import, and diff DBML schemas — ERD view, PostgreSQL import, live database compare.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "icon": "assets/logo.png",
   "publisher": "konyshevav",
   "license": "MIT",
