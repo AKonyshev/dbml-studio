@@ -54,6 +54,26 @@ describe("hoverStore", () => {
     stop();
   });
 
+  test("releases the pointed-at column when its own row is left", () => {
+    hoverStore.setHoveredColumn({ table: "users", field: "id", offsetY: 0 });
+    hoverStore.releaseHoveredColumn("users", "id");
+
+    expect(hoverStore.getHoveredColumn()).toBeNull();
+  });
+
+  test("leaves a same-named column in another table alone", () => {
+    // The pointer moved from `users.id` onto `orders.id`: the new row's enter
+    // lands before the old row's leave.
+    hoverStore.setHoveredColumn({ table: "orders", field: "id", offsetY: 40 });
+    hoverStore.releaseHoveredColumn("users", "id");
+
+    expect(hoverStore.getHoveredColumn()).toEqual({
+      table: "orders",
+      field: "id",
+      offsetY: 40,
+    });
+  });
+
   test("stops telling a subscriber that has unsubscribed", () => {
     let calls = 0;
     const stop = hoverStore.subscribe(() => {

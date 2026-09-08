@@ -6,7 +6,7 @@ import type { KonvaEventObject } from "konva/lib/Node";
 import { COLUMN_HEIGHT, PADDINGS } from "@/constants/sizing";
 import { useTableWidth } from "@/hooks/table";
 import { useIsColumnHighlighted } from "@/hooks/hover";
-import { getHoveredColumn, setHoveredColumn } from "@/stores/hoverStore";
+import { releaseHoveredColumn, setHoveredColumn } from "@/stores/hoverStore";
 import { useIsColumnFocused } from "@/hooks/columnFocus";
 import { focusColumn } from "@/stores/currentTarget";
 import { openQuickEdit } from "@/stores/quickEditStore";
@@ -70,9 +70,7 @@ const ColumnWrapper = ({
     setHovered(false);
     // Only if nothing else has claimed the pointer in the meantime: leaving one
     // column for the next raises the new one's enter before this leave.
-    if (getHoveredColumn()?.field === columnName) {
-      setHoveredColumn(null);
-    }
+    releaseHoveredColumn(tableName, columnName);
   };
 
   // Its own pointer wins outright — the same short-circuit shouldHighLightCol

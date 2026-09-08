@@ -52,6 +52,26 @@ class HoverStore {
     this.hoveredColumn = next;
   };
 
+  /**
+   * Let go of a column, but only if it is still the one being pointed at.
+   *
+   * Leaving one column for the next raises the new one's enter before this
+   * leave, so a leave that asked by name alone released whichever column had
+   * just taken the pointer — and every schema has an `id` in more than one
+   * table, which is where that went wrong.
+   */
+  public readonly releaseHoveredColumn = (
+    table: string,
+    field: string,
+  ): void => {
+    if (
+      this.hoveredColumn?.table === table &&
+      this.hoveredColumn.field === field
+    ) {
+      this.hoveredColumn = null;
+    }
+  };
+
   public readonly getHighlightedColumns = (): string[] =>
     this.highlightedColumns;
 
@@ -93,4 +113,5 @@ export const setHighlightedColumns = hoverStore.setHighlightedColumns;
 export const getHoveredTableName = hoverStore.getHoveredTableName;
 export const getHighlightedColumns = hoverStore.getHighlightedColumns;
 export const setHoveredColumn = hoverStore.setHoveredColumn;
+export const releaseHoveredColumn = hoverStore.releaseHoveredColumn;
 export const getHoveredColumn = hoverStore.getHoveredColumn;
