@@ -18,7 +18,11 @@ import {
   getQuickEditTarget,
   subscribeQuickEdit,
 } from "@/stores/quickEditStore";
-import { recordRename, renameTableState } from "@/stores/renameReconcile";
+import {
+  predictRenamedFullName,
+  recordRename,
+  renameTableState,
+} from "@/stores/renameReconcile";
 
 const NEW_COLUMN_TEXT = "new_column varchar";
 const MIN_POPUP_WIDTH = 200;
@@ -138,12 +142,29 @@ const QuickEditPopup = (): JSX.Element | null => {
       return false;
     }
 
+    // A rename moves the table's saved position, detail level and hidden
+    // relations to the new name — and it has to happen *before* the write. The
+    // write changes the document, the document sends a new schema, and the
+    // diagram draws the table under its new name; a table reads its position
+    // once, when it is drawn, so a position that arrives afterwards is never
+    // seen and the table sits in the corner. Refused, it is put straight back.
+    const predicted =
+      operation.kind === "renameTable"
+        ? predictRenamedFullName(operation.newName)
+        : null;
+    if (predicted !== null && operation.kind === "renameTable") {
+      renameTableState(operation.table, predicted);
+    }
+
     const outcome = await host.submit(
       operation,
       operation.kind === "renameTable" ? undefined : original,
     );
 
     if (!outcome.ok) {
+      if (predicted !== null && operation.kind === "renameTable") {
+        renameTableState(predicted, operation.table, { announce: true });
+      }
       setError(messageForRejection(outcome.reason));
 
       return false;
@@ -151,10 +172,13 @@ const QuickEditPopup = (): JSX.Element | null => {
 
     setError(null);
 
-    // Only now, and never before: a rejected rename must not leave the stores
-    // describing a document that does not exist.
     if (operation.kind === "renameTable") {
-      renameTableState(operation.table, outcome.table);
+      // The host decides the real name — a schema prefix may survive that the
+      // guess above dropped. Correcting late means the table may already be
+      // drawn, so this one announces.
+      if (predicted !== null && predicted !== outcome.table) {
+        renameTableState(predicted, outcome.table, { announce: true });
+      }
       recordRename(operation.table, outcome.table);
     }
 

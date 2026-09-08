@@ -38,6 +38,18 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     return this.tableCoords;
   }
 
+  /**
+   * Tell every table to read its position again.
+   *
+   * A table reads `getCoords` once and then listens only for this, so a
+   * coordinate that arrives under a new key after the table has drawn is
+   * invisible until something says so. Used by a rename that could not be
+   * carried out before the diagram redrew.
+   */
+  public announcePositions(): void {
+    eventEmitter.emit(TableCoordsStore.RESET_POS_EVENT_NAME, this.tableCoords);
+  }
+
   public subscribeToReset(
     callback: (pos: Map<string, XYWHPosition>) => void,
   ): () => void {

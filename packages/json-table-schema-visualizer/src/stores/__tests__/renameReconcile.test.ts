@@ -2,6 +2,7 @@
 // and the coordinates store reaches it through the layout helper.
 import {
   forgetRenames,
+  predictRenamedFullName,
   reconcileAfterSchemaChange,
   recordRename,
   renameTableState,
@@ -155,5 +156,71 @@ describe("mirroring an undone rename", () => {
     reconcileAfterSchemaChange(["users"]);
 
     expect(tableCoordsStore.getAllCoords().has("users")).toBe(false);
+  });
+});
+
+describe("carrying the position before the write", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    forgetRenames();
+    tableCoordsStore.switchTo("doc-3", [], []);
+    tableDetailLevelStore.switchTo("doc-3");
+    tableRelationsVisibilityStore.switchTo("doc-3");
+  });
+
+  // The order is the whole point. A table reads its position once, when it is
+  // drawn, and the new schema draws it under the new name — so a position moved
+  // after the write is never read and the table lands in the corner.
+  it("has the position under the new name before anything is written", () => {
+    tableCoordsStore.setCoords("acl.analysis", { x: 300, y: 120 });
+
+    renameTableState("acl.analysis", predictRenamedFullName("acl.analysis1"));
+
+    expect(tableCoordsStore.getCoords("acl.analysis1")).toMatchObject({
+      x: 300,
+      y: 120,
+    });
+  });
+
+  it("puts it back when the write is refused", () => {
+    tableCoordsStore.setCoords("acl.analysis", { x: 300, y: 120 });
+    const predicted = predictRenamedFullName("acl.analysis1");
+
+    renameTableState("acl.analysis", predicted);
+    renameTableState(predicted, "acl.analysis", { announce: true });
+
+    expect(tableCoordsStore.getCoords("acl.analysis")).toMatchObject({
+      x: 300,
+      y: 120,
+    });
+    expect(tableCoordsStore.getAllCoords().has("acl.analysis1")).toBe(false);
+  });
+
+  it("corrects a guess the host disagrees with", () => {
+    tableCoordsStore.setCoords("analytics.users", { x: 40, y: 50 });
+    // The reader typed a bare name for a schema-qualified table.
+    const predicted = predictRenamedFullName("accounts");
+
+    renameTableState("analytics.users", predicted);
+    renameTableState(predicted, "analytics.accounts", { announce: true });
+
+    expect(tableCoordsStore.getCoords("analytics.accounts")).toMatchObject({
+      x: 40,
+      y: 50,
+    });
+  });
+
+  it("tells the diagram to look again when it corrects late", () => {
+    const listener = jest.fn();
+    const unsubscribe = tableCoordsStore.subscribeToReset(listener);
+    tableCoordsStore.setCoords("a", { x: 1, y: 2 });
+
+    renameTableState("a", "b");
+    expect(listener).not.toHaveBeenCalled();
+
+    renameTableState("b", "c", { announce: true });
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
   });
 });

@@ -11,7 +11,11 @@ import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
  * Called only after the host confirms the write. A rejected rename must not
  * leave the stores describing a document that does not exist.
  */
-export const renameTableState = (oldName: string, newName: string): void => {
+export const renameTableState = (
+  oldName: string,
+  newName: string,
+  options: { announce?: boolean } = {},
+): void => {
   if (oldName === newName) {
     return;
   }
@@ -19,7 +23,29 @@ export const renameTableState = (oldName: string, newName: string): void => {
   tableCoordsStore.renameKey(oldName, newName);
   tableRelationsVisibilityStore.renameKey(oldName, newName);
   tableDetailLevelStore.renameKey(oldName, newName);
+
+  // Only when the diagram may already have drawn the table under its new name
+  // and found no position for it. Carried out *before* the write, which is the
+  // normal path, nothing has drawn yet and there is nothing to tell.
+  if (options.announce === true) {
+    tableCoordsStore.announcePositions();
+  }
 };
+
+/**
+ * What the table will be called once the host has renamed it, as far as the
+ * page can tell.
+ *
+ * A guess, and it has to be: only the host knows whether the qualified name the
+ * reader edited has a schema of its own or is one quoted identifier with a dot
+ * in it. It is right whenever the reader keeps the name they were shown, which
+ * is the ordinary case, and the caller corrects it against the host's answer.
+ *
+ * It exists because the alternative is worse. The state has to move before the
+ * write, or the new schema reaches the diagram first, the table is drawn under
+ * a name nothing has coordinates for, and it lands in the corner.
+ */
+export const predictRenamedFullName = (typed: string): string => typed.trim();
 
 interface RenamePair {
   from: string;

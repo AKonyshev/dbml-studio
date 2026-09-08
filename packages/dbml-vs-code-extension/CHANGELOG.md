@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **A renamed table keeps its place.** It jumped to the top-left corner instead. A table reads its position once, when it is drawn, and the rename drew it under its new name before the saved position had been moved there — so it found nothing and used the origin. The position, the detail level and the hidden-relations flag now move before the write, and go back if the write is refused.
+
 - **`F2` aims at what the pointer is on.** Clicking a column left it pointed at until something else took over, and the key checked that before anything else — so after one click on any column, `F2` re-opened that column wherever you pressed it, and renaming a table appeared not to work at all. The pointer now decides: a column under it edits that column, a table under it renames the table, and the clicked column is only a fallback for a pointer that is off the diagram.
 
 - **Renaming a table needs nothing but the pointer.** It used to want the table _selected_, and a table can only be selected in select mode — so renaming meant pressing `V`, clicking the table, renaming, and pressing `V` back, which is not a sequence anyone guesses. `F2` now renames the table under the pointer, the way `H` and `T` already act on the table you are hovering. A single selected table still works.
