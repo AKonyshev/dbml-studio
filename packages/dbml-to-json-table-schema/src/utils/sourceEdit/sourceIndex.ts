@@ -113,6 +113,15 @@ const isBehindASchema = (text: string, at: number): boolean => {
 const nameTailOf = (matched: string, name: string): string =>
   matched.endsWith(`"${name}"`) ? `"${name}"` : name;
 
+/**
+ * Where the layout block names this table.
+ *
+ * The name is looked for as JSON writes it, not as DBML does: a name holding
+ * a backslash stands in the block escaped, and searching for the raw one found
+ * nothing — the rename then left the layout entry behind and the table lost
+ * its place. The range covers the whole string, quotes included, and
+ * `planRename` writes a JSON string back into it.
+ */
 const metaInfoNameRanges = (
   text: string,
   fullName: string,
@@ -121,16 +130,16 @@ const metaInfoNameRanges = (
   const to = text.indexOf(METAINFO_END);
   if (from === -1 || to === -1) return [];
 
-  // The range covers the name inside the JSON string, not the quotes around it.
   const found: NameOccurrence[] = [];
+  const written = JSON.stringify(fullName);
 
-  for (const form of [`"name":"${fullName}"`, `"name": "${fullName}"`]) {
+  for (const form of [`"name":${written}`, `"name": ${written}`]) {
     let at = text.indexOf(form, from);
     while (at !== -1 && at < to) {
-      const nameAt = at + form.indexOf(fullName);
+      const nameAt = at + form.indexOf(written);
       found.push({
         start: nameAt,
-        end: nameAt + fullName.length,
+        end: nameAt + written.length,
         quoted: false,
       });
       at = text.indexOf(form, at + form.length);

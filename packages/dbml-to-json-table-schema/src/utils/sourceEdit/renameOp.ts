@@ -67,10 +67,12 @@ export const planRename = (
       end: occurrence.end,
       text: write(occurrence, declared),
     })),
+    // The layout block is JSON, and the range covers the whole string there,
+    // so a whole string goes back — escaped the way JSON needs it.
     ...table.metaInfoNameRanges.map((occurrence) => ({
       start: occurrence.start,
       end: occurrence.end,
-      text: newFullName,
+      text: JSON.stringify(newFullName),
     })),
   ];
 

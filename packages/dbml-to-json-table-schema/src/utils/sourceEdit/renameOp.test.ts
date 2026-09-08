@@ -338,6 +338,31 @@ describe("planRename", () => {
     expect(next).toContain('Ref: "sch"."people"."user_id" > "users"."id"');
   });
 
+  it("follows a layout entry whose name the block had to escape", () => {
+    const escaped = [
+      'Table "a\\b" {',
+      "  id integer [pk]",
+      "}",
+      "",
+      "/*MetaInfo",
+      '[{"name":"a\\\\b","x":10,"y":20}]',
+      "MetaInfo*/",
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(escaped), {
+      kind: "renameTable",
+      table: "a\\b",
+      newName: "accounts",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(escaped, result.edits);
+    // A name that stood in quotes stays in them, whatever it is now called.
+    expect(next).toContain('Table "accounts" {');
+    expect(next).toContain('[{"name":"accounts","x":10,"y":20}]');
+  });
+
   it("refuses a name another table already uses", () => {
     expect(
       planRename(buildSourceIndex(src), {

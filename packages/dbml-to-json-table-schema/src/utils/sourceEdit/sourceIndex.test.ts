@@ -84,7 +84,25 @@ describe("buildSourceIndex", () => {
     const range = users?.metaInfoNameRanges[0];
 
     expect(users?.metaInfoNameRanges).toHaveLength(1);
-    expect(withMeta.slice(range?.start ?? 0, range?.end ?? 0)).toBe("users");
+    expect(withMeta.slice(range?.start ?? 0, range?.end ?? 0)).toBe('"users"');
+  });
+
+  it("finds a name the block had to escape", () => {
+    const escaped = [
+      'Table "a\\b" {',
+      "  id integer [pk]",
+      "}",
+      "",
+      "/*MetaInfo",
+      '[{"name":"a\\\\b","x":10,"y":20}]',
+      "MetaInfo*/",
+      "",
+    ].join("\n");
+    const table = findTable(buildSourceIndex(escaped), "a\\b");
+    const range = table?.metaInfoNameRanges[0];
+
+    expect(table?.metaInfoNameRanges).toHaveLength(1);
+    expect(escaped.slice(range?.start ?? 0, range?.end ?? 0)).toBe('"a\\\\b"');
   });
 });
 
