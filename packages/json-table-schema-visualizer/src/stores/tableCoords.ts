@@ -285,14 +285,11 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
    * away. See `renameTableState` for why this is done rather than detected.
    */
   public renameKey(oldName: string, newName: string): void {
-    let changed = false;
-
     const current = this.tableCoords.get(oldName);
     if (current !== undefined) {
       this.tableCoords.delete(oldName);
       this.tableCoords.set(newName, current);
       this.persist(this.currentStoreKey, Array.from(this.tableCoords));
-      changed = true;
     }
 
     for (const level of Object.values(TableDetailLevel)) {
@@ -306,12 +303,13 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
       stored.delete(oldName);
       stored.set(newName, entry);
       this.persist(storeKey, Array.from(stored));
-      changed = true;
     }
 
-    if (changed) {
-      eventEmitter.emit("table:coords:updated");
-    }
+    // Deliberately silent. Nothing moved — a table's arrangement is now filed
+    // under a different name, which is not news to anything that draws it. The
+    // announcement is what the position write-back listens for, and answering a
+    // rename with a whole-file write built from the page's copy of the text is
+    // how a rename used to undo itself.
   }
 
   private storedCoordsFor(

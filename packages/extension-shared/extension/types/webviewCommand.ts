@@ -1,4 +1,5 @@
 import { type JSONTableSchema } from "shared/types/tableSchema";
+import { type TableCoordEntry } from "dbml-to-json-table-schema";
 
 import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 
@@ -13,6 +14,15 @@ export enum WebviewCommand {
 
 export interface WebviewPostMessage {
   command: WebviewCommand;
+  /**
+   * Table positions for `UPDATE_DBML_CONTENT`.
+   *
+   * The arrangement, not the document. The page used to send the whole file,
+   * rebuilt from its own copy of the text — and that copy is out of date the
+   * moment anything else edits the document, so the write put the old text
+   * back. The extension holds the live document and merges into it.
+   */
+  coords?: TableCoordEntry[];
   message?: string;
   content?: string;
   documentUri?: string;

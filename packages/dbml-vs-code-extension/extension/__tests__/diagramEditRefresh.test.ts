@@ -61,7 +61,9 @@ describe("a field edit and the diagram's own write-back", () => {
     await WebviewHelper.handleWebviewMessage(
       {
         command: WebviewCommand.UPDATE_DBML_CONTENT,
-        content: SOURCE,
+        // The arrangement, not a whole file: the page no longer builds the
+        // document, because its copy of the text goes stale.
+        coords: [{ name: "users", x: 10, y: 20 }],
         documentUri: "file:///a.dbml",
       } as never,
       {} as never,

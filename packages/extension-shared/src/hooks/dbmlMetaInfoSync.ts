@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { upsertMetaInfoInDbml } from "dbml-to-json-table-schema";
 import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
 import eventEmitter from "json-table-schema-visualizer/src/events-emitter";
 
@@ -27,9 +26,8 @@ export const useDbmlMetaInfoSync = (
     if (!enabled) return;
 
     const syncMetaInfo = (): void => {
-      const content = rawContentRef.current;
       const uri = documentKeyRef.current;
-      if (content == null || uri == null) return;
+      if (uri == null) return;
 
       // Whatever the reader has arranged, at whichever detail level: the
       // entries carry the level with them, so the file can be read back safely.
@@ -38,13 +36,14 @@ export const useDbmlMetaInfoSync = (
       const coords = tableCoordsStore.getCoordEntriesForMetaInfo();
       if (coords.length === 0) return;
 
-      const updated = upsertMetaInfoInDbml(content, coords);
-
-      if (updated === content) return;
-
+      // The arrangement only. Merging it into the document is the extension's
+      // job, because the extension has the document: this page's copy of the
+      // text is stale the moment anything else edits it, and sending a whole
+      // file built from that copy put the old text back — which is how a rename
+      // made from the diagram used to undo itself half a second later.
       const message: WebviewPostMessage = {
         command: WebviewCommand.UPDATE_DBML_CONTENT,
-        content: updated,
+        coords,
         documentUri: uri,
       };
 

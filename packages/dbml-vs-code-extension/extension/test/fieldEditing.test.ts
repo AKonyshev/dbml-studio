@@ -241,6 +241,16 @@ suite("an edit from the diagram reaches the document", () => {
         after.includes(`{"name":"sch.renamed_entity"`),
         "the saved layout did not follow the rename",
       );
+
+      // Past the position write-back's debounce. That write used to rebuild the
+      // whole file from the page's own copy of the text, which by then was the
+      // text from before the rename — so the rename undid itself a few hundred
+      // milliseconds after it landed, and the table jumped and came back.
+      await sleep(2000);
+      assert.ok(
+        document.getText().includes(`Table "sch.renamed_entity"`),
+        "the rename was undone by the position write-back",
+      );
     } finally {
       await browser.close();
     }

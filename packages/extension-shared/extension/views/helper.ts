@@ -15,6 +15,10 @@ import {
   WorkspaceEdit,
 } from "vscode";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
+import {
+  upsertMetaInfoInDbml,
+  type TableCoordEntry,
+} from "dbml-to-json-table-schema";
 
 import {
   diagramEditResultMessage,
@@ -58,6 +62,15 @@ export interface WebviewHooksOptions {
   onWebviewReady?: () => void;
   onTypingFocusChanged?: (typing: boolean) => void;
   postToWebview?: (message: unknown) => void;
+  /**
+   * Somewhere to say what an edit asked for and what came of it.
+   *
+   * Editing lives in three places — the page decides what to aim at, this
+   * merges it into the document, and the diagram redraws — and when a reader
+   * says "it does nothing", none of the three can be told apart from outside.
+   * This is the one place all of it passes through.
+   */
+  log?: (line: string) => void;
 }
 
 export class WebviewHelper {
@@ -113,13 +126,17 @@ export class WebviewHelper {
       case WebviewCommand.UPDATE_DBML_CONTENT:
         if (
           options.supportsDbmlFileSync &&
-          typeof message.content === "string" &&
+          Array.isArray(message.coords) &&
           typeof message.documentUri === "string"
         ) {
-          const content = message.content;
+          const coords = message.coords;
           const documentUri = message.documentUri;
           await WebviewHelper.writeQueue.run(documentUri, async () => {
-            await WebviewHelper.applyDbmlContent(content, documentUri, options);
+            await WebviewHelper.applyTablePositions(
+              coords,
+              documentUri,
+              options,
+            );
           });
         }
         break;
@@ -168,6 +185,13 @@ export class WebviewHelper {
       return;
     }
 
+    options.log?.(
+      `edit requested: ${JSON.stringify(request.operation)}` +
+        (request.expectedText === undefined
+          ? ""
+          : ` (expecting ${JSON.stringify(request.expectedText)})`),
+    );
+
     const outcome = await WebviewHelper.writeQueue.run(
       request.documentUri,
       async () =>
@@ -202,13 +226,28 @@ export class WebviewHelper {
         }),
     );
 
+    options.log?.(
+      outcome.ok
+        ? `edit applied: ${outcome.table}${outcome.field === undefined ? "" : `.${outcome.field}`}`
+        : `edit refused: ${JSON.stringify(outcome.reason)}`,
+    );
+
     options.postToWebview?.(
       diagramEditResultMessage(request.requestId, outcome),
     );
   }
 
-  private static async applyDbmlContent(
-    content: string,
+  /**
+   * Merge the reader's arrangement into the document as it is now.
+   *
+   * The page sends the arrangement and this reads the text, rather than the
+   * page sending a whole file it built from its own copy. That copy goes stale
+   * the moment anything else edits the document — and it did: a rename made
+   * from the diagram was undone a few hundred milliseconds later by this write
+   * putting the pre-rename text back.
+   */
+  private static async applyTablePositions(
+    coords: TableCoordEntry[],
     documentUri: string,
     options: WebviewHooksOptions,
   ): Promise<void> {
@@ -216,12 +255,16 @@ export class WebviewHelper {
     if (doc.languageId !== options.fileExt) return;
     if (doc.isUntitled || doc.isClosed) return;
 
+    const current = doc.getText();
+    const updated = upsertMetaInfoInDbml(current, coords);
+    if (updated === current) return;
+
     const edit = new WorkspaceEdit();
     const fullRange = new Range(
       doc.positionAt(0),
-      doc.positionAt(doc.getText().length),
+      doc.positionAt(current.length),
     );
-    edit.replace(doc.uri, fullRange, content);
+    edit.replace(doc.uri, fullRange, updated);
 
     options.onApplyingDbmlEdit?.(true);
     await workspace.applyEdit(edit);

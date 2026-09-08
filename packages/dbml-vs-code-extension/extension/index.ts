@@ -27,6 +27,12 @@ export function activate(context: ExtensionContext): void {
   const treeProvider = new ConnectionsTreeProvider(context.secrets);
   const diagnostics = languages.createDiagnosticCollection("dbml-studio");
 
+  // Under View → Output → DBML Studio. Editing crosses the page, the extension
+  // and the document, and when a reader reports that nothing happened, this is
+  // the only place that can say which of the three stopped.
+  const output = window.createOutputChannel("DBML Studio");
+  context.subscriptions.push(output);
+
   const { provider, registration } = DiagramEditorProvider.register(
     WEB_VIEW_NAME,
     {
@@ -36,6 +42,9 @@ export function activate(context: ExtensionContext): void {
       parser: parseDBMLToJSON,
       fileExt: "dbml",
       supportsDbmlFileSync: true,
+      log: (line) => {
+        output.appendLine(`${new Date().toISOString()} ${line}`);
+      },
     },
   );
 

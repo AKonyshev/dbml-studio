@@ -28,6 +28,8 @@ export interface DiagramHostConfig {
   extensionConfigSession: string;
   parser: (code: string) => JSONTableSchema;
   fileExt: string;
+  /** Where an edit says what it asked for and what came of it. */
+  log?: (line: string) => void;
   supportsDbmlFileSync?: boolean;
 }
 
@@ -100,6 +102,9 @@ export class DiagramView implements Disposable {
         },
         postToWebview: (message) => {
           void panel.webview.postMessage(message);
+        },
+        log: (line) => {
+          deps.log?.(line);
         },
       },
     );

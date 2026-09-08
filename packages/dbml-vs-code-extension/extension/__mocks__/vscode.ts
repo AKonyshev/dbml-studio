@@ -3,6 +3,10 @@ type TextEditor = {
 };
 
 export const window = {
+  createOutputChannel: jest.fn(() => ({
+    appendLine: jest.fn(),
+    dispose: jest.fn(),
+  })),
   activeTextEditor: undefined as TextEditor | undefined,
   showQuickPick: jest.fn(),
   showInputBox: jest.fn(),
