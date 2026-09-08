@@ -1,11 +1,14 @@
 import { type JSONTableSchema } from "shared/types/tableSchema";
 
+import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
+
 export enum WebviewCommand {
   SET_THEME_PREFERENCES = "SET_THEME_PREFERENCES",
   UPDATE_DBML_CONTENT = "UPDATE_DBML_CONTENT",
   SAVE_EXPORT = "SAVE_EXPORT",
   WEBVIEW_READY = "WEBVIEW_READY",
   SET_TYPING_FOCUS = "SET_TYPING_FOCUS",
+  APPLY_DIAGRAM_EDIT = "APPLY_DIAGRAM_EDIT",
 }
 
 export interface WebviewPostMessage {
@@ -102,4 +105,60 @@ export interface SetSchemaCommandPayload {
   message?: string;
   key: string;
   rawContent?: string;
+  /** Whether an edit made in the diagram could actually land in this document. */
+  editable?: boolean;
 }
+
+/**
+ * The diagram asking for one change to the source.
+ *
+ * It carries the intent, never the file: the extension holds the live document
+ * and the webview holds a copy that goes stale the moment the same file is open
+ * in a second tab. `expectedText` is the text the popup opened against, which is
+ * what lets the extension notice that the document moved underneath it.
+ */
+export interface ApplyDiagramEditMessage {
+  command: WebviewCommand.APPLY_DIAGRAM_EDIT;
+  documentUri: string;
+  requestId: string;
+  operation: EditOperation;
+  expectedText?: string;
+}
+
+export const DIAGRAM_EDIT_RESULT = "diagramEditResult";
+
+export interface DiagramEditResultMessage {
+  type: typeof DIAGRAM_EDIT_RESULT;
+  requestId: string;
+  outcome: EditOutcome;
+}
+
+export const diagramEditResultMessage = (
+  requestId: string,
+  outcome: EditOutcome,
+): DiagramEditResultMessage => ({
+  type: DIAGRAM_EDIT_RESULT,
+  requestId,
+  outcome,
+});
+
+/**
+ * The reply to one submitted edit, or null for a message that is not one.
+ *
+ * Like `readDiagramAction`, the sender is deliberately not checked: inside a
+ * VS Code webview the sender is a shell frame the page cannot name, and a guard
+ * on it rejects every message in silence.
+ */
+export const readDiagramEditResult = (event: {
+  data?: unknown;
+}): { requestId: string; outcome: EditOutcome } | null => {
+  const message = event.data as Partial<DiagramEditResultMessage> | null;
+  if (message == null || typeof message !== "object") return null;
+  if (message.type !== DIAGRAM_EDIT_RESULT) return null;
+  if (typeof message.requestId !== "string") return null;
+  if (message.outcome == null || typeof message.outcome !== "object") {
+    return null;
+  }
+
+  return { requestId: message.requestId, outcome: message.outcome };
+};
