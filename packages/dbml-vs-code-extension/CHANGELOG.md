@@ -4,6 +4,12 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Every diagram command works again.** In 1.2.0 none of them did anything inside VS Code: not a single keyboard shortcut and not a single **DBML** entry in the command palette. The diagram on the website was unaffected, which is why this looked at first like one new key being broken rather than all twelve. The page was refusing the message the extension sends it, on a check that asked the message to come from the frame directly above the page — and inside a webview it never does. It comes from the shell VS Code puts in between, which the page cannot name. The check could only ever reject, and it did so in silence.
+
 ## [1.2.0] - 2026-09-07
 
 ### Added

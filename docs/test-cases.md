@@ -213,6 +213,7 @@ deployed.
 | 10.14 | Compare with a database                 | Compare a file against a connection      | A Markdown report of what differs                             | `compareWithDatabase.test.ts`, `liveDatabase.test.ts` |
 | 10.15 | Delete a connection                     | Delete it                                | It goes from the view and from storage                        | `connectionStore.test.ts`                             |
 | 10.16 | Commands are namespaced                 | Open the palette, type "DBML"            | Every command is `dbmlStudio.*`                               | Manual                                                |
+| 10.17 | A command reaches the diagram           | Run any diagram command with one open    | The page acts on it — keys and the palette both go this way   | `hostRelay.test.ts` (`test:integration`)              |
 
 ## 11. Libraries
 
@@ -250,7 +251,9 @@ thinner:
 
 1. **The extension's own features are still mostly manual** — 10.6 to 10.10 and
    10.16. The integration suite can drive a real VS Code, so they are reachable;
-   nobody has written them.
+   nobody has written them. 10.17 is the first one written, and it was written
+   after the thing it covers shipped broken: every piece of that relay had a
+   test and every piece was green while the whole did nothing.
 2. **The live-database suites are opt-in.** They pass, but only when somebody
    remembers to raise a database. In CI they would run on every change; see
    `docs/testing.md`.
