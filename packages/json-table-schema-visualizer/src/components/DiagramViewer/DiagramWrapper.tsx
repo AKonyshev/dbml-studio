@@ -521,16 +521,23 @@ const DiagramWrapper = ({
         tableDetailLevelStore.resetAll();
       },
       /**
-       * One key for both, because the reader is only ever pointing at one
-       * thing: a focused column wins, and a single selected table is the
-       * fallback. The alternative was two commands on the same chord separated
-       * by a context key the webview would have to keep the workbench told
-       * about — a whole channel of state to keep in step, for a choice that is
-       * already made here.
+       * One key for all of it, because the reader is only ever pointing at one
+       * thing: a focused column wins, then a single selected table, then the
+       * table under the pointer.
        *
-       * Read at the keypress rather than subscribed to, the way `toggleRefs`
-       * reads the hovered table: pointing at a column is no reason to re-render
-       * the diagram. Aimed at nothing, this does nothing.
+       * That last fallback is what makes renaming reachable. A table can only
+       * be selected in select mode, so requiring a selection meant pressing
+       * `V`, clicking, renaming, and pressing `V` back — a ritual nobody
+       * guesses, and nobody did. `H` and `T` already act on the hovered table,
+       * so this is the diagram's own idiom rather than a new one.
+       *
+       * One command rather than two on the same chord, which would have needed
+       * a context key the webview kept the workbench told about: a whole
+       * channel of state to keep in step, for a choice already made here.
+       *
+       * All of it read at the keypress rather than subscribed to: pointing at
+       * something is no reason to re-render the diagram. Aimed at nothing, this
+       * does nothing.
        */
       quickEdit: () => {
         const focused = columnFocusStore.get();
@@ -545,9 +552,11 @@ const DiagramWrapper = ({
         }
 
         const selected = [...selectionStore.getSelected()];
-        if (selected.length !== 1) return;
+        const table =
+          selected.length === 1 ? selected[0] : getHoveredTableName();
+        if (table == null || table === "") return;
 
-        openQuickEdit({ table: selected[0], offsetY: 0 });
+        openQuickEdit({ table, offsetY: 0 });
       },
     },
     !isLegendOpen,

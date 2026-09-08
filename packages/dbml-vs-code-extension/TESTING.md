@@ -57,7 +57,7 @@ The one thing here that **does** write to the file. Automated where it can be: t
 8. **Shift+Enter** adds a line break rather than applying. **Ctrl+Enter** applies and leaves a new column below. **Ctrl+Delete** removes the column. **Ctrl+Up** and **Ctrl+Down** move it.
 9. While the box is open, press **T** or **D**: the letters go into the text and the diagram does not toggle anything.
 10. Delete a column another table's `Ref` points at: refused, with the parser's message, and the file is untouched.
-11. Select one table, no column pointed at, and press **F2**: the table's name is what opens. Rename it. Every `Ref` that named it follows, the table keeps its position and its detail level, its colour changes because the colour is derived from the name. Undo: the name goes back and the position comes back with it.
+11. Hover a table, with no column pointed at, and press **F2**: the table's name is what opens. It works in both interaction modes and needs no selection; a single selected table opens the same way. Rename it. Every `Ref` that named it follows, the table keeps its position and its detail level, its colour changes because the colour is derived from the name. Undo: the name goes back and the position comes back with it.
 12. Rename a table that has an alias (`Table users as u`) with relations written through the alias: the alias is untouched and those relations still draw.
 13. Open a `.dbml` that has never been saved (**File → New**, paste a schema, show the diagram): double-clicking a column gives no editing box at all. A file the filesystem will not let you write refuses on **Enter** instead, with a message.
 14. The site is unaffected. Open the same schema at the web app: columns do not take a focus outline and **F2** does nothing.

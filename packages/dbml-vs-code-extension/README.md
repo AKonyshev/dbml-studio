@@ -73,7 +73,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.
 
-With one table selected and no column pointed at, `F2` renames the table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
+With no column pointed at, `F2` renames the table under the pointer — the same way `H` and `T` act on the table you are hovering. A single selected table works too. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
 
 Only the ranges you changed are written, so one undo takes back one edit and the rest of your file is untouched. Text that would not parse is refused before it reaches the file, with the parser's own message. A schema that has never been saved offers no editing at all; a file that cannot be written to says so when you apply.
 

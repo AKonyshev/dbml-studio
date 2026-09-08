@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **Renaming a table needs nothing but the pointer.** It used to want the table _selected_, and a table can only be selected in select mode — so renaming meant pressing `V`, clicking the table, renaming, and pressing `V` back, which is not a sequence anyone guesses. `F2` now renames the table under the pointer, the way `H` and `T` already act on the table you are hovering. A single selected table still works.
+
 - **The diagram shows an edit straight away.** A changed column or table name only appeared after the file was saved. The write was being marked as the diagram's own — a mark that exists so the diagram does not redraw from its own write-back of table positions — and that mark suppressed the redraw a field edit needs. Editing a field no longer claims it, so the name changes under the pointer while the file is still unsaved.
 
 - **Clicking away closes the edit box.** It applied only on `Enter` before, so a click elsewhere left the box open over the diagram. It now behaves like a spreadsheet cell: clicking anywhere else applies what you typed and closes, `Escape` still throws it away, and text that will not parse keeps the box open with its reason rather than losing your typing.
