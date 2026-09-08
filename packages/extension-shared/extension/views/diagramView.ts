@@ -151,7 +151,6 @@ export class DiagramView implements Disposable {
     );
 
     this.refresh();
-    void this.learnReadOnly();
   }
 
   public get isActive(): boolean {
@@ -203,27 +202,35 @@ export class DiagramView implements Disposable {
   }
 
   /**
-   * Whether the file system will refuse a write, asked once when the view is
-   * made. A refusal before the reader reaches for a column is kinder than one
-   * after they have typed a line, and only `stat` can say so — the document
-   * itself does not know.
+   * Whether the file system will refuse a write. A refusal before the reader
+   * reaches for a column is kinder than one after they have typed a line, and
+   * only `stat` can say so — the document itself does not know.
+   *
+   * Asked again on every refresh, and answered both ways: a file locked or
+   * unlocked while the diagram is open was otherwise judged by how it stood
+   * when the view was made, for as long as the view lived.
    */
   private readOnly = false;
 
   private async learnReadOnly(): Promise<void> {
     try {
       const stat = await workspace.fs.stat(this.uri);
-      const readonly = (stat.permissions ?? 0) & FilePermission.Readonly;
-      if (readonly !== 0 && !this.readOnly) {
-        this.readOnly = true;
-        this.refresh();
-      }
+      const readonly =
+        ((stat.permissions ?? 0) & FilePermission.Readonly) !== 0;
+      if (readonly === this.readOnly) return;
+
+      // The refresh this causes asks again and finds nothing changed, so the
+      // two of them do not chase each other.
+      this.readOnly = readonly;
+      this.refresh();
     } catch {
-      // A scheme with no stat — leave it writable and let the write decide.
+      // A scheme with no stat — leave it as it stands and let the write decide.
     }
   }
 
   public refresh(): void {
+    void this.learnReadOnly();
+
     const code = this.document.getText();
 
     try {

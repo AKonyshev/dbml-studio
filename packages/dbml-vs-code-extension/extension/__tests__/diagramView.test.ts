@@ -305,7 +305,7 @@ describe("telling the diagram whether it may edit", () => {
 
 describe("a read-only file", () => {
   test("is reported not editable once the file system has said so", async () => {
-    (workspace.fs.stat as jest.Mock).mockResolvedValueOnce({
+    (workspace.fs.stat as jest.Mock).mockResolvedValue({
       permissions: FilePermission.Readonly,
     });
     const panel = makePanel();
@@ -325,6 +325,33 @@ describe("a read-only file", () => {
     );
     const last = [...posted].reverse().find((m) => m.type === "setSchema");
     expect(last?.editable).toBe(false);
+
+    view.dispose();
+  });
+
+  test("is editable again once the lock is taken off", async () => {
+    (workspace.fs.stat as jest.Mock).mockResolvedValue({
+      permissions: FilePermission.Readonly,
+    });
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///locked.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // `chmod +w` while the diagram is open. The next refresh asks again.
+    (workspace.fs.stat as jest.Mock).mockResolvedValue({ permissions: 0 });
+    view.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const posted = (panel.webview.postMessage as jest.Mock).mock.calls.map(
+      ([message]) => message as { type?: string; editable?: boolean },
+    );
+    const last = [...posted].reverse().find((m) => m.type === "setSchema");
+    expect(last?.editable).toBe(true);
 
     view.dispose();
   });
