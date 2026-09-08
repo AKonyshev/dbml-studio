@@ -244,6 +244,9 @@ lends it and neither the web app nor the embedded frame lends one.
 | 10a.18 | The document moved underneath    | Edit the same line in the text editor, then apply the box             | Refused, and the box says the document changed                                    | `planEdit.test.ts`        |
 | 10a.19 | A file that cannot be written    | Show the diagram for an unsaved (untitled) schema, click a column     | No editing box opens at all                                                       | `diagramView.test.ts`     |
 | 10a.20 | The other hosts do not edit      | Open the same schema in the web app and the embedded frame            | Columns take no focus outline and `F2` does nothing                               | Manual                    |
+| 10a.21 | A quoted qualified table name    | Rename a table declared `Table "sch.orders"`                          | The schema and the quotes survive; the name inside them changes                   | `realisticSchema.test.ts` |
+| 10a.22 | Relations written with quotes    | Rename a table referred to as `"sch.a"."id"`                          | Every such relation follows the rename                                            | `realisticSchema.test.ts` |
+| 10a.23 | An index naming a missing column | Edit any column in a file whose index names an undeclared column      | The edit applies; the index does not hold the file hostage                        | `realisticSchema.test.ts` |
 
 ## 11. Libraries
 
