@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { commitOperationFor, quickEditIntent } from "./quickEditIntent";
 import { useQuickEditPosition } from "./useQuickEditPosition";
@@ -54,6 +54,10 @@ const QuickEditPopup = (): JSX.Element | null => {
   const [text, setText] = useState("");
   const [original, setOriginal] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  // Read by the pointer listener below, which is registered once and must not
+  // be looking at the text as it was when it was registered.
+  const commitRef = useRef<() => Promise<boolean>>(async () => true);
 
   useEffect(() => {
     if (target === null) {
@@ -69,6 +73,40 @@ const QuickEditPopup = (): JSX.Element | null => {
     setText(current);
     setOriginal(current);
     setError(null);
+  }, [target]);
+
+  /**
+   * A click anywhere else ends the edit, the way it does in a spreadsheet cell.
+   *
+   * It applies rather than discards: the reader has typed something and
+   * clicking away is not how anyone asks for their typing to be thrown out —
+   * `Escape` is. A refused edit keeps the box open with its reason, so nothing
+   * is lost silently either way.
+   *
+   * `pointerdown` on the window rather than the field's own `blur`, because
+   * blur also fires when the whole window loses focus, and switching to another
+   * application is not an instruction to write to the file.
+   */
+  useEffect(() => {
+    if (target === null) {
+      return;
+    }
+
+    const onPointerDown = (event: PointerEvent): void => {
+      if (boxRef.current?.contains(event.target as Node) === true) {
+        return;
+      }
+
+      void commitRef.current().then((applied) => {
+        if (applied) closeQuickEdit();
+      });
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [target]);
 
   if (target === null || position === null) {
@@ -121,6 +159,8 @@ const QuickEditPopup = (): JSX.Element | null => {
 
     return await send(commitOperationFor(target, text));
   };
+
+  commitRef.current = commit;
 
   const onKeyDown = async (
     event: ReactKeyboardEvent<HTMLTextAreaElement>,
@@ -178,6 +218,7 @@ const QuickEditPopup = (): JSX.Element | null => {
 
   return (
     <div
+      ref={boxRef}
       className="absolute z-50 rounded border border-neutral-400 bg-white p-1 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
       style={{
         left: position.x,

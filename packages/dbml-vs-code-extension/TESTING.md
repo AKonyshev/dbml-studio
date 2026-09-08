@@ -53,13 +53,14 @@ The one thing here that **does** write to the file. Automated where it can be: t
 4. Press **Ctrl/Cmd+Z** in the text editor: one press takes the whole edit back.
 5. Open the box again, type something DBML cannot parse, press **Enter**. The box stays open with your text, the parser's own message under it in English, and the file is untouched.
 6. Press **Escape** with the text changed: nothing is written.
-7. **Shift+Enter** adds a line break rather than applying. **Ctrl+Enter** applies and leaves a new column below. **Ctrl+Delete** removes the column. **Ctrl+Up** and **Ctrl+Down** move it.
-8. While the box is open, press **T** or **D**: the letters go into the text and the diagram does not toggle anything.
-9. Delete a column another table's `Ref` points at: refused, with the parser's message, and the file is untouched.
-10. Select one table, no column pointed at, and press **F2**: the table's name is what opens. Rename it. Every `Ref` that named it follows, the table keeps its position and its detail level, its colour changes because the colour is derived from the name. Undo: the name goes back and the position comes back with it.
-11. Rename a table that has an alias (`Table users as u`) with relations written through the alias: the alias is untouched and those relations still draw.
-12. Open a `.dbml` that has never been saved (**File → New**, paste a schema, show the diagram): double-clicking a column gives no editing box at all. A file the filesystem will not let you write refuses on **Enter** instead, with a message.
-13. The site is unaffected. Open the same schema at the web app: columns do not take a focus outline and **F2** does nothing.
+7. Click anywhere else — another column, an empty part of the canvas, the toolbar. The box closes and what you typed is applied, the same as **Enter**. If the text does not parse, the box stays open with the reason instead.
+8. **Shift+Enter** adds a line break rather than applying. **Ctrl+Enter** applies and leaves a new column below. **Ctrl+Delete** removes the column. **Ctrl+Up** and **Ctrl+Down** move it.
+9. While the box is open, press **T** or **D**: the letters go into the text and the diagram does not toggle anything.
+10. Delete a column another table's `Ref` points at: refused, with the parser's message, and the file is untouched.
+11. Select one table, no column pointed at, and press **F2**: the table's name is what opens. Rename it. Every `Ref` that named it follows, the table keeps its position and its detail level, its colour changes because the colour is derived from the name. Undo: the name goes back and the position comes back with it.
+12. Rename a table that has an alias (`Table users as u`) with relations written through the alias: the alias is untouched and those relations still draw.
+13. Open a `.dbml` that has never been saved (**File → New**, paste a schema, show the diagram): double-clicking a column gives no editing box at all. A file the filesystem will not let you write refuses on **Enter** instead, with a message.
+14. The site is unaffected. Open the same schema at the web app: columns do not take a focus outline and **F2** does nothing.
 
 ## Colored relations
 
