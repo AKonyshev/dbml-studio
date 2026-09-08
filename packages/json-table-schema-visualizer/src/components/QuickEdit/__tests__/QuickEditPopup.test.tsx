@@ -293,6 +293,35 @@ describe("QuickEditPopup", () => {
     expect(box().getAttribute("aria-label")).toBe("name");
   });
 
+  it("sends nothing further while the host has not answered", async () => {
+    const held: { answer?: (outcome: EditOutcome) => void } = {};
+    const submit = jest.fn(
+      async () =>
+        await new Promise<EditOutcome>((resolve) => {
+          held.answer = resolve;
+        }),
+    );
+    host(submit);
+    render(<QuickEditPopup />);
+    open();
+
+    fireEvent.change(box(), { target: { value: "email varchar [unique]" } });
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+    // The reader presses it again because nothing has happened yet.
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+
+    expect(submit).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      held.answer?.({ ok: true, table: "users", field: "email" });
+    });
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
   it("closes on Tab from the last row", async () => {
     host(submitting({ ok: true, table: "users", field: "name" }));
     render(<QuickEditPopup />);

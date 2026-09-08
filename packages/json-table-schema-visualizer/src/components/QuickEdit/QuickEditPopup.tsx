@@ -92,6 +92,7 @@ const QuickEditPopup = (): JSX.Element | null => {
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const commitRef = useRef<() => Promise<EditOutcome | null>>(async () => null);
+  const sending = useRef(false);
 
   /**
    * Load the text when the box opens, and again when a schema arrives — but
@@ -177,7 +178,7 @@ const QuickEditPopup = (): JSX.Element | null => {
    * would overwrite another table's state. Then the move waits for the reply,
    * and the store's re-key event has the drawn table read its position again.
    */
-  const send = async (
+  const sendToHost = async (
     operation: EditOperation,
     expectedText?: string,
   ): Promise<EditOutcome | null> => {
@@ -238,6 +239,30 @@ const QuickEditPopup = (): JSX.Element | null => {
     }
 
     return outcome;
+  };
+
+  /**
+   * One change at a time.
+   *
+   * Every key that writes goes through here, and the host takes a moment to
+   * answer. A second `Enter` on the way back sent the same line again — which
+   * comes back refused as stale, reading as a failure the reader did nothing
+   * to cause — and a second `Ctrl+Enter` added two columns instead of one.
+   */
+  const send = async (
+    operation: EditOperation,
+    expectedText?: string,
+  ): Promise<EditOutcome | null> => {
+    if (sending.current) {
+      return null;
+    }
+
+    sending.current = true;
+    try {
+      return await sendToHost(operation, expectedText);
+    } finally {
+      sending.current = false;
+    }
   };
 
   const commit = async (): Promise<EditOutcome | null> => {
