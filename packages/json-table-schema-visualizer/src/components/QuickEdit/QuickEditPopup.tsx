@@ -19,17 +19,6 @@ import {
 import { recordRename, renameTableState } from "@/stores/renameReconcile";
 
 const NEW_COLUMN_TEXT = "new_column varchar";
-
-/**
- * The identifier a table is declared under, out of the name the diagram shows.
- *
- * The two differ whenever a schema is involved: the diagram says
- * `analytics.users` and the file says `Table analytics.users`, where only the
- * second half is the name. Renaming with the qualified string put the schema in
- * twice and the file stopped parsing.
- */
-const declaredNameOf = (fullName: string): string =>
-  fullName.slice(fullName.lastIndexOf(".") + 1);
 const MIN_POPUP_WIDTH = 200;
 
 /**
@@ -74,7 +63,7 @@ const QuickEditPopup = (): JSX.Element | null => {
     const host = getDiagramEditingHost();
     const current =
       target.field === undefined
-        ? declaredNameOf(target.table)
+        ? target.table
         : host?.readFieldText(target.table, target.field) ?? "";
 
     setText(current);

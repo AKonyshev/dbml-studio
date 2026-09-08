@@ -8,6 +8,7 @@ import { locateTableName } from "./tableHeader";
 
 import type {
   FieldLocation,
+  NameOccurrence,
   SourceIndex,
   SourceRange,
   TableLocation,
@@ -27,21 +28,24 @@ const escapeForPattern = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
- * Every `<name>` inside a range that is a whole identifier followed by a dot.
+ * Every place inside a range where this table is named, and how it is written.
  *
  * A ref names a table only in front of a dot, so this cannot collide with a
- * column that happens to share the name, and the guard in front keeps it from
- * matching the tail of a longer identifier or a schema-qualified spelling.
+ * column that happens to share the name. Both spellings have to be found: real
+ * schemas quote (`"sch.users"."id"`) and hand-written ones do not
+ * (`users.id`) — matching only the bare form left every ref in a quoted file
+ * untouched, and a rename then broke the file.
  */
 const identifierRangesIn = (
   text: string,
   range: SourceRange,
   name: string,
-): SourceRange[] => {
-  const found: SourceRange[] = [];
+): NameOccurrence[] => {
+  const found: NameOccurrence[] = [];
   const slice = text.slice(range.start, range.end);
+  const escaped = escapeForPattern(name);
   const pattern = new RegExp(
-    `(?<![A-Za-z0-9_."])${escapeForPattern(name)}(?=\\s*\\.)`,
+    `(?:"${escaped}"|(?<![A-Za-z0-9_."])${escaped})(?=\\s*\\.)`,
     "g",
   );
 
@@ -49,7 +53,8 @@ const identifierRangesIn = (
   while (match !== null) {
     found.push({
       start: range.start + match.index,
-      end: range.start + match.index + name.length,
+      end: range.start + match.index + match[0].length,
+      quoted: match[0].startsWith('"'),
     });
     match = pattern.exec(slice);
   }
@@ -57,18 +62,26 @@ const identifierRangesIn = (
   return found;
 };
 
-const metaInfoNameRanges = (text: string, fullName: string): SourceRange[] => {
+const metaInfoNameRanges = (
+  text: string,
+  fullName: string,
+): NameOccurrence[] => {
   const from = text.indexOf(METAINFO_START);
   const to = text.indexOf(METAINFO_END);
   if (from === -1 || to === -1) return [];
 
-  const found: SourceRange[] = [];
+  // The range covers the name inside the JSON string, not the quotes around it.
+  const found: NameOccurrence[] = [];
 
   for (const form of [`"name":"${fullName}"`, `"name": "${fullName}"`]) {
     let at = text.indexOf(form, from);
     while (at !== -1 && at < to) {
       const nameAt = at + form.indexOf(fullName);
-      found.push({ start: nameAt, end: nameAt + fullName.length });
+      found.push({
+        start: nameAt,
+        end: nameAt + fullName.length,
+        quoted: false,
+      });
       at = text.indexOf(form, at + form.length);
     }
   }
@@ -120,7 +133,7 @@ export const buildSourceIndex = (text: string): SourceIndex => {
       (other) => other !== table && other.alias === parts.declaredName,
     );
 
-    const refNameRanges: SourceRange[] = [];
+    const refNameRanges: NameOccurrence[] = [];
     for (const ref of nameIsSomeoneElsesAlias ? [] : raw.refs) {
       const usesDeclaredName = ref.endpoints.some(
         (endpoint) => endpoint.tableName === parts.declaredName,

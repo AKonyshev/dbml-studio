@@ -1,0 +1,558 @@
+Table "sch.entity_01" {
+  "col_001" uuid [pk, not null, note: 'Description 1']
+  "col_002" uuid [not null, note: 'Description 2']
+  "col_003" text [not null, note: 'Description 3']
+  "col_004" timestamp [not null, note: 'Description 4']
+  "col_005" numeric [note: 'Description 5']
+  "col_006" numeric [note: 'Description 6']
+  "col_007" numeric [note: 'Description 7']
+  "col_008" numeric [note: 'Description 8']
+  "col_009" numeric [note: 'Description 9']
+  "col_010" numeric [note: 'Description 10']
+  "col_011" numeric [note: 'Description 11']
+  "col_012" numeric [note: 'Description 12']
+  "col_013" numeric [note: 'Description 13']
+  "col_014" numeric [note: 'Description 14']
+  "col_015" numeric [note: 'Description 15']
+  "col_016" numeric [note: 'Description 16']
+  "col_017" numeric [note: 'Description 17']
+  "col_018" numeric [note: 'Description 18']
+  "col_019" numeric [note: 'Description 19']
+  "col_020" numeric [note: 'Description 20']
+  "col_021" numeric [not null, note: 'Description 21']
+  "col_022" int4 [not null, default: 0, note: 'Description 22']
+  "col_023" uuid [note: 'Description 23']
+  "col_024" timestamp [not null, default: `(now() AT TIME ZONE 'utc'::text)`, note: 'Description 24']
+  "col_025" timestamp [note: 'Description 25']
+  "col_026" uuid [not null, note: 'Description 26']
+  Note: 'Description 27'
+}
+
+Table "sch.entity_02" {
+  "col_001" uuid [pk, not null, note: 'Description 28']
+  "col_002" uuid [not null, note: 'Description 29']
+  "col_003" text [not null, note: 'Description 30']
+  "col_004" timestamp [not null, note: 'Description 31']
+  "col_027" numeric [note: 'Description 32']
+  "col_028" numeric [note: 'Description 33']
+  "col_029" numeric [note: 'Description 34']
+  "col_030" numeric [note: 'Description 35']
+  "col_031" numeric [note: 'Description 36']
+  "col_032" numeric [note: 'Description 37']
+  "col_033" numeric [note: 'Description 38']
+  "col_034" numeric [note: 'Description 39']
+  "col_035" numeric [note: 'Description 40']
+  "col_036" numeric [note: 'Description 41']
+  "col_037" numeric [note: 'Description 42']
+  "col_038" numeric [note: 'Description 43']
+  "col_039" numeric [note: 'Description 44']
+  "col_040" numeric [note: 'Description 45']
+  "col_041" numeric [note: 'Description 46']
+  "col_042" numeric [note: 'Description 47']
+  "col_043" numeric [note: 'Description 48']
+  "col_044" numeric [note: 'Description 49']
+  "col_045" numeric [note: 'Description 50']
+  "col_046" numeric [not null, note: 'Description 51']
+  "col_022" int4 [not null, default: 0, note: 'Description 52']
+  "col_023" uuid [note: 'Description 53']
+  "col_024" timestamp [not null, default: `(now() AT TIME ZONE 'utc'::text)`, note: 'Description 54']
+  "col_025" timestamp [note: 'Description 55']
+  "col_026" uuid [not null, note: 'Description 56']
+  Note: 'Description 57'
+}
+
+Table "sch.entity_03" {
+  "col_001" uuid [pk, not null, note: 'Description 58']
+  "col_047" uuid [not null, note: 'Description 59']
+  "col_048" uuid [not null, note: 'Description 60']
+  "col_049" uuid [not null, note: 'Description 61']
+  "col_050" timestamp [not null, note: 'Description 62']
+  "col_051" numeric [note: 'Description 63']
+  "col_052" numeric [note: 'Description 64']
+  "col_053" numeric [note: 'Description 65']
+  "col_054" numeric [note: 'Description 66']
+  "col_055" numeric [note: 'Description 67']
+  "col_056" numeric [note: 'Description 68']
+  "col_057" numeric [note: 'Description 69']
+  "col_058" numeric [note: 'Description 70']
+  "col_059" numeric [note: 'Description 71']
+  "col_060" numeric [note: 'Description 72']
+  "col_061" numeric [note: 'Description 73']
+  "col_062" numeric [note: 'Description 74']
+  "col_063" numeric [note: 'Description 75']
+  "col_064" numeric [note: 'Description 76']
+  "col_065" numeric [note: 'Description 77']
+  "col_066" numeric [note: 'Description 78']
+  "col_067" numeric [note: 'Description 79']
+  "col_068" numeric [note: 'Description 80']
+  "col_069" numeric [note: 'Description 81']
+  "col_070" numeric [note: 'Description 82']
+  "col_071" numeric [note: 'Description 83']
+  "col_021" numeric [note: 'Description 84']
+  "col_072" numeric [note: 'Description 85']
+  "col_073" numeric [note: 'Description 86']
+  "col_074" numeric [note: 'Description 87']
+  "col_075" numeric [note: 'Description 88']
+  "col_076" numeric [note: 'Description 89']
+  "col_077" numeric [note: 'Description 90']
+  "col_078" numeric [note: 'Description 91']
+  "col_079" numeric [note: 'Description 92']
+  "col_080" numeric [note: 'Description 93']
+  "col_081" numeric [note: 'Description 94']
+  "col_082" numeric [note: 'Description 95']
+  "col_083" numeric [note: 'Description 96']
+  "col_084" numeric [note: 'Description 97']
+  "col_085" numeric [note: 'Description 98']
+  "col_086" numeric [note: 'Description 99']
+  "col_087" numeric [note: 'Description 100']
+  "col_088" numeric [note: 'Description 101']
+  "col_089" numeric [note: 'Description 102']
+  "col_090" numeric [note: 'Description 103']
+  "col_091" numeric [note: 'Description 104']
+  "col_092" bool [not null, note: 'Description 105']
+  "col_093" numeric [note: 'Description 106']
+  "col_094" numeric [note: 'Description 107']
+  "col_095" numeric [note: 'Description 108']
+  "col_096" numeric [note: 'Description 109']
+  "col_097" numeric [note: 'Description 110']
+  "col_098" numeric [note: 'Description 111']
+  "col_099" numeric [note: 'Description 112']
+  "col_100" numeric [note: 'Description 113']
+  "col_101" numeric [note: 'Description 114']
+  "col_102" numeric [note: 'Description 115']
+  "col_103" numeric [note: 'Description 116']
+  "col_104" numeric [note: 'Description 117']
+  "col_105" numeric [note: 'Description 118']
+  "col_106" numeric [note: 'Description 119']
+  "col_107" numeric [note: 'Description 120']
+  "col_108" numeric [note: 'Description 121']
+  "col_109" numeric [note: 'Description 122']
+  "col_110" numeric [note: 'Description 123']
+  "col_111" numeric [note: 'Description 124']
+  "col_112" numeric [note: 'Description 125']
+  "col_113" timestamp [not null, note: 'Description 126']
+  "col_114" text [note: 'Description 127']
+
+  Indexes {
+    (col_047, col_048, col_049, undeclared_01) [type: btree, name: "col_115"]
+  }
+  Note: 'Description 128'
+}
+
+Table "sch.entity_04" {
+  "col_116" uuid [not null, note: 'Description 129']
+  "col_047" uuid [not null, note: 'Description 130']
+  "col_048" uuid [not null, note: 'Description 131']
+  "col_049" uuid [not null, note: 'Description 132']
+  "col_051" numeric [note: 'Description 133']
+  "col_075" numeric [note: 'Description 134']
+  "col_053" numeric [note: 'Description 135']
+  "col_060" numeric [note: 'Description 136']
+  "col_055" numeric [note: 'Description 137']
+  "col_098" numeric [note: 'Description 138']
+  "col_054" numeric [note: 'Description 139']
+  "col_117" numeric [note: 'Description 140']
+  "col_059" numeric [note: 'Description 141']
+  "col_021" numeric [note: 'Description 142']
+  "col_107" numeric [note: 'Description 143']
+  "col_073" numeric [note: 'Description 144']
+  "col_061" numeric [note: 'Description 145']
+  "col_106" numeric [note: 'Description 146']
+  "col_052" numeric [note: 'Description 147']
+  "col_063" numeric [note: 'Description 148']
+  "col_093" numeric [note: 'Description 149']
+  "col_096" numeric [note: 'Description 150']
+  "col_097" numeric [note: 'Description 151']
+  "col_092" bool [not null, note: 'Description 152']
+  "col_118" numeric [note: 'Description 153']
+  "col_074" numeric [note: 'Description 154']
+  "col_119" numeric [note: 'Description 155']
+  "col_058" numeric [note: 'Description 156']
+  "col_056" numeric [note: 'Description 157']
+  "col_109" numeric [note: 'Description 158']
+  "col_120" numeric [note: 'Description 159']
+  "col_121" numeric [note: 'Description 160']
+  "col_122" numeric [note: 'Description 161']
+  "col_123" numeric [note: 'Description 162']
+  "col_124" numeric [note: 'Description 163']
+  "col_125" numeric [note: 'Description 164']
+  "col_108" numeric [note: 'Description 165']
+  "col_126" numeric [note: 'Description 166']
+  "col_127" numeric [note: 'Description 167']
+  "col_057" numeric [note: 'Description 168']
+  "col_128" numeric [note: 'Description 169']
+  "col_102" numeric [note: 'Description 170']
+  "col_129" numeric [note: 'Description 171']
+  "col_130" numeric [note: 'Description 172']
+  "col_131" numeric [note: 'Description 173']
+  "col_132" numeric [note: 'Description 174']
+  "col_133" numeric [note: 'Description 175']
+  "col_082" numeric [note: 'Description 176']
+  "col_087" numeric [note: 'Description 177']
+  "col_091" numeric [note: 'Description 178']
+  "col_110" numeric [note: 'Description 179']
+  "col_069" numeric [note: 'Description 180']
+  "col_077" numeric [note: 'Description 181']
+  "col_089" numeric [note: 'Description 182']
+  "col_067" numeric [note: 'Description 183']
+  "col_076" numeric [note: 'Description 184']
+  "col_066" numeric [note: 'Description 185']
+  "col_083" numeric [note: 'Description 186']
+  "col_134" numeric [note: 'Description 187']
+  "col_103" numeric [note: 'Description 188']
+  "col_112" numeric [note: 'Description 189']
+  "col_135" numeric [note: 'Description 190']
+  "col_062" numeric [note: 'Description 191']
+  "col_064" numeric [note: 'Description 192']
+  "col_065" numeric [note: 'Description 193']
+  "col_068" numeric [note: 'Description 194']
+  "col_070" numeric [note: 'Description 195']
+  "col_071" numeric [note: 'Description 196']
+  "col_072" numeric [note: 'Description 197']
+  "col_078" numeric [note: 'Description 198']
+  "col_079" numeric [note: 'Description 199']
+  "col_080" numeric [note: 'Description 200']
+  "col_081" numeric [note: 'Description 201']
+  "col_084" numeric [note: 'Description 202']
+  "col_085" numeric [note: 'Description 203']
+  "col_086" numeric [note: 'Description 204']
+  "col_088" numeric [note: 'Description 205']
+  "col_090" numeric [note: 'Description 206']
+  "col_094" numeric [note: 'Description 207']
+  "col_095" numeric [note: 'Description 208']
+  "col_099" numeric [note: 'Description 209']
+  "col_100" numeric [note: 'Description 210']
+  "col_101" numeric [note: 'Description 211']
+  "col_104" numeric [note: 'Description 212']
+  "col_105" numeric [note: 'Description 213']
+  "col_111" numeric [note: 'Description 214']
+  "col_136" numeric [note: 'Description 215']
+  "col_137" numeric [note: 'Description 216']
+  "col_138" numeric [note: 'Description 217']
+  "col_139" bool [not null, note: 'Description 218']
+
+  Indexes {
+    (col_048, col_116, undeclared_01) [type: btree, name: "col_140"]
+  }
+  Note: 'Description 219'
+}
+
+Table "sch.entity_05" {
+  "col_001" uuid [pk, not null, note: 'Description 220']
+  "col_116" uuid [not null, note: 'Description 221']
+  "col_141" timestamp [not null, note: 'Description 222']
+  "col_142" timestamp [not null, note: 'Description 223']
+  "col_050" timestamp [not null, note: 'Description 224']
+  "col_113" timestamp [not null, note: 'Description 225']
+  "col_143" timestamp [note: 'Description 226']
+  "col_114" text [note: 'Description 227']
+
+  Indexes {
+    (col_116, col_141, col_142, col_050, col_143) [type: btree, name: "col_144"]
+  }
+  Note: 'Description 228'
+}
+
+Table "sch.entity_06" {
+  "col_145" uuid [not null, note: 'Description 229']
+  "col_048" uuid [not null, note: 'Description 230']
+  "col_136" numeric [note: 'Description 231']
+  "col_137" numeric [note: 'Description 232']
+  "col_124" numeric [note: 'Description 233']
+  "col_125" numeric [note: 'Description 234']
+ 
+  Indexes {
+    (col_145, col_048) [type: btree, name: "col_146"]
+  }
+  Note: 'Description 235'
+}
+
+Table "sch.entity_07" {
+  "col_001" uuid [pk, not null, note: 'Description 236']
+  "col_116" uuid [not null, note: 'Description 237']
+  "col_141" timestamp [not null, note: 'Description 238']
+  "col_142" timestamp [not null, note: 'Description 239']
+  "col_050" timestamp [not null, note: 'Description 240']
+  "col_113" timestamp [not null, note: 'Description 241']
+  "col_143" timestamp [note: 'Description 242']
+  "col_114" text [note: 'Description 243']
+
+  Indexes {
+    (col_116, col_141, col_142, col_050, col_143) [type: btree, name: "col_147"]
+  }
+  Note: 'Description 244'
+}
+
+Table "sch.entity_08" {
+  "col_148" uuid [not null, note: 'Description 245']
+  "col_048" uuid [not null, note: 'Description 246']
+  "col_149" int4 [note: 'Description 247']
+  "col_058" numeric [note: 'Description 248']
+  "col_133" numeric [note: 'Description 249']
+  "col_056" numeric [note: 'Description 250']
+  "col_138" numeric [note: 'Description 251']
+  "col_059" numeric [note: 'Description 252']
+  "col_055" numeric [note: 'Description 253']
+  "col_109" numeric [note: 'Description 254']
+  "col_129" numeric [note: 'Description 255']
+  "col_130" numeric [note: 'Description 256']
+  "col_131" numeric [note: 'Description 257']
+  "col_132" numeric [note: 'Description 258']
+  "col_121" numeric [note: 'Description 259']
+  "col_123" numeric [note: 'Description 260']
+
+  Indexes {
+    (col_148, col_048) [type: btree, name: "col_150"]
+  }
+  Note: 'Description 261'
+}
+
+Table "sch.entity_09" {
+  "col_001" uuid [pk, not null, note: 'Description 262']
+  "col_116" uuid [not null, note: 'Description 263']
+  "col_141" timestamp [not null, note: 'Description 264']
+  "col_142" timestamp [not null, note: 'Description 265']
+  "col_050" timestamp [not null, note: 'Description 266']
+  "col_113" timestamp [not null, note: 'Description 267']
+  "col_143" timestamp [note: 'Description 268']
+  "col_114" text [note: 'Description 269']
+
+  Indexes {
+    (col_116, col_141, col_142, col_050, col_143) [type: btree, name: "col_151"]
+  }
+  Note: 'Description 270'
+}
+
+Table "sch.entity_10" {
+  "col_152" uuid [not null, note: 'Description 271']
+  "col_048" uuid [not null, note: 'Description 272']
+  "col_128" numeric [note: 'Description 273']
+  "col_102" numeric [note: 'Description 274']
+  "col_122" numeric [note: 'Description 275']
+  "col_120" numeric [note: 'Description 276']
+  "col_119" numeric [note: 'Description 277']
+  "col_057" numeric [note: 'Description 278']
+  "col_108" numeric [note: 'Description 279']
+  "col_126" numeric [note: 'Description 280']
+  "col_127" numeric [note: 'Description 281']
+  "col_062" numeric [note: 'Description 282']
+
+  Indexes {
+    (col_152, col_048) [type: btree, name: "col_153"]
+  }
+  Note: 'Description 283'
+}
+
+Table "sch.entity_11" {
+  "col_001" uuid [pk, not null, note: 'Description 284']
+  "col_116" uuid [not null, note: 'Description 285']
+  "col_154" uuid [not null, default: '00000000-0000-0000-0038-000000000003', note: 'Description 286']
+  "col_141" timestamp [not null, note: 'Description 287']
+  "col_142" timestamp [not null, note: 'Description 288']
+  "col_155" timestamp [not null, note: 'Description 289']
+  "col_156" text [not null, note: 'Description 290']
+  "col_114" text [note: 'Description 291']
+
+  Indexes {
+  (col_141, col_156) [type: btree, unique, name: "col_157"]
+  }
+  
+  Note: 'Description 292'
+}
+
+Table "sch.entity_12" {
+  "col_158" uuid [pk, not null, note: 'Description 293']
+  "col_159" uuid [note: 'Description 294']
+  "col_160" numeric [note: 'Description 295']
+  "col_161" numeric [note: 'Description 296']
+  "col_162" numeric [note: 'Description 297']
+  "col_163" numeric [note: 'Description 298']
+  "col_164" numeric [note: 'Description 299']
+  "col_165" numeric [note: 'Description 300, first line
+and its second line']
+  "col_166" numeric [note: 'Description 301']
+  "col_167" numeric [note: 'Description 302']
+  "col_168" numeric [note: 'Description 303']
+  "col_169" numeric [note: 'Description 304']
+  "col_170" numeric [note: 'Description 305']
+  "col_171" numeric [note: 'Description 306']
+  "col_172" numeric [note: 'Description 307']
+  "col_173" numeric [note: 'Description 308']
+  "col_174" numeric [note: 'Description 309']
+  "col_175" numeric [note: 'Description 310']
+  "col_176" numeric [note: 'Description 311']
+  "col_177" numeric [note: 'Description 312']
+  "col_178" numeric [note: 'Description 313']
+  "col_179" numeric [note: 'Description 314']
+  "col_180" numeric [note: 'Description 315']
+  "constraint_01" numeric [note: 'Description 316']
+  "col_181" numeric [note: 'Description 317']
+  "col_182" numeric [note: 'Description 318']
+  "col_183" numeric [note: 'Description 319, first line
+and its second line']
+
+  Note: 'Description 320'
+}
+
+Table "sch.entity_13" {
+  "col_158" uuid [pk, not null, note: 'Description 321']
+  "col_184" numeric [note: 'Description 322']
+  "col_185" numeric [note: 'Description 323']
+  "col_186" numeric [note: 'Description 324']
+  "col_187" numeric [note: 'Description 325']
+  "col_188" numeric [note: 'Description 326']
+  "col_189" numeric [note: 'Description 327']
+  "col_190" numeric [note: 'Description 328']
+  "col_191" numeric [note: 'Description 329']
+  "col_192" numeric [note: 'Description 330']
+  "col_193" numeric [note: 'Description 331']
+  "col_194" numeric [note: 'Description 332']
+  "col_195" numeric [note: 'Description 333']
+  "col_196" numeric [note: 'Description 334']
+  "col_197" numeric [note: 'Description 335']
+  "col_198" numeric [note: 'Description 336']
+  "col_199" numeric [note: 'Description 337']
+  "col_200" numeric [note: 'Description 338']
+  "col_201" numeric [note: 'Description 339']
+  "col_202" numeric [note: 'Description 340']
+  "col_203" numeric [note: 'Description 341']
+  "col_204" numeric [note: 'Description 342']
+  "col_205" numeric [note: 'Description 343']
+
+  Note: 'Description 344'
+}
+
+Table "sch.entity_14" {
+  "col_158" uuid [pk, not null, note: 'Description 345']
+  "col_206" numeric [note: 'Description 346']
+  "col_169" numeric [note: 'Description 347']
+
+  Note: 'Description 348'
+}
+
+Table "sch.entity_15" {
+  "col_158" uuid [pk, not null, note: 'Description 349']
+  "col_159" uuid [note: 'Description 350']
+  "col_160" numeric [note: 'Description 351']
+  "col_161" numeric [note: 'Description 352']
+  "col_162" numeric [note: 'Description 353']
+  "col_184" numeric [note: 'Description 354']
+
+  Note: 'Description 355'
+}
+
+Table "sch.entity_16" {
+  "col_158" uuid [pk, not null, note: 'Description 356']
+  "col_202" numeric [note: 'Description 357']
+  "col_169" numeric [note: 'Description 358']
+
+  Note: 'Description 359'
+}
+
+Table "sch.entity_17" {
+  "col_001" uuid [pk, not null, note: 'Description 360']
+  "col_116" uuid [not null, note: 'Description 361']
+  "col_050" timestamp [not null, note: 'Description 362']
+  "col_143" timestamp [note: 'Description 363']
+  "col_113" timestamp [not null, note: 'Description 364']
+  "col_114" text [note: 'Description 365']
+
+Indexes {
+    (col_116, col_050, col_143) [type: btree, name: "col_207"]
+  } 
+  Note: 'Description 366'
+}
+  
+Table "sch.entity_18" {  
+  "col_208" uuid [not null, note: 'Description 367']
+  "col_048" uuid [not null, note: 'Description 368']
+  "col_082" numeric [note: 'Description 369']
+  "col_093" numeric [note: 'Description 370']
+  "col_087" numeric [note: 'Description 371']
+  "col_051" numeric [note: 'Description 372']
+  "col_021" numeric [note: 'Description 373']
+  "col_091" numeric [note: 'Description 374']
+  "col_110" numeric [note: 'Description 375']
+  "col_069" numeric [note: 'Description 376']
+  "col_096" numeric [note: 'Description 377']
+  "col_097" numeric [note: 'Description 378']
+  "col_098" numeric [note: 'Description 379']
+  "col_077" numeric [note: 'Description 380']
+  "col_089" numeric [note: 'Description 381']
+  "col_067" numeric [note: 'Description 382']
+  "col_076" numeric [note: 'Description 383']
+  "col_066" numeric [note: 'Description 384']
+  "col_083" numeric [note: 'Description 385']
+  "col_134" numeric [note: 'Description 386']
+  "col_092" bool [not null, note: 'Description 387']
+  "col_139" bool [not null, note: 'Description 388']
+  "col_053" numeric [note: 'Description 389']
+  "col_061" numeric [note: 'Description 390']
+  "col_103" numeric [note: 'Description 391']
+  "col_112" numeric [note: 'Description 392']
+  "col_052" numeric [note: 'Description 393']
+  "col_135" numeric [note: 'Description 394']
+  "col_073" numeric [note: 'Description 395']
+  "col_090" numeric [note: 'Description 396']
+  "col_068" numeric [note: 'Description 397']
+  "col_070" numeric [note: 'Description 398']
+  "col_106" numeric [note: 'Description 399']
+  "col_054" numeric [note: 'Description 400']
+  "col_063" numeric [note: 'Description 401']
+  "col_064" numeric [note: 'Description 402']
+  "col_074" numeric [note: 'Description 403']
+  "col_075" numeric [note: 'Description 404']
+  "col_117" numeric [note: 'Description 405']
+  
+  Indexes {
+    (col_208, col_048) [type: btree, name: "col_209"]
+  }
+  Note: 'Description 406'
+}
+
+Ref "col_210":"sch.entity_09"."col_001" < "sch.entity_10"."col_152" [delete: cascade]
+
+Ref "col_211":"sch.entity_01"."col_001" < "sch.entity_01"."col_023"
+
+Ref "col_212":"sch.entity_07"."col_001" < "sch.entity_08"."col_148" [delete: cascade]
+
+Ref "col_213":"sch.entity_05"."col_001" < "sch.entity_06"."col_145" [delete: cascade]
+
+Ref "col_214":"sch.entity_02"."col_001" < "sch.entity_02"."col_023"
+
+Ref "col_215":"sch.entity_11"."col_001" < "sch.entity_12"."col_158"
+
+Ref "col_216":"sch.entity_11"."col_001" < "sch.entity_13"."col_158"
+
+Ref "col_217":"sch.entity_11"."col_001" < "sch.entity_14"."col_158"
+
+Ref "col_218":"sch.entity_11"."col_001" < "sch.entity_15"."col_158"
+
+Ref "col_219":"sch.entity_11"."col_001" < "sch.entity_16"."col_158"
+
+Ref "col_220":"sch.entity_17"."col_001" < "sch.entity_18"."col_208"
+
+
+
+/*MetaInfo
+[
+{"name":"sch.entity_01","x":-933,"y":1233},
+{"name":"sch.entity_02","x":-477,"y":1241},
+{"name":"sch.entity_03","x":487,"y":-141},
+{"name":"sch.entity_04","x":-27,"y":-143},
+{"name":"sch.entity_05","x":-527,"y":337},
+{"name":"sch.entity_06","x":-979,"y":394},
+{"name":"sch.entity_07","x":-499,"y":-117},
+{"name":"sch.entity_08","x":-1034,"y":-180},
+{"name":"sch.entity_09","x":-516,"y":720},
+{"name":"sch.entity_10","x":-1424,"y":758},
+{"name":"sch.entity_11","x":1947,"y":1184},
+{"name":"sch.entity_12","x":996,"y":1439},
+{"name":"sch.entity_13","x":1504,"y":1599},
+{"name":"sch.entity_14","x":1509,"y":1040},
+{"name":"sch.entity_15","x":1930,"y":1734},
+{"name":"sch.entity_16","x":1538,"y":817},
+{"name":"sch.entity_17","x":1041,"y":-130},
+{"name":"sch.entity_18","x":1003,"y":183}
+]
+MetaInfo*/ 

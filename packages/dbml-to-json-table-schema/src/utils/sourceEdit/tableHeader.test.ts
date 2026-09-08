@@ -47,6 +47,13 @@ describe("locateTableName", () => {
     });
   });
 
+  it("remembers that a name was written in quotes", () => {
+    expect(locateTableName('Table "sch.users" {', 0)?.nameRange.quoted).toBe(
+      true,
+    );
+    expect(locateTableName("Table users {", 0)?.nameRange.quoted).toBe(false);
+  });
+
   it("handles a quoted name", () => {
     expect(cut('Table "my table" as t {')).toEqual({
       text: '"my table"',
@@ -59,7 +66,7 @@ describe("locateTableName", () => {
   it("offsets the range by the header's position in the document", () => {
     const found = locateTableName("Table users {", 100);
 
-    expect(found?.nameRange).toEqual({ start: 106, end: 111 });
+    expect(found?.nameRange).toEqual({ start: 106, end: 111, quoted: false });
   });
 
   it("returns null for a line that is not a table header", () => {

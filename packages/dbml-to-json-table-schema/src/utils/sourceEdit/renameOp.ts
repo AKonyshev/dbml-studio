@@ -23,14 +23,25 @@ export const planRename = (
   index: SourceIndex,
   operation: Extract<EditOperation, { kind: "renameTable" }>,
 ): RenameResult => {
-  const newName = operation.newName.trim();
-  if (newName === "") return { ok: false, reason: { code: "emptyText" } };
+  const typed = operation.newName.trim();
+  if (typed === "") return { ok: false, reason: { code: "emptyText" } };
 
   const table = findTable(index, operation.table);
   if (table === null) return { ok: false, reason: { code: "tableNotFound" } };
 
+  // The reader edits the name the diagram shows them, which is qualified when
+  // the *parser* says the table has a schema of its own. It does not when the
+  // whole qualified name is one quoted identifier (`Table "sch.users"`), and
+  // there the dot is part of the name — splitting on it there would silently
+  // move the table out of its schema.
+  const prefix = table.schemaName === null ? null : `${table.schemaName}.`;
+  const declared =
+    prefix !== null && typed.startsWith(prefix)
+      ? typed.slice(prefix.length)
+      : typed;
+
   const newFullName =
-    table.schemaName === null ? newName : `${table.schemaName}.${newName}`;
+    table.schemaName === null ? declared : `${table.schemaName}.${declared}`;
 
   const taken = index.tables.some(
     (other) => other !== table && other.fullName === newFullName,
@@ -39,16 +50,26 @@ export const planRename = (
     return { ok: false, reason: { code: "nameTaken", name: newFullName } };
   }
 
+  // Put back what was taken: a name written in quotes stays in quotes, and one
+  // that needs them gets them, or DBML reads the dot as a schema separator.
+  const needsQuoting = !/^[A-Za-z_][A-Za-z0-9_]*$/.test(declared);
+  const write = (occurrence: { quoted: boolean }, value: string): string =>
+    occurrence.quoted || needsQuoting ? `"${value}"` : value;
+
   const edits: TextEdit[] = [
-    { start: table.nameRange.start, end: table.nameRange.end, text: newName },
-    ...table.refNameRanges.map((range) => ({
-      start: range.start,
-      end: range.end,
-      text: newName,
+    {
+      start: table.nameRange.start,
+      end: table.nameRange.end,
+      text: write(table.nameRange, declared),
+    },
+    ...table.refNameRanges.map((occurrence) => ({
+      start: occurrence.start,
+      end: occurrence.end,
+      text: write(occurrence, declared),
     })),
-    ...table.metaInfoNameRanges.map((range) => ({
-      start: range.start,
-      end: range.end,
+    ...table.metaInfoNameRanges.map((occurrence) => ({
+      start: occurrence.start,
+      end: occurrence.end,
       text: newFullName,
     })),
   ];

@@ -12,6 +12,18 @@ export interface FieldLocation {
   isMultiline: boolean;
 }
 
+/**
+ * Where a table's name is written, and how.
+ *
+ * A name appears bare (`Table users`) or quoted (`Table "sch.users"`), and a
+ * rename has to put back what it took: writing a bare name where a quoted one
+ * stood turns `"sch.users"` into `sch.users`, which DBML then reads as a table
+ * `users` in a schema `sch` — a different table.
+ */
+export interface NameOccurrence extends SourceRange {
+  quoted: boolean;
+}
+
 export interface TableLocation {
   /** Schema-qualified, exactly as the diagram names the table. */
   fullName: string;
@@ -19,10 +31,10 @@ export interface TableLocation {
   declaredName: string;
   schemaName: string | null;
   alias: string | null;
-  nameRange: SourceRange;
+  nameRange: NameOccurrence;
   fields: FieldLocation[];
   /** Where this table's name appears inside standalone refs that use it. */
-  refNameRanges: SourceRange[];
+  refNameRanges: NameOccurrence[];
   /** Where this table's name appears inside the metainfo block. */
   metaInfoNameRanges: SourceRange[];
 }

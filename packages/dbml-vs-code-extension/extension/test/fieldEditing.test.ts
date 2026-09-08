@@ -14,6 +14,8 @@
  * risk here.
  */
 import * as assert from "assert";
+import * as fs from "fs";
+import * as path from "path";
 
 import * as vscode from "vscode";
 import { chromium, type Frame } from "playwright";
@@ -28,25 +30,33 @@ import {
 } from "./helpers";
 
 /**
- * Shaped after a schema this feature was first broken on, not after a fixture
- * that suits it: the second table carries an index naming a column that is not
- * declared. The diagram draws such a file without complaint, and the editing
- * core must too — building the DBML model instead rejects it, and used to make
- * every column in the file uneditable while blaming a table nobody touched.
+ * A real schema, anonymised, rather than a fixture written to suit the code.
+ *
+ * Shared with the unit tests next door, and the reason is the two defects it
+ * caught after everything else was green: one index naming a column that is
+ * never declared made every column in the file uneditable, and refs written as
+ * `"sch.a"."col"` were invisible to the rename. Neither shape exists in a
+ * fixture somebody invents while writing the feature.
  */
-const SAMPLE_DBML = `Table users {
-  id uuid [pk]
-  email varchar
-}
+const FIXTURE =
+  "dbml-to-json-table-schema/src/utils/sourceEdit/__fixtures__/realistic.dbml";
 
-Table reports {
-  id uuid [pk]
-
-  Indexes {
-    dt
+/**
+ * Found by walking up to `packages/`, because this file runs from `out/` where
+ * a path counted from the source tree lands one directory short.
+ */
+const fixturePath = (): string => {
+  let dir = __dirname;
+  while (path.basename(dir) !== "packages") {
+    const parent = path.dirname(dir);
+    assert.notStrictEqual(parent, dir, "packages/ not found above the tests");
+    dir = parent;
   }
-}
-`;
+
+  return path.join(dir, FIXTURE);
+};
+
+const SAMPLE_DBML = fs.readFileSync(fixturePath(), "utf8");
 
 /**
  * The diagram writes table positions into the file shortly after it opens, so
@@ -117,8 +127,8 @@ suite("an edit from the diagram reaches the document", () => {
       const diagram = await findDiagramFrame(browser);
       const before = await settledText(document);
       assert.ok(
-        before.includes("  email varchar"),
-        `the fixture lost its column: ${before}`,
+        before.includes(`  "col_005" numeric [note: 'Description 5']`),
+        "the fixture lost the column this test edits",
       );
 
       // Exactly what `useDiagramEditingHost` posts, including the text the
@@ -129,11 +139,11 @@ suite("an edit from the diagram reaches the document", () => {
         requestId: "integration-1",
         operation: {
           kind: "replaceField",
-          table: "users",
-          field: "email",
-          text: "email varchar [unique]",
+          table: "sch.entity_01",
+          field: "col_005",
+          text: `"col_005" numeric [not null, note: 'Description 5']`,
         },
-        expectedText: "email varchar",
+        expectedText: `"col_005" numeric [note: 'Description 5']`,
       };
 
       await diagram.evaluate(
@@ -142,18 +152,23 @@ suite("an edit from the diagram reaches the document", () => {
 
       await waitFor(
         "the document to carry the edit",
-        () => document.getText().includes("email varchar [unique]"),
+        () => document.getText().includes(`"col_005" numeric [not null`),
         30000,
       );
 
       const after = document.getText();
       assert.ok(
-        after.includes("  id uuid [pk]"),
+        after.includes(
+          `  "col_004" timestamp [not null, note: 'Description 4']`,
+        ),
         "the column beside the edited one changed",
       );
       assert.strictEqual(
         after,
-        before.replace("  email varchar", "  email varchar [unique]"),
+        before.replace(
+          `"col_005" numeric [note: 'Description 5']`,
+          `"col_005" numeric [not null, note: 'Description 5']`,
+        ),
         "more than the edited range was written",
       );
 
@@ -163,7 +178,7 @@ suite("an edit from the diagram reaches the document", () => {
       await vscode.commands.executeCommand("undo");
       await waitFor(
         "the undo to take the edit back",
-        () => !document.getText().includes("[unique]"),
+        () => !document.getText().includes(`"col_005" numeric [not null`),
         30000,
       );
       assert.strictEqual(document.getText(), before);

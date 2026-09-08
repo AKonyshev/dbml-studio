@@ -1,7 +1,7 @@
-import type { SourceRange } from "./types";
+import type { NameOccurrence } from "./types";
 
 export interface TableHeaderParts {
-  nameRange: SourceRange;
+  nameRange: NameOccurrence;
   declaredName: string;
   schemaName: string | null;
   alias: string | null;
@@ -11,6 +11,7 @@ interface Word {
   start: number;
   end: number;
   value: string;
+  quoted: boolean;
 }
 
 const readWord = (text: string, from: number): Word | null => {
@@ -22,14 +23,19 @@ const readWord = (text: string, from: number): Word | null => {
     const close = text.indexOf('"', i + 1);
     if (close === -1) return null;
 
-    return { start: i, end: close + 1, value: text.slice(i + 1, close) };
+    return {
+      start: i,
+      end: close + 1,
+      value: text.slice(i + 1, close),
+      quoted: true,
+    };
   }
 
   const start = i;
   while (i < text.length && /[A-Za-z0-9_]/.test(text[i])) i += 1;
   if (i === start) return null;
 
-  return { start, end: i, value: text.slice(start, i) };
+  return { start, end: i, value: text.slice(start, i), quoted: false };
 };
 
 /**
@@ -69,7 +75,11 @@ export const locateTableName = (
   }
 
   return {
-    nameRange: { start: headerStart + name.start, end: headerStart + name.end },
+    nameRange: {
+      start: headerStart + name.start,
+      end: headerStart + name.end,
+      quoted: name.quoted,
+    },
     declaredName: name.value,
     schemaName,
     alias,
