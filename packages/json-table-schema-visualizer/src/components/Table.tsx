@@ -66,7 +66,8 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   const tableRef = useRef<null | Konva.Group>(null);
   const highlightRef = useRef<null | Konva.Rect>(null);
   const { theme } = useThemeContext();
-  const { x: tableX, y: tableY } = useTableDefaultPosition(name);
+  const position = useTableDefaultPosition(name);
+  const { x: tableX, y: tableY } = position;
   const tablePreferredWidth = useTableWidth();
   const visibleFields = useMemo(() => {
     return filterByDetailLevel(fields, detailLevel);
@@ -76,13 +77,20 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   // the bounds fit-to-view works from, which oscillates around the threshold.
   // Only whether the rows are drawn depends on how far out the reader is.
   const rowsAreWorthDrawing = useAreRowsWorthDrawing(schemaColumns);
+  // Keyed on the position *object*, not on its numbers. A drag moves the node
+  // by Konva's hand and the store learns of it, but nothing re-renders this
+  // component — so its numbers still say where the table stood before. When
+  // auto-arrange then puts the table back exactly there, the numbers do not
+  // change and an effect keyed on them never fires, and the node stays where it
+  // was dragged. The store hands out a fresh object every time it lays the
+  // diagram out again, so that is what to watch.
   useEffect(() => {
     if (tableRef.current != null) {
       tableRef.current.x(tableX);
       tableRef.current.y(tableY);
       eventEmitter.emit(tableDragEventName, { x: tableX, y: tableY });
     }
-  }, [tableX, tableY]);
+  }, [position]);
 
   // The same function `computeDiagramBounds` frames this table with, so that
   // fit-to-view is computed for the drawing that is actually on screen.

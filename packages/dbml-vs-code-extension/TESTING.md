@@ -43,6 +43,10 @@ The diagram's own level and a single table's, side by side — and **neither wri
 8. Open the legend with **?**: the notation list names the double-click gesture, and the shortcut list has **T** and **U**.
 9. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
 
+## Auto-arrange after a drag
+
+1. Open a schema whose layout was made by auto-arrange (press **L**, save, reopen). Drag one table well away from where it was, then press **L** again: it returns to its place. Before, it stayed where it was dropped, because the layout put it back on the very numbers it had before the drag and nothing noticed.
+
 ## Editing from the diagram
 
 The one thing here that **does** write to the file. Automated where it can be: the pure planning is unit-tested, the key map is unit-tested, and one integration suite proves a request from the page turns into a workspace edit that a single undo takes back. What is left below is the part that needs eyes.

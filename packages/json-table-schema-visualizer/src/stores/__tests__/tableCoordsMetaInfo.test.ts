@@ -141,3 +141,22 @@ describe("the layout a file is given, and the one it is read back from", () => {
     expect(levels[levels.length - 1]).toBe(TableDetailLevel.FullDetails);
   });
 });
+
+describe("laying out again", () => {
+  // The table component re-applies its position when the object it reads
+  // changes identity, not when the numbers do: after a drag the numbers it
+  // holds are stale, and an arrangement that lands on the very same numbers
+  // must still be applied. So a fresh layout has to hand out fresh objects.
+  it("hands out a new position object even when the numbers come out the same", () => {
+    const tables = [tableFrom("a", 2), tableFrom("b", 2)];
+    tableCoordsStore.switchTo("doc-relayout", tables, []);
+    tableCoordsStore.resetPositions(tables, [], { force: true });
+    const first = tableCoordsStore.getCoords("a");
+
+    tableCoordsStore.resetPositions(tables, [], { force: true });
+    const second = tableCoordsStore.getCoords("a");
+
+    expect(second).toEqual(first);
+    expect(second).not.toBe(first);
+  });
+});
