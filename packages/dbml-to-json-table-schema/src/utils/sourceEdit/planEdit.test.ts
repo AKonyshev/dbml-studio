@@ -142,3 +142,45 @@ describe("renaming a schema-qualified table", () => {
     expect(plan.table).toBe("analytics.accounts");
   });
 });
+
+describe("a schema the diagram renders but the model rejects", () => {
+  // Reported from a real file: one table carried an index naming a column that
+  // is not declared. The diagram draws such a schema without complaint, but
+  // building the DBML model throws — and the editing core used to build it, so
+  // every column in the file became uneditable and the reader was shown an
+  // error about a table they had never touched.
+  const withBadIndex = [
+    "Table analysis_water {",
+    "  analysis_id uuid [pk]",
+    "  ph numeric",
+    "}",
+    "",
+    "Table average_reservoir_property {",
+    "  id uuid [pk]",
+    "",
+    "  Indexes {",
+    "    dt",
+    "  }",
+    "}",
+    "",
+  ].join("\n");
+
+  it("still reads a column's text", () => {
+    expect(readFieldText(withBadIndex, "analysis_water", "ph")).toBe(
+      "ph numeric",
+    );
+  });
+
+  it("still applies an edit to a column in another table", () => {
+    const plan = planEdit(withBadIndex, {
+      kind: "replaceField",
+      table: "analysis_water",
+      field: "ph",
+      text: "ph1 numeric",
+    });
+    if (!plan.ok) throw new Error(`${plan.reason.code}`);
+
+    expect(plan.nextText).toContain("  ph1 numeric");
+    expect(plan.field).toBe("ph1");
+  });
+});

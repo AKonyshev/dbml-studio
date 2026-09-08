@@ -1,6 +1,6 @@
 import { Parser } from "@dbml/core";
 
-import { computeNameWithSchemaName } from "../computeNameWithSchemaName";
+import { getTableFullName } from "../computeNameWithSchemaName";
 import { METAINFO_END, METAINFO_START } from "../metainfo";
 
 import { resolveFieldRange } from "./fieldRange";
@@ -79,76 +79,75 @@ const metaInfoNameRanges = (text: string, fullName: string): SourceRange[] => {
 /**
  * Where everything in a DBML document is written, by character offset.
  *
- * This is the whole bridge from the model back to the file. The parser supplies
- * tokens for tables, fields and refs but nothing for a table's name, and its
- * field tokens are not the field's line, so both of those are worked out here
- * rather than trusted.
+ * Built from `parseDBMLToJSON`, which is deliberately the same door the diagram
+ * comes through, and *not* from `Parser.parse`. The difference is not academic:
+ * `Parser.parse` goes on to build the model, and the model enforces things the
+ * diagram never does — that an index names columns that exist, that every ref
+ * resolves. A real schema with one such flaw anywhere in the file renders
+ * perfectly and used to make editing impossible everywhere in it, reporting a
+ * table the reader had never touched.
+ *
+ * The parser supplies tokens for tables, fields and refs but nothing for a
+ * table's name, and its field tokens are not the field's line, so both of those
+ * are worked out here rather than trusted.
  */
 export const buildSourceIndex = (text: string): SourceIndex => {
-  const database = Parser.parse(text, "dbml");
+  const raw = Parser.parseDBMLToJSON(text);
   const tables: TableLocation[] = [];
 
-  for (const schema of database.schemas) {
-    for (const table of schema.tables) {
-      const { header, start } = headerLineOf(text, table.token.start.offset);
-      const parts = locateTableName(header, start);
-      if (parts === null) continue;
+  for (const table of raw.tables) {
+    const { header, start } = headerLineOf(text, table.token.start.offset);
+    const parts = locateTableName(header, start);
+    if (parts === null) continue;
 
-      const fields: FieldLocation[] = table.fields.map((field) => {
-        const resolved = resolveFieldRange(text, field.token);
+    const fields: FieldLocation[] = table.fields.map((field) => {
+      const resolved = resolveFieldRange(text, field.token);
 
-        return {
-          name: field.name,
-          range: { start: resolved.start, end: resolved.end },
-          indent: resolved.indent,
-          isMultiline: resolved.isMultiline,
-        };
-      });
+      return {
+        name: field.name,
+        range: { start: resolved.start, end: resolved.end },
+        indent: resolved.indent,
+        isMultiline: resolved.isMultiline,
+      };
+    });
 
-      // A ref names a table by whichever spelling it was written with, so an
-      // endpoint saying `users` may be another table's *alias* rather than this
-      // table's name. Rewriting those would break a file that still parses,
-      // which is the one kind of damage the parse gate cannot catch — so when
-      // the name is ambiguous, no ref is touched at all.
-      const nameIsSomeoneElsesAlias = schema.tables.some(
-        (other) =>
-          other !== table &&
-          (other as { alias?: string | null }).alias === parts.declaredName,
+    // A ref names a table by whichever spelling it was written with, so an
+    // endpoint saying `users` may be another table's *alias* rather than this
+    // table's name. Rewriting those would break a file that still parses,
+    // which is the one kind of damage the parse gate cannot catch — so when the
+    // name is ambiguous, no ref is touched at all.
+    const nameIsSomeoneElsesAlias = raw.tables.some(
+      (other) => other !== table && other.alias === parts.declaredName,
+    );
+
+    const refNameRanges: SourceRange[] = [];
+    for (const ref of nameIsSomeoneElsesAlias ? [] : raw.refs) {
+      const usesDeclaredName = ref.endpoints.some(
+        (endpoint) => endpoint.tableName === parts.declaredName,
       );
+      if (!usesDeclaredName) continue;
 
-      const refNameRanges: SourceRange[] = [];
-      for (const ref of nameIsSomeoneElsesAlias ? [] : schema.refs) {
-        const usesDeclaredName = ref.endpoints.some(
-          (endpoint) => endpoint.tableName === parts.declaredName,
-        );
-        if (!usesDeclaredName) continue;
-
-        refNameRanges.push(
-          ...identifierRangesIn(
-            text,
-            { start: ref.token.start.offset, end: ref.token.end.offset },
-            parts.declaredName,
-          ),
-        );
-      }
-
-      // `getTableFullName` reads `table.schemaName`, which the raw JSON shape
-      // carries and the parsed model does not: here the schema is the object
-      // holding the table. The qualified name has to match the one the diagram
-      // uses, or nothing in the index can be found by it.
-      const fullName = computeNameWithSchemaName(table.name, schema.name);
-
-      tables.push({
-        fullName,
-        declaredName: parts.declaredName,
-        schemaName: parts.schemaName,
-        alias: parts.alias,
-        nameRange: parts.nameRange,
-        fields,
-        refNameRanges,
-        metaInfoNameRanges: metaInfoNameRanges(text, fullName),
-      });
+      refNameRanges.push(
+        ...identifierRangesIn(
+          text,
+          { start: ref.token.start.offset, end: ref.token.end.offset },
+          parts.declaredName,
+        ),
+      );
     }
+
+    const fullName = getTableFullName(table);
+
+    tables.push({
+      fullName,
+      declaredName: parts.declaredName,
+      schemaName: parts.schemaName,
+      alias: parts.alias,
+      nameRange: parts.nameRange,
+      fields,
+      refNameRanges,
+      metaInfoNameRanges: metaInfoNameRanges(text, fullName),
+    });
   }
 
   return { tables };

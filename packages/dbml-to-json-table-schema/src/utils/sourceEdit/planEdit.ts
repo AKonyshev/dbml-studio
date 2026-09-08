@@ -1,5 +1,7 @@
 import { Parser } from "@dbml/core";
 
+import { validateSchema } from "../../validators";
+
 import { planColumnEdit } from "./columnOps";
 import { planRename } from "./renameOp";
 import { buildSourceIndex, findField, findTable } from "./sourceIndex";
@@ -37,10 +39,18 @@ const parseErrorOf = (error: unknown): EditRejection => {
   return { code: "parseError", message };
 };
 
-/** The reason a candidate document cannot be written, or null if it parses. */
+/**
+ * The reason a candidate document cannot be written, or null if it is fine.
+ *
+ * "Fine" means exactly what it means to the rest of this product: the soft
+ * parse the diagram uses, plus this package's own validators. Building the full
+ * model instead would reject documents the diagram renders every day — an index
+ * naming a column that is not there is enough — and it would reject them
+ * wherever the reader was editing, naming a table they had not touched.
+ */
 const parseFailureOf = (candidate: string): EditRejection | null => {
   try {
-    Parser.parse(candidate, "dbml");
+    validateSchema(Parser.parseDBMLToJSON(candidate));
 
     return null;
   } catch (error) {

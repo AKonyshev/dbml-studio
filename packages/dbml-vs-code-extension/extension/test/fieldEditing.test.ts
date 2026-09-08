@@ -27,9 +27,24 @@ import {
   writeFixture,
 } from "./helpers";
 
+/**
+ * Shaped after a schema this feature was first broken on, not after a fixture
+ * that suits it: the second table carries an index naming a column that is not
+ * declared. The diagram draws such a file without complaint, and the editing
+ * core must too — building the DBML model instead rejects it, and used to make
+ * every column in the file uneditable while blaming a table nobody touched.
+ */
 const SAMPLE_DBML = `Table users {
   id uuid [pk]
   email varchar
+}
+
+Table reports {
+  id uuid [pk]
+
+  Indexes {
+    dt
+  }
 }
 `;
 
