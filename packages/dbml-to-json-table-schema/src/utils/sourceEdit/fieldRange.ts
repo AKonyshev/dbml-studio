@@ -5,7 +5,14 @@ export interface ResolvedFieldRange extends SourceRange {
   isMultiline: boolean;
 }
 
-const lineStartOffsets = (text: string): number[] => {
+/**
+ * Where every line of the document begins.
+ *
+ * Worked out once per document and handed to `resolveFieldRange`, because
+ * doing it per field made indexing quadratic: a 175 KB schema spent most of a
+ * second here, and every edit builds the index twice.
+ */
+export const lineStartOffsets = (text: string): number[] => {
   const offsets = [0];
   for (let i = 0; i < text.length; i += 1) {
     if (text[i] === "\n") offsets.push(i + 1);
@@ -27,15 +34,18 @@ const lineStartOffsets = (text: string): number[] => {
 export const resolveFieldRange = (
   text: string,
   token: ParserToken,
+  lineStarts?: number[],
 ): ResolvedFieldRange => {
-  const starts = lineStartOffsets(text);
+  const starts = lineStarts ?? lineStartOffsets(text);
   const firstLine = token.start.line - 1;
   const lastLine =
     token.end.column === 1 ? token.end.line - 2 : token.end.line - 1;
 
   const lineStart = starts[firstLine];
-  const indentLength = text.slice(lineStart).search(/\S|$/);
-  const start = lineStart + indentLength;
+  // Scanned rather than sliced: slicing the rest of the document per field
+  // costs as much as reading the document again for every column in it.
+  let start = lineStart;
+  while (start < text.length && /\s/.test(text[start])) start += 1;
 
   const afterLast =
     lastLine + 1 < starts.length ? starts[lastLine + 1] : text.length;

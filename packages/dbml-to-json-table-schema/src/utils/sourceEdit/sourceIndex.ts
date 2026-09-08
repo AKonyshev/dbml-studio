@@ -3,7 +3,7 @@ import { Parser } from "@dbml/core";
 import { getTableFullName } from "../computeNameWithSchemaName";
 import { METAINFO_END, METAINFO_START } from "../metainfo";
 
-import { resolveFieldRange } from "./fieldRange";
+import { lineStartOffsets, resolveFieldRange } from "./fieldRange";
 import { locateTableName } from "./tableHeader";
 
 import type {
@@ -157,6 +157,7 @@ const metaInfoNameRanges = (
  */
 export const buildSourceIndex = (text: string): SourceIndex => {
   const raw = Parser.parseDBMLToJSON(text);
+  const lineStarts = lineStartOffsets(text);
   const tables: TableLocation[] = [];
 
   for (const table of raw.tables) {
@@ -165,7 +166,7 @@ export const buildSourceIndex = (text: string): SourceIndex => {
     if (parts === null) continue;
 
     const fields: FieldLocation[] = table.fields.map((field) => {
-      const resolved = resolveFieldRange(text, field.token);
+      const resolved = resolveFieldRange(text, field.token, lineStarts);
 
       return {
         name: field.name,
