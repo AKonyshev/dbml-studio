@@ -166,6 +166,21 @@ export class DiagramView implements Disposable {
     void this.panel.webview.postMessage(runDiagramActionMessage(action));
   }
 
+  /**
+   * Whether an edit made in the diagram could actually land in this document.
+   *
+   * Refusing here, before the reader reaches for a column, is kinder than
+   * refusing after they have typed a line: an untitled or closed document takes
+   * no workspace edit, and the diagram simply offers no editing on one.
+   */
+  private isEditable(): boolean {
+    return (
+      !this.document.isUntitled &&
+      !this.document.isClosed &&
+      this.document.languageId === this.deps.fileExt
+    );
+  }
+
   public refresh(): void {
     const code = this.document.getText();
 
@@ -177,6 +192,7 @@ export class DiagramView implements Disposable {
         payload,
         key: this.documentUri,
         rawContent: code,
+        editable: this.isEditable(),
       });
       // Addressed, not `clear()`: another open diagram's errors are not ours.
       this.deps.diagnostics.delete(this.document.uri);

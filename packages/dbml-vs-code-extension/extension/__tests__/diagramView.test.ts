@@ -52,9 +52,16 @@ const makeDeps = (
   supportsDbmlFileSync: true,
 });
 
-const makeDocument = (uri: string, text: string) => ({
+const makeDocument = (
+  uri: string,
+  text: string,
+  over: { isUntitled?: boolean; isClosed?: boolean; languageId?: string } = {},
+) => ({
   uri: { toString: () => uri },
   getText: () => text,
+  isUntitled: over.isUntitled ?? false,
+  isClosed: over.isClosed ?? false,
+  languageId: over.languageId ?? "dbml",
 });
 
 beforeAll(() => {
@@ -253,5 +260,43 @@ describe("DiagramView", () => {
     // VS Code owns a custom editor's panel; disposing it would close the tab
     // out from under the user. The old MainPanel.dispose did exactly that.
     expect(panel.dispose).not.toHaveBeenCalled();
+  });
+});
+
+describe("telling the diagram whether it may edit", () => {
+  test("a saved dbml document is editable", () => {
+    const panel = makePanel();
+    const deps = makeDeps(() => emptySchema);
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///a.dbml", "Table a {}") as never,
+      deps,
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    expect(panel.webview.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "setSchema", editable: true }),
+    );
+
+    view.dispose();
+  });
+
+  test("an untitled document is not editable", () => {
+    const panel = makePanel();
+    const deps = makeDeps(() => emptySchema);
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("untitled:a.dbml", "Table a {}", {
+        isUntitled: true,
+      }) as never,
+      deps,
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    expect(panel.webview.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "setSchema", editable: false }),
+    );
+
+    view.dispose();
   });
 });
