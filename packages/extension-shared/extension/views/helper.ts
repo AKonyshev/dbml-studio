@@ -6,6 +6,7 @@
 import {
   type Disposable,
   type ExtensionContext,
+  type TextDocument,
   type Webview,
   Range,
   Uri,
@@ -16,7 +17,9 @@ import {
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 
 import {
+  diagramEditResultMessage,
   WebviewCommand,
+  type ApplyDiagramEditMessage,
   type WebviewPostMessage,
 } from "../types/webviewCommand";
 import { type DefaultPageConfig } from "../types/defaultPageConfig";
@@ -25,6 +28,9 @@ import {
   WEBVIEW_HTML_MARKER_FOR_BOOTSTRAP,
   WEBVIEW_HTML_MARKER_FOR_DEFAULT_CONFIG,
 } from "../constants";
+
+import { DocumentWriteQueue } from "./editQueue";
+import { applyDiagramEdit } from "./applyDiagramEdit";
 
 const WEBVIEW_BOOTSTRAP_SCRIPT = `
 (function () {
@@ -51,9 +57,17 @@ export interface WebviewHooksOptions {
   onApplyingDbmlEdit?: (applying: boolean) => void;
   onWebviewReady?: () => void;
   onTypingFocusChanged?: (typing: boolean) => void;
+  postToWebview?: (message: unknown) => void;
 }
 
 export class WebviewHelper {
+  /**
+   * Shared by both write paths on purpose. A field edit replaces a few ranges
+   * and the position sync replaces the whole file; running at the same time,
+   * the second undoes the first.
+   */
+  private static readonly writeQueue = new DocumentWriteQueue();
+
   public static setupHtml(
     webview: Webview,
     context: ExtensionContext,
@@ -102,11 +116,11 @@ export class WebviewHelper {
           typeof message.content === "string" &&
           typeof message.documentUri === "string"
         ) {
-          await WebviewHelper.applyDbmlContent(
-            message.content,
-            message.documentUri,
-            options,
-          );
+          const content = message.content;
+          const documentUri = message.documentUri;
+          await WebviewHelper.writeQueue.run(documentUri, async () => {
+            await WebviewHelper.applyDbmlContent(content, documentUri, options);
+          });
         }
         break;
       case WebviewCommand.SAVE_EXPORT:
@@ -125,9 +139,60 @@ export class WebviewHelper {
           options.onTypingFocusChanged?.(message.typing);
         }
         break;
+      case WebviewCommand.APPLY_DIAGRAM_EDIT:
+        await WebviewHelper.handleDiagramEdit(
+          message as unknown as ApplyDiagramEditMessage,
+          options,
+        );
+        break;
       default:
         break;
     }
+  }
+
+  private static async handleDiagramEdit(
+    request: ApplyDiagramEditMessage,
+    options: WebviewHooksOptions,
+  ): Promise<void> {
+    if (!options.supportsDbmlFileSync) return;
+
+    const outcome = await WebviewHelper.writeQueue.run(
+      request.documentUri,
+      async () =>
+        await applyDiagramEdit(request, {
+          openDocument: async (uri) => {
+            const doc = await workspace.openTextDocument(Uri.parse(uri));
+
+            return doc.languageId === options.fileExt ? doc : null;
+          },
+          applyEdit: async (document, edits) => {
+            const doc = document as unknown as TextDocument;
+            const edit = new WorkspaceEdit();
+            for (const change of edits) {
+              edit.replace(
+                doc.uri,
+                new Range(
+                  doc.positionAt(change.start),
+                  doc.positionAt(change.end),
+                ),
+                change.text,
+              );
+            }
+
+            options.onApplyingDbmlEdit?.(true);
+            const written = await workspace.applyEdit(edit);
+            setTimeout(() => {
+              options.onApplyingDbmlEdit?.(false);
+            }, 600);
+
+            return written;
+          },
+        }),
+    );
+
+    options.postToWebview?.(
+      diagramEditResultMessage(request.requestId, outcome),
+    );
   }
 
   private static async applyDbmlContent(

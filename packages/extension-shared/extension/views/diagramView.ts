@@ -98,6 +98,9 @@ export class DiagramView implements Disposable {
         onTypingFocusChanged: (typing) => {
           this.inputFocus.set(typing);
         },
+        postToWebview: (message) => {
+          void panel.webview.postMessage(message);
+        },
       },
     );
 
