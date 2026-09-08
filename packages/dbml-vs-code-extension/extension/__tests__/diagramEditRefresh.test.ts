@@ -38,25 +38,25 @@ describe("a field edit and the diagram's own write-back", () => {
     (workspace.applyEdit as jest.Mock).mockResolvedValue(true);
   });
 
-  // The flag exists to stop the diagram redrawing from its own position
-  // write-back. Raising it for a field edit too left the reader looking at the
-  // old name until they saved the file.
+  // Naming a text exists to stop the diagram redrawing from its own position
+  // write-back. Claiming a field edit too left the reader looking at the old
+  // name until they saved the file.
   test("does not claim the edit as the diagram's own", async () => {
-    const onApplyingDbmlEdit = jest.fn();
+    const onOwnLayoutWrite = jest.fn();
 
     await WebviewHelper.handleWebviewMessage(request as never, {} as never, {
       fileExt: "dbml",
       supportsDbmlFileSync: true,
-      onApplyingDbmlEdit,
+      onOwnLayoutWrite,
       postToWebview: jest.fn(),
     });
 
     expect(workspace.applyEdit).toHaveBeenCalled();
-    expect(onApplyingDbmlEdit).not.toHaveBeenCalled();
+    expect(onOwnLayoutWrite).not.toHaveBeenCalled();
   });
 
   test("still claims the position write-back as its own", async () => {
-    const onApplyingDbmlEdit = jest.fn();
+    const onOwnLayoutWrite = jest.fn();
 
     await WebviewHelper.handleWebviewMessage(
       {
@@ -70,10 +70,13 @@ describe("a field edit and the diagram's own write-back", () => {
       {
         fileExt: "dbml",
         supportsDbmlFileSync: true,
-        onApplyingDbmlEdit,
+        onOwnLayoutWrite,
       },
     );
 
-    expect(onApplyingDbmlEdit).toHaveBeenCalledWith(true);
+    // The text it is about to write, and then nothing left standing: a claim
+    // that outlives its own write is what swallowed the reader's next edit.
+    expect(onOwnLayoutWrite).toHaveBeenNthCalledWith(1, expect.any(String));
+    expect(onOwnLayoutWrite).toHaveBeenLastCalledWith(null);
   });
 });

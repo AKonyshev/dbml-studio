@@ -53,7 +53,8 @@ export class DiagramView implements Disposable {
   private ready = false;
   private outbound: unknown[] = [];
   private updateTimeout: NodeJS.Timeout | null = null;
-  private applyingOwnEdit = false;
+  /** The document our own layout write-back is producing, while it is in flight. */
+  private ownLayoutText: string | null = null;
   private readonly inputFocus: DiagramInputFocus;
 
   constructor(
@@ -92,8 +93,8 @@ export class DiagramView implements Disposable {
       {
         fileExt: deps.fileExt,
         supportsDbmlFileSync,
-        onApplyingDbmlEdit: (applying) => {
-          this.applyingOwnEdit = applying;
+        onOwnLayoutWrite: (text) => {
+          this.ownLayoutText = text;
         },
         onWebviewReady: () => {
           this.markReady();
@@ -129,8 +130,20 @@ export class DiagramView implements Disposable {
     workspace.onDidChangeTextDocument(
       (event) => {
         if (event.document.uri.toString() !== this.documentUri) return;
-        // The diagram's own MetaInfo write-back would otherwise loop.
-        if (this.applyingOwnEdit) return;
+        // The diagram's own MetaInfo write-back would otherwise loop. It is
+        // recognised by the text it produced, not by a window of time: a window
+        // swallows whatever else is written while it is open, and what a reader
+        // writes right after dragging a table is a rename. That rename reached
+        // the file and was never drawn, which left the diagram naming a table
+        // the document no longer had.
+        if (
+          this.ownLayoutText !== null &&
+          event.document.getText() === this.ownLayoutText
+        ) {
+          this.ownLayoutText = null;
+
+          return;
+        }
         this.scheduleRefresh();
       },
       null,

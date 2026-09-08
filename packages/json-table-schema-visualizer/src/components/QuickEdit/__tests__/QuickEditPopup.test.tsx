@@ -253,6 +253,34 @@ describe("QuickEditPopup", () => {
     );
   });
 
+  // A rename refused by the host has two halves to undo: the reader has to be
+  // told why, and the position carried ahead of the write has to go back where
+  // it came from. Silence here is what a reader reports as "F2 does nothing".
+  it("says why a rename was refused and puts the carried position back", async () => {
+    tableCoordsStore.setCoords("users", { x: 400, y: 250 });
+    const submit = submitting({
+      ok: false,
+      reason: { code: "tableNotFound" },
+    });
+    host(submit, "email varchar", (_table, typed) => typed);
+    render(<QuickEditPopup />);
+    act(() => {
+      openQuickEdit({ table: "users", offsetY: 0 });
+    });
+
+    fireEvent.change(box(), { target: { value: "people" } });
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+
+    expect(box().value).toBe("people");
+    expect(screen.getByText(/no longer in the document/)).toBeTruthy();
+    expect(tableCoordsStore.getCoords("users")).toEqual(
+      expect.objectContaining({ x: 400, y: 250 }),
+    );
+    expect(tableCoordsStore.hasCoords("people")).toBe(false);
+  });
+
   it("moves to the row drawn below on Tab", async () => {
     host(submitting({ ok: true, table: "users", field: "email" }));
     render(<QuickEditPopup />);

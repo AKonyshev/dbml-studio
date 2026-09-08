@@ -58,7 +58,15 @@ const WEBVIEW_BOOTSTRAP_SCRIPT = `
 export interface WebviewHooksOptions {
   fileExt: string;
   supportsDbmlFileSync: boolean;
-  onApplyingDbmlEdit?: (applying: boolean) => void;
+  /**
+   * The exact text the diagram's own layout write-back is about to produce,
+   * and `null` once that write has settled.
+   *
+   * Announced rather than flagged, because the view has to tell the change
+   * event this write causes apart from a change the reader made — and the two
+   * arrive the same way, milliseconds apart.
+   */
+  onOwnLayoutWrite?: (text: string | null) => void;
   onWebviewReady?: () => void;
   onTypingFocusChanged?: (typing: boolean) => void;
   postToWebview?: (message: unknown) => void;
@@ -215,7 +223,7 @@ export class WebviewHelper {
               );
             }
 
-            // Deliberately without `onApplyingDbmlEdit`, which the position
+            // Deliberately without `onOwnLayoutWrite`, which the position
             // sync raises to stop the diagram redrawing from its own
             // write-back. A field edit is the opposite case: the schema has
             // changed and only the document knows how, so the diagram has to
@@ -266,11 +274,14 @@ export class WebviewHelper {
     );
     edit.replace(doc.uri, fullRange, updated);
 
-    options.onApplyingDbmlEdit?.(true);
+    // Said before the write and taken back after it. The change event this
+    // causes reaches the view while `applyEdit` is still in flight, so by the
+    // time it resolves the view has either recognised the text as ours or the
+    // write never landed — and either way nothing is left standing that could
+    // swallow the next change.
+    options.onOwnLayoutWrite?.(updated);
     await workspace.applyEdit(edit);
-    setTimeout(() => {
-      options.onApplyingDbmlEdit?.(false);
-    }, 600);
+    options.onOwnLayoutWrite?.(null);
   }
 
   private static async saveExportFile(

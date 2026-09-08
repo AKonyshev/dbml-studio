@@ -5,6 +5,8 @@ import {
 } from "extension-shared/extension/views/diagramView";
 import { diagramInputFocusKey } from "extension-shared/extension/views/diagramInputFocus";
 import { DiagnosticError } from "shared/types/diagnostic";
+import { DIAGRAM_UPDATER_DEBOUNCE_TIME } from "extension-shared/extension/constants";
+import { upsertMetaInfoInDbml } from "dbml-to-json-table-schema";
 import type { JSONTableSchema } from "shared/types/tableSchema";
 
 const emptySchema: JSONTableSchema = { refs: [], enums: [], tables: [] };
@@ -325,5 +327,125 @@ describe("a read-only file", () => {
     expect(last?.editable).toBe(false);
 
     view.dispose();
+  });
+});
+
+/**
+ * The diagram writes the reader's arrangement back into the file, and that
+ * write comes back as a change like any other. Ignoring it is what stops the
+ * diagram redrawing itself in a circle — but it used to be ignored by *when* it
+ * arrived, and a 600ms window swallows everything else written in it.
+ *
+ * What the reader writes right after dragging a table is a rename, and that
+ * rename reached the file and was never drawn: the diagram went on naming a
+ * table the document no longer had, so the next rename asked for a table that
+ * was not there and did nothing at all.
+ */
+describe("the diagram's own layout write-back", () => {
+  const SOURCE = ["Table users {", "  id uuid [pk]", "}", ""].join("\n");
+  const COORDS = [{ name: "users", x: 10, y: 20 }];
+  const URI = "file:///a.dbml";
+
+  const changeHandler = (): ((event: unknown) => void) =>
+    (workspace.onDidChangeTextDocument as jest.Mock).mock.calls.at(-1)?.[0] as (
+      event: unknown,
+    ) => void;
+
+  /**
+   * Open a diagram and leave its write-back in flight, the way a drag does.
+   *
+   * `applyEdit` is left unresolved on purpose: the change events that follow
+   * are exactly the ones the old window was open for.
+   */
+  const withWriteBackInFlight = async (): Promise<{
+    panel: ReturnType<typeof makePanel>;
+    view: DiagramView;
+    settle: () => void;
+  }> => {
+    (workspace.openTextDocument as jest.Mock).mockResolvedValue({
+      uri: { toString: () => URI },
+      getText: () => SOURCE,
+      isUntitled: false,
+      isClosed: false,
+      languageId: "dbml",
+      positionAt: (offset: number) => offset,
+    });
+    let settle = (): void => undefined;
+    (workspace.applyEdit as jest.Mock).mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        settle = () => {
+          resolve(true);
+        };
+      }),
+    );
+
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument(URI, SOURCE) as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    panel.listeners.message({
+      command: "UPDATE_DBML_CONTENT",
+      coords: COORDS,
+      documentUri: URI,
+    });
+    // Timers are already faked here, so the write-back's own awaits are let
+    // through this way rather than by sleeping on a clock that is not running.
+    await jest.advanceTimersByTimeAsync(1);
+    (panel.webview.postMessage as jest.Mock).mockClear();
+
+    return { panel, view, settle };
+  };
+
+  const posted = (panel: ReturnType<typeof makePanel>): unknown[] =>
+    (panel.webview.postMessage as jest.Mock).mock.calls
+      .map(([message]) => message as { type?: string })
+      .filter((message) => message.type === "setSchema");
+
+  test("redraws for a change it did not make, even while its own is in flight", async () => {
+    jest.useFakeTimers();
+    try {
+      const { panel, view, settle } = await withWriteBackInFlight();
+
+      changeHandler()({
+        document: {
+          uri: { toString: () => URI },
+          getText: () => SOURCE.replace("users", "people"),
+        },
+      });
+      await jest.advanceTimersByTimeAsync(DIAGRAM_UPDATER_DEBOUNCE_TIME + 50);
+
+      expect(posted(panel)).toHaveLength(1);
+
+      settle();
+      view.dispose();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("does not redraw for the text it wrote itself", async () => {
+    jest.useFakeTimers();
+    try {
+      const { panel, view, settle } = await withWriteBackInFlight();
+
+      changeHandler()({
+        document: {
+          uri: { toString: () => URI },
+          getText: () => upsertMetaInfoInDbml(SOURCE, COORDS),
+        },
+      });
+      await jest.advanceTimersByTimeAsync(DIAGRAM_UPDATER_DEBOUNCE_TIME + 50);
+
+      expect(posted(panel)).toHaveLength(0);
+
+      settle();
+      view.dispose();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
