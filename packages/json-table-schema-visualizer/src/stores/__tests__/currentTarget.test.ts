@@ -15,14 +15,18 @@ describe("current target", () => {
 
   it("focusing a column clears the table selection", () => {
     selectTables(new Set(["users", "posts"]));
-    focusColumn("users", "email");
+    focusColumn("users", "email", 30);
 
     expect(selectionStore.getSelected().size).toBe(0);
-    expect(columnFocusStore.get()).toEqual({ table: "users", field: "email" });
+    expect(columnFocusStore.get()).toEqual({
+      table: "users",
+      field: "email",
+      offsetY: 30,
+    });
   });
 
   it("selecting tables clears the column focus", () => {
-    focusColumn("users", "email");
+    focusColumn("users", "email", 30);
     selectTables(new Set(["posts"]));
 
     expect(columnFocusStore.get()).toBeNull();
@@ -30,7 +34,7 @@ describe("current target", () => {
   });
 
   it("toggling a table into the selection clears the column focus", () => {
-    focusColumn("users", "email");
+    focusColumn("users", "email", 30);
     toggleTableSelection("posts");
 
     expect(columnFocusStore.get()).toBeNull();
@@ -41,8 +45,8 @@ describe("current target", () => {
     const listener = jest.fn();
     const unsubscribe = columnFocusStore.subscribe(listener);
 
-    focusColumn("users", "email");
-    focusColumn("users", "email");
+    focusColumn("users", "email", 30);
+    focusColumn("users", "email", 30);
 
     expect(listener).toHaveBeenCalledTimes(1);
 

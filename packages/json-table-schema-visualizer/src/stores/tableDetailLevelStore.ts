@@ -117,6 +117,26 @@ class TableDetailLevelStore extends PersistableStore<
     return this.current().size > 0;
   }
 
+  /**
+   * Carry one table's override to its new name.
+   *
+   * A rename is not a delete plus an insert to the reader, but it is to every
+   * store keyed by name — and DBML gives a table nothing more stable to be
+   * keyed by. See `renameTableState`.
+   */
+  public renameKey(oldName: string, newName: string): void {
+    const overrides = this.current();
+    const existing = overrides.get(oldName);
+    if (existing === undefined) {
+      return;
+    }
+
+    overrides.delete(oldName);
+    overrides.set(newName, existing);
+    this.persistCurrent();
+    this.announce();
+  }
+
   private current(): Map<string, TableDetailLevel> {
     const key = this.activeKey ?? "default";
     let overrides = this.overridesByKey.get(key);

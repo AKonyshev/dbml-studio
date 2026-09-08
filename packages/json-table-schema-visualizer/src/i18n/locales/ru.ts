@@ -95,4 +95,15 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "md.noDescription": "Нет описания",
   "md.columns": "| Наименование | Тип | Описание |",
   "md.relations": "Связи:",
+  "quickEdit.rejected": "Правка не применена.",
+  "quickEdit.staleText":
+    "Документ изменился во время правки. Откройте колонку заново.",
+  "quickEdit.nameTaken": "Такое имя уже занято другой таблицей.",
+  "quickEdit.notEditable": "Этот документ нельзя редактировать.",
+  "quickEdit.atBoundary": "Колонка уже с краю.",
+  "quickEdit.emptyText":
+    "Колонка не может быть пустой. Чтобы удалить, нажмите Ctrl+Delete.",
+  "quickEdit.tableNotFound": "Такой таблицы в документе больше нет.",
+  "quickEdit.fieldNotFound": "Такой колонки в документе больше нет.",
+  "action.quickEdit": "Править колонку или переименовать таблицу",
 };

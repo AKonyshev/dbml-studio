@@ -23,5 +23,6 @@
   "command.tableDetailLevel": "DBML: Сменить уровень детализации таблицы под курсором",
   "command.resetTableDetailLevels": "DBML: Вернуть всем таблицам общий уровень детализации",
   "command.showShortcuts": "DBML: Показать легенду диаграммы",
-  "configuration.title": "DBML Studio"
+  "configuration.title": "DBML Studio",
+  "command.quickEdit": "DBML: Править колонку или переименовать таблицу"
 }

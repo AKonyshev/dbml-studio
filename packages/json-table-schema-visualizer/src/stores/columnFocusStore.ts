@@ -3,6 +3,14 @@ type Listener = () => void;
 export interface FocusedColumn {
   table: string;
   field: string;
+  /**
+   * Where the row is drawn inside the table's rows group, in world units.
+   *
+   * Kept here rather than recomputed: the component that took the focus already
+   * knows it, and working it out again would mean repeating the detail-level
+   * filtering that decided which rows are on screen at all.
+   */
+  offsetY: number;
 }
 
 /**
@@ -32,7 +40,8 @@ class ColumnFocusStore {
   public readonly set = (next: FocusedColumn | null): void => {
     const same =
       next?.table === this.focused?.table &&
-      next?.field === this.focused?.field;
+      next?.field === this.focused?.field &&
+      next?.offsetY === this.focused?.offsetY;
     if (same) {
       return;
     }

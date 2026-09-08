@@ -276,6 +276,44 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     this.tableCoords.delete(table);
   }
 
+  /**
+   * Carry one table's arrangement to its new name, at every detail level.
+   *
+   * Every level, not only the one on screen: a reader who arranged the schema
+   * with the headers showing and then again at full detail owns two layouts,
+   * and a rename that moved only one of them would silently throw the other
+   * away. See `renameTableState` for why this is done rather than detected.
+   */
+  public renameKey(oldName: string, newName: string): void {
+    let changed = false;
+
+    const current = this.tableCoords.get(oldName);
+    if (current !== undefined) {
+      this.tableCoords.delete(oldName);
+      this.tableCoords.set(newName, current);
+      this.persist(this.currentStoreKey, Array.from(this.tableCoords));
+      changed = true;
+    }
+
+    for (const level of Object.values(TableDetailLevel)) {
+      const storeKey = storeKeyFor(this.currentDocumentKey, level);
+      if (storeKey === this.currentStoreKey) continue;
+
+      const stored = this.storedCoordsFor(level);
+      const entry = stored?.get(oldName);
+      if (stored == null || entry === undefined) continue;
+
+      stored.delete(oldName);
+      stored.set(newName, entry);
+      this.persist(storeKey, Array.from(stored));
+      changed = true;
+    }
+
+    if (changed) {
+      eventEmitter.emit("table:coords:updated");
+    }
+  }
+
   private storedCoordsFor(
     level: TableDetailLevel,
   ): Map<string, XYWHPosition> | null {

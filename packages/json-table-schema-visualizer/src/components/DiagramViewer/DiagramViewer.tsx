@@ -7,6 +7,7 @@ import { type ReactNode } from "react";
 
 import EmptyTableMessage from "../Messages/EmptyTableMessage";
 import Search from "../Search/Search";
+import QuickEditPopup from "../QuickEdit/QuickEditPopup";
 
 import DiagramWrapper from "./DiagramWrapper";
 import RelationsConnections from "./Connections";
@@ -80,6 +81,11 @@ const DiagramViewer = ({
               }
               tables={<Tables tables={tables} />}
             />
+
+            {/* A DOM overlay: the diagram is a canvas, which has no text input
+                of its own. Inside `main` because that is the positioned box the
+                stage fills. */}
+            <QuickEditPopup />
           </main>
         </MainProviders>
       </TablesPositionsProvider>

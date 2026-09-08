@@ -23,5 +23,6 @@
   "command.tableDetailLevel": "DBML: Cycle the detail level of the hovered table",
   "command.resetTableDetailLevels": "DBML: Give every table the shared detail level back",
   "command.showShortcuts": "DBML: Show the diagram legend",
-  "configuration.title": "DBML Studio"
+  "configuration.title": "DBML Studio",
+  "command.quickEdit": "DBML: Edit the column, or rename the table"
 }

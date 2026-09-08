@@ -79,6 +79,12 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "quickEdit",
+    key: "F2",
+    labelKey: "action.quickEdit",
+    executable: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",

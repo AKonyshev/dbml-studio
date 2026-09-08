@@ -4,6 +4,12 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+
+- **Edit a column, or rename a table, from the diagram.** Changing a schema used to mean leaving the diagram, finding the table in the `.dbml`, finding the line, editing it and coming back. Click a column to point at it and press `F2`, or double-click it, and a small box opens on the column holding the line exactly as it is in the file. `Enter` applies, `Escape` throws the edit away, `Shift+Enter` adds a line break inside a note. `Ctrl+Enter` adds a column below, `Ctrl+Delete` removes one, and `Ctrl+Up` / `Ctrl+Down` move one. With one table selected and no column pointed at, `F2` renames the table instead, and the rename follows through to every relation that refers to it by name and to the layout the file carries. The command is **DBML: Edit the column, or rename the table** in the palette and can be rebound like every other. Only the ranges you actually changed are written, so one undo takes back one edit, and text that would not parse is refused before it reaches the file rather than after. The diagram on the website is unchanged: editing is something the extension lends it, and the website lends nothing.
+
 ## [1.2.1] - 2026-09-08
 
 ### Fixed

@@ -91,4 +91,13 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "md.noDescription": "无说明",
   "md.columns": "| 名称 | 类型 | 说明 |",
   "md.relations": "关系：",
+  "quickEdit.rejected": "未应用此修改。",
+  "quickEdit.staleText": "编辑期间文档已更改。请重新打开该列。",
+  "quickEdit.nameTaken": "该名称已被其他表使用。",
+  "quickEdit.notEditable": "此文档无法编辑。",
+  "quickEdit.atBoundary": "该列已在边缘。",
+  "quickEdit.emptyText": "列不能为空。按 Ctrl+Delete 删除。",
+  "quickEdit.tableNotFound": "文档中已没有该表。",
+  "quickEdit.fieldNotFound": "文档中已没有该列。",
+  "action.quickEdit": "编辑列或重命名表",
 };

@@ -93,6 +93,17 @@ export const MESSAGES_EN = {
   "md.noDescription": "No description",
   "md.columns": "| Name | Type | Description |",
   "md.relations": "Relations:",
+  "quickEdit.rejected": "The edit was not applied.",
+  "quickEdit.staleText":
+    "The document changed while you were editing. Reopen the column.",
+  "quickEdit.nameTaken": "Another table already uses that name.",
+  "quickEdit.notEditable": "This document cannot be edited.",
+  "quickEdit.atBoundary": "The column is already at the end.",
+  "quickEdit.emptyText":
+    "A column cannot be empty. Use Ctrl+Delete to remove it.",
+  "quickEdit.tableNotFound": "That table is no longer in the document.",
+  "quickEdit.fieldNotFound": "That column is no longer in the document.",
+  "action.quickEdit": "Edit the column, or rename the table",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

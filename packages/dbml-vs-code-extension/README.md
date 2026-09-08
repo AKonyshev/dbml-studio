@@ -31,22 +31,41 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 Every view action is a command, so the keys below are defaults rather than fixtures: rebind any of them in **Preferences: Open Keyboard Shortcuts** by searching for `DBML`, and run any of them from the command palette. They apply while the diagram has focus and nowhere else.
 
-| Key | Command                                 |
-| --- | --------------------------------------- |
-| `C` | Colored relations                       |
-| `A` | Relation animation                      |
-| `S` | Short table names                       |
-| `D` | Cycle detail level                      |
-| `V` | Switch between pan and select           |
-| `L` | Auto-arrange                            |
-| `F` | Fit to view                             |
-| `H` | Hide/show the hovered table's relations |
-| `R` | Show all hidden relations               |
-| `T` | Cycle the hovered table's detail level  |
-| `U` | Give every table the shared level back  |
-| `?` | Show the shortcuts legend               |
+| Key  | Command                                 |
+| ---- | --------------------------------------- |
+| `C`  | Colored relations                       |
+| `A`  | Relation animation                      |
+| `S`  | Short table names                       |
+| `D`  | Cycle detail level                      |
+| `V`  | Switch between pan and select           |
+| `L`  | Auto-arrange                            |
+| `F`  | Fit to view                             |
+| `H`  | Hide/show the hovered table's relations |
+| `R`  | Show all hidden relations               |
+| `T`  | Cycle the hovered table's detail level  |
+| `U`  | Give every table the shared level back  |
+| `F2` | Edit the column, or rename the table    |
+| `?`  | Show the shortcuts legend               |
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.
+
+## Editing from the diagram
+
+Click a column to point at it, then press `F2` or double-click it. A box opens on the column holding the line exactly as it stands in the `.dbml` file, so anything DBML lets you write on a column you can write here.
+
+| Key                     | What it does                               |
+| ----------------------- | ------------------------------------------ |
+| `Enter`                 | Apply and close                            |
+| `Shift+Enter`           | Insert a line break, for a multi-line note |
+| `Ctrl+Enter`            | Apply, then add a column below             |
+| `Ctrl+Delete`           | Delete the column                          |
+| `Ctrl+Up` / `Ctrl+Down` | Move the column                            |
+| `Tab`                   | Apply and close                            |
+| `Escape`                | Throw the edit away                        |
+
+With one table selected and no column pointed at, `F2` renames the table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
+
+Only the ranges you changed are written, so one undo takes back one edit and the rest of your file is untouched. Text that would not parse is refused before it reaches the file, with the parser's own message. Editing is offered only on a saved file that can be written to.
 
 None of these keys fires while you are typing, in the diagram's own search box or anywhere else in the editor.
 

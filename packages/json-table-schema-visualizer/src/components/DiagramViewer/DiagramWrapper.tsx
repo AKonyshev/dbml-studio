@@ -41,6 +41,13 @@ import { exportStageSVG } from "@/export/svg/svg-exporter";
 import { generateAsciiDoc } from "@/utils/exportAsciiDoc";
 import { generateMarkdown } from "@/utils/exportMarkdown";
 import useLocalStorage from "@/hooks/localStorage";
+import { columnFocusStore } from "@/stores/columnFocusStore";
+import {
+  forgetRenames,
+  reconcileAfterSchemaChange,
+} from "@/stores/renameReconcile";
+import { selectionStore } from "@/stores/selectionStore";
+import { openQuickEdit } from "@/stores/quickEditStore";
 import {
   useDiagramActions,
   useKeyboardShortcuts,
@@ -443,6 +450,17 @@ const DiagramWrapper = ({
    * reader left behind. The viewer is keyed by document, so a document switch
    * mounts a fresh one and lands here too.
    */
+  /**
+   * Undo restores the text of a rename but not the keys these stores hold, so
+   * every new schema is checked against the renames this session made. See
+   * `reconcileAfterSchemaChange`.
+   */
+  useEffect(() => {
+    reconcileAfterSchemaChange(tablesMeta.map((table) => table.name));
+  }, [tablesMeta]);
+
+  useEffect(() => forgetRenames, []);
+
   const arrangedAtDetailLevel = useRef(detailLevel);
   useEffect(() => {
     if (arrangedAtDetailLevel.current === detailLevel) {
@@ -501,6 +519,35 @@ const DiagramWrapper = ({
       },
       resetTableDetailLevels: () => {
         tableDetailLevelStore.resetAll();
+      },
+      /**
+       * One key for both, because the reader is only ever pointing at one
+       * thing: a focused column wins, and a single selected table is the
+       * fallback. The alternative was two commands on the same chord separated
+       * by a context key the webview would have to keep the workbench told
+       * about — a whole channel of state to keep in step, for a choice that is
+       * already made here.
+       *
+       * Read at the keypress rather than subscribed to, the way `toggleRefs`
+       * reads the hovered table: pointing at a column is no reason to re-render
+       * the diagram. Aimed at nothing, this does nothing.
+       */
+      quickEdit: () => {
+        const focused = columnFocusStore.get();
+        if (focused !== null) {
+          openQuickEdit({
+            table: focused.table,
+            field: focused.field,
+            offsetY: focused.offsetY,
+          });
+
+          return;
+        }
+
+        const selected = [...selectionStore.getSelected()];
+        if (selected.length !== 1) return;
+
+        openQuickEdit({ table: selected[0], offsetY: 0 });
       },
     },
     !isLegendOpen,

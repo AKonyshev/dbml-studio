@@ -10,9 +10,13 @@ import { selectionStore } from "./selectionStore";
  * editing aims at exactly one thing. Writing either through anything but these
  * three functions is what would let the two drift apart.
  */
-export const focusColumn = (table: string, field: string): void => {
+export const focusColumn = (
+  table: string,
+  field: string,
+  offsetY: number,
+): void => {
   selectionStore.setSelected(new Set());
-  columnFocusStore.set({ table, field });
+  columnFocusStore.set({ table, field, offsetY });
 };
 
 export const clearColumnFocus = (): void => {

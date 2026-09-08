@@ -176,6 +176,10 @@
       {
         "command": "dbmlStudio.showShortcuts",
         "title": "%command.showShortcuts%"
+      },
+      {
+        "command": "dbmlStudio.quickEdit",
+        "title": "%command.quickEdit%"
       }
     ],
     "keybindings": [
@@ -237,6 +241,11 @@
       {
         "command": "dbmlStudio.showShortcuts",
         "key": "shift+/",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.quickEdit",
+        "key": "f2",
         "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       }
     ],
@@ -300,6 +309,10 @@
         },
         {
           "command": "dbmlStudio.resetTableDetailLevels",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        },
+        {
+          "command": "dbmlStudio.quickEdit",
           "when": "activeCustomEditorId == 'dbml-studio-diagram'"
         }
       ],

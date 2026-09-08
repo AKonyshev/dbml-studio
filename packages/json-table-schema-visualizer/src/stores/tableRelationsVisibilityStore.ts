@@ -90,6 +90,20 @@ class TableRelationsVisibilityStore extends PersistableStore<
     return hiddenSet?.has(tableName) ?? false;
   }
 
+  /** Carry one table's hidden-relations flag to its new name. */
+  public renameKey(oldName: string, newName: string): void {
+    const key = this.activeKey ?? "default";
+    const hiddenSet = this.hiddenRelationsByKey.get(key);
+    if (hiddenSet == null || !hiddenSet.has(oldName)) {
+      return;
+    }
+
+    hiddenSet.delete(oldName);
+    hiddenSet.add(newName);
+    this.persist(key, this.getCurrentState());
+    eventEmitter.emit(RELATIONS_TOGGLE_EVENT);
+  }
+
   private getCurrentState(): Record<string, boolean> {
     const key = this.activeKey ?? "default";
     const hiddenSet = this.hiddenRelationsByKey.get(key);

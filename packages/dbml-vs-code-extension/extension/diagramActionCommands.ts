@@ -24,4 +24,5 @@ export const DIAGRAM_ACTION_COMMANDS: ReadonlyArray<
   ["dbmlStudio.tableDetailLevel", "tableDetailLevel"],
   ["dbmlStudio.resetTableDetailLevels", "resetTableDetailLevels"],
   ["dbmlStudio.showShortcuts", "legend"],
+  ["dbmlStudio.quickEdit", "quickEdit"],
 ];

@@ -8,6 +8,7 @@ import { useTableWidth } from "@/hooks/table";
 import { useIsColumnHighlighted } from "@/hooks/hover";
 import { useIsColumnFocused } from "@/hooks/columnFocus";
 import { focusColumn } from "@/stores/currentTarget";
+import { openQuickEdit } from "@/stores/quickEditStore";
 import { useThemeColors } from "@/hooks/theme";
 
 interface ColumnWrapperProps {
@@ -38,7 +39,21 @@ const ColumnWrapper = ({
     // Without this the same click also reaches the table's drag and its
     // selection, and the column would lose the focus it just took.
     event.cancelBubble = true;
-    focusColumn(tableName, columnName);
+    focusColumn(tableName, columnName, offsetY ?? 0);
+  };
+
+  // The mouse's way to what `F2` does. A table header's double-click is already
+  // taken by its detail level, which is why renaming a table has no equivalent.
+  const handleDoubleClick = (
+    event: KonvaEventObject<MouseEvent | TouchEvent>,
+  ): void => {
+    event.cancelBubble = true;
+    focusColumn(tableName, columnName, offsetY ?? 0);
+    openQuickEdit({
+      table: tableName,
+      field: columnName,
+      offsetY: offsetY ?? 0,
+    });
   };
 
   const handleOnHover = () => {
@@ -64,6 +79,8 @@ const ColumnWrapper = ({
       onMouseLeave={handleOnLeave}
       onClick={handleClick}
       onTap={handleClick}
+      onDblClick={handleDoubleClick}
+      onDblTap={handleDoubleClick}
       y={offsetY}
     >
       <Rect
