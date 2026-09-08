@@ -1,6 +1,6 @@
 import { Parser } from "@dbml/core";
 
-import { getTableFullName } from "../computeNameWithSchemaName";
+import { computeNameWithSchemaName } from "../computeNameWithSchemaName";
 import { METAINFO_END, METAINFO_START } from "../metainfo";
 
 import { resolveFieldRange } from "./fieldRange";
@@ -121,7 +121,11 @@ export const buildSourceIndex = (text: string): SourceIndex => {
         );
       }
 
-      const fullName = getTableFullName(table);
+      // `getTableFullName` reads `table.schemaName`, which the raw JSON shape
+      // carries and the parsed model does not: here the schema is the object
+      // holding the table. The qualified name has to match the one the diagram
+      // uses, or nothing in the index can be found by it.
+      const fullName = computeNameWithSchemaName(table.name, schema.name);
 
       tables.push({
         fullName,
