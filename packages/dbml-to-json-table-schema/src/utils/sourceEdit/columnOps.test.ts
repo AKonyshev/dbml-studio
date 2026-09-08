@@ -165,6 +165,38 @@ describe("planColumnEdit", () => {
   });
 });
 
+describe("planColumnEdit when a name is not enough to aim by", () => {
+  const twice = [
+    "Table users {",
+    "  id integer [pk]",
+    "  note varchar",
+    "  note text",
+    "}",
+    "",
+  ].join("\n");
+
+  it("refuses rather than editing the first of two columns of one name", () => {
+    expect(
+      planColumnEdit(twice, buildSourceIndex(twice), {
+        kind: "replaceField",
+        table: "users",
+        field: "note",
+        text: "note varchar [note: 'x']",
+      }),
+    ).toEqual({ ok: false, reason: { code: "ambiguousField" } });
+  });
+
+  it("still edits a column whose name the table holds once", () => {
+    const result = planColumnEdit(twice, buildSourceIndex(twice), {
+      kind: "deleteField",
+      table: "users",
+      field: "id",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+});
+
 describe("planColumnEdit on a file written with CRLF", () => {
   const windows = [
     "Table users {",

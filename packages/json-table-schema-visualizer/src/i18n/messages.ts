@@ -103,6 +103,8 @@ export const MESSAGES_EN = {
     "A column cannot be empty. Use Ctrl+Delete to remove it.",
   "quickEdit.tableNotFound": "That table is no longer in the document.",
   "quickEdit.fieldNotFound": "That column is no longer in the document.",
+  "quickEdit.ambiguousField":
+    "The table has more than one column of that name. Rename one in the text editor first.",
   "action.quickEdit": "Edit the column, or rename the table",
 } as const;
 

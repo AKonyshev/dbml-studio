@@ -100,5 +100,7 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "quickEdit.emptyText": "列不能为空。按 Ctrl+Delete 删除。",
   "quickEdit.tableNotFound": "文档中已没有该表。",
   "quickEdit.fieldNotFound": "文档中已没有该列。",
+  "quickEdit.ambiguousField":
+    "该表中有多个同名列。请先在文本编辑器中重命名其中一个。",
   "action.quickEdit": "编辑列或重命名表",
 };

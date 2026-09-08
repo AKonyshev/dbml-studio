@@ -23,6 +23,7 @@ export type EditOperation =
 export type EditRejection =
   | { code: "tableNotFound" }
   | { code: "fieldNotFound" }
+  | { code: "ambiguousField" }
   | { code: "atBoundary" }
   | { code: "emptyText" }
   | { code: "nameTaken"; name: string }

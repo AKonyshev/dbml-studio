@@ -105,5 +105,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
     "Колонка не может быть пустой. Чтобы удалить, нажмите Ctrl+Delete.",
   "quickEdit.tableNotFound": "Такой таблицы в документе больше нет.",
   "quickEdit.fieldNotFound": "Такой колонки в документе больше нет.",
+  "quickEdit.ambiguousField":
+    "В таблице несколько колонок с таким именем. Переименуйте одну в текстовом редакторе.",
   "action.quickEdit": "Править колонку или переименовать таблицу",
 };
