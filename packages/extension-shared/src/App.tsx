@@ -30,7 +30,7 @@ const App = () => {
   // page in daylight colours around the diagram.
   useThemeClass(theme);
 
-  const { schema, key, schemaErrorMessage, rawContent } = useSchema();
+  const { schema, key, schemaErrorMessage, rawContent, editable } = useSchema();
   useHostActions();
   useReportTypingFocus();
   const supportsDbmlFileSync =
@@ -70,7 +70,11 @@ const App = () => {
       syncEffects={
         supportsDbmlFileSync
           ? () => (
-              <DbmlFileSyncEffects rawContent={rawContent} documentKey={key} />
+              <DbmlFileSyncEffects
+                rawContent={rawContent}
+                documentKey={key}
+                editable={editable}
+              />
             )
           : undefined
       }

@@ -21,6 +21,7 @@ const readBootstrapSchema = (): {
   key: string | null;
   schemaErrorMessage: string | null;
   rawContent: string | null;
+  editable: boolean;
 } => {
   const schemaMessage = window.__SCHEMA_BOOTSTRAP__;
   const errorMessage = window.__SCHEMA_ERROR_BOOTSTRAP__;
@@ -34,6 +35,7 @@ const readBootstrapSchema = (): {
       key: typeof errorMessage.key === "string" ? errorMessage.key : null,
       schemaErrorMessage: errorMessage.message,
       rawContent: null,
+      editable: false,
     };
   }
 
@@ -50,6 +52,7 @@ const readBootstrapSchema = (): {
         typeof schemaMessage.rawContent === "string"
           ? schemaMessage.rawContent
           : null,
+      editable: schemaMessage.editable === true,
     };
   }
 
@@ -58,6 +61,7 @@ const readBootstrapSchema = (): {
     key: null,
     schemaErrorMessage: null,
     rawContent: null,
+    editable: false,
   };
 };
 
@@ -69,6 +73,7 @@ const applySchemaMessage = (
     setSchemaKey: (key: string | null) => void;
     setSchemaErrorMessage: (message: string | null) => void;
     setRawContent: (content: string | null) => void;
+    setEditable: (editable: boolean) => void;
   },
 ): void => {
   if (
@@ -93,6 +98,7 @@ const applySchemaMessage = (
 
   setters.setSchema(message.payload);
   setters.setSchemaErrorMessage(null);
+  setters.setEditable(message.editable === true);
   if (typeof message.rawContent === "string") {
     setters.setRawContent(message.rawContent);
   }
@@ -103,6 +109,7 @@ export const useSchema = (): {
   key: string | null;
   schemaErrorMessage: string | null;
   rawContent: string | null;
+  editable: boolean;
 } => {
   const bootstrap = readBootstrapSchema();
   const [schemaErrorMessage, setSchemaErrorMessage] = useState<string | null>(
@@ -115,6 +122,7 @@ export const useSchema = (): {
   const [rawContent, setRawContent] = useState<string | null>(
     bootstrap.rawContent,
   );
+  const [editable, setEditable] = useState<boolean>(bootstrap.editable);
   const schemaKeyRef = useRef<string | null>(bootstrap.key);
 
   useLayoutEffect(() => {
@@ -138,6 +146,7 @@ export const useSchema = (): {
         setSchemaKey,
         setSchemaErrorMessage,
         setRawContent,
+        setEditable,
       });
     };
 
@@ -154,5 +163,5 @@ export const useSchema = (): {
     };
   }, []);
 
-  return { schema, key: schemaKey, schemaErrorMessage, rawContent };
+  return { schema, key: schemaKey, schemaErrorMessage, rawContent, editable };
 };

@@ -1,8 +1,10 @@
 import { useDbmlMetaInfoSync } from "../hooks/dbmlMetaInfoSync";
+import { useDiagramEditingHost } from "../hooks/diagramEditingHost";
 
 interface DbmlFileSyncEffectsProps {
   rawContent: string | null;
   documentKey: string | null;
+  editable: boolean;
 }
 
 // Writes table positions back into the open file. Hiding a table's relations is
@@ -11,8 +13,10 @@ interface DbmlFileSyncEffectsProps {
 const DbmlFileSyncEffects = ({
   rawContent,
   documentKey,
+  editable,
 }: DbmlFileSyncEffectsProps) => {
   useDbmlMetaInfoSync(true, rawContent, documentKey);
+  useDiagramEditingHost(editable, rawContent, documentKey);
 
   return null;
 };
