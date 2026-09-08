@@ -172,8 +172,21 @@ suite("an edit from the diagram reaches the document", () => {
         "more than the edited range was written",
       );
 
-      // One undo, not several: the edit is a workspace edit over the ranges
-      // that changed, rather than a rewrite of the whole file.
+      // The diagram goes first, so that `undo` cannot land in it. A custom
+      // editor takes the command when it has focus, and the tests either side
+      // of this one leave focus in the page: they drive the canvas with a real
+      // mouse. Closing it leaves the text editor as the only thing that can
+      // answer, which is what this test is asking about.
+      const diagramTab = vscode.window.tabGroups.all
+        .flatMap((group) => group.tabs)
+        .find(
+          (tab) =>
+            (tab.input as { viewType?: string } | undefined)?.viewType ===
+            "dbml-studio-diagram",
+        );
+      if (diagramTab !== undefined) {
+        await vscode.window.tabGroups.close(diagramTab);
+      }
       await vscode.window.showTextDocument(document);
       await vscode.commands.executeCommand("undo");
       await waitFor(

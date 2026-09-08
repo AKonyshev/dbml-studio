@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **A renamed table no longer flies off and comes back.** Its position was applied by an effect, and an effect runs after the first paint — so a table appearing mid-session, which is exactly what a rename makes it do, was drawn once at the top-left corner and jumped to its place on the next frame. The position is now part of the first paint. Measured rather than eyeballed: the table's own position is sampled on every animation frame through a rename, and the diagram's pan is sampled with it so that a moving view cannot be mistaken for a moving table.
+
 - **Auto-arrange moves a dragged table back.** Drag a table, press `L`, and it stayed where you dropped it whenever the layout wanted it exactly where it had been before the drag — which is every time on a file whose layout auto-arrange itself produced. A table applied its position only when the numbers changed, and the drag had changed the canvas without changing its numbers. It now re-applies its position whenever the diagram is laid out again, equal numbers or not.
 
 - **Editing chains work, and a collision cannot hurt a neighbour.** `Ctrl+Enter` used to fail whenever the line had actually changed, because the follow-up aimed at the column's old name with its old text; it now follows the name the file reports. `Tab` moves to the row drawn below, as documented, rather than closing. `Ctrl+Up`/`Ctrl+Down` take the box along with the row. Renaming a table onto a name another table holds is refused _before_ that table's saved position could be touched. And a rename no longer re-frames the whole diagram on its way through.

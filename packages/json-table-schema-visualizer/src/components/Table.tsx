@@ -84,6 +84,9 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   // change and an effect keyed on them never fires, and the node stays where it
   // was dragged. The store hands out a fresh object every time it lays the
   // diagram out again, so that is what to watch.
+  //
+  // The position itself is a prop above; what this adds is telling the
+  // connections, which have no other way to learn that the table moved.
   useEffect(() => {
     if (tableRef.current != null) {
       tableRef.current.x(tableX);
@@ -228,6 +231,18 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     <Group
       name={`table-${name.replace(/\s+/g, "_")}`}
       ref={tableRef}
+      // Where the table is, declared rather than only applied afterwards. The
+      // effect below cannot place the *first* paint: it runs after it, so a
+      // table appearing mid-session — which is what a rename does, since the
+      // new name is a new React key — was drawn once at the origin and jumped
+      // to its place on the next frame. Measured: the node sits at 0,0 for a
+      // frame or two while the stage never moves, which is exactly what the
+      // reader sees fly to the left and come back.
+      //
+      // Safe alongside the drag: `handleOnDrag` writes the node's position to
+      // the store on every move, so these props and the node agree throughout.
+      x={tableX}
+      y={tableY}
       draggable
       onDragStart={handleOnDragStart}
       onDragMove={handleOnDrag}
