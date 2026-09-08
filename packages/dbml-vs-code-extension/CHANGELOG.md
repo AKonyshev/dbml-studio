@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **The diagram shows an edit straight away.** A changed column or table name only appeared after the file was saved. The write was being marked as the diagram's own — a mark that exists so the diagram does not redraw from its own write-back of table positions — and that mark suppressed the redraw a field edit needs. Editing a field no longer claims it, so the name changes under the pointer while the file is still unsaved.
+
 - **Clicking away closes the edit box.** It applied only on `Enter` before, so a click elsewhere left the box open over the diagram. It now behaves like a spreadsheet cell: clicking anywhere else applies what you typed and closes, `Escape` still throws it away, and text that will not parse keeps the box open with its reason rather than losing your typing.
 
 - **Editing understands the schemas people actually write.** Three shapes a hand-written test schema never has and a real one always does. A table whose whole qualified name is one quoted string (`Table "sch.orders"`) is renamed without losing the schema or the quotes. Relations written as `"sch.a"."id" < "sch.b"."a_id"` are found and follow the rename; before they were invisible, and a rename left the file unparseable. And a file carrying an index that names a column nobody declared — which the diagram has always drawn without complaint — no longer refuses every edit in it with an error about a table you never touched.

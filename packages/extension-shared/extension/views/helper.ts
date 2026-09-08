@@ -191,13 +191,13 @@ export class WebviewHelper {
               );
             }
 
-            options.onApplyingDbmlEdit?.(true);
-            const written = await workspace.applyEdit(edit);
-            setTimeout(() => {
-              options.onApplyingDbmlEdit?.(false);
-            }, 600);
-
-            return written;
+            // Deliberately without `onApplyingDbmlEdit`, which the position
+            // sync raises to stop the diagram redrawing from its own
+            // write-back. A field edit is the opposite case: the schema has
+            // changed and only the document knows how, so the diagram has to
+            // hear about it — raising the flag here left the new name invisible
+            // until the reader saved the file.
+            return await workspace.applyEdit(edit);
           },
         }),
     );

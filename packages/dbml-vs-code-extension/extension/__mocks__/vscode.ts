@@ -121,6 +121,19 @@ export class Range {
   ) {}
 }
 
+/** Enough of a `WorkspaceEdit` to record what a test's code asked for. */
+export class WorkspaceEdit {
+  public readonly replacements: Array<{
+    uri: unknown;
+    range: Range;
+    text: string;
+  }> = [];
+
+  public replace(uri: unknown, range: Range, text: string): void {
+    this.replacements.push({ uri, range, text });
+  }
+}
+
 export const DiagnosticSeverity = { Error: 0 } as const;
 
 export class Diagnostic {
