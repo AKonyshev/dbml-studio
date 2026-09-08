@@ -81,6 +81,14 @@ export const useDiagramEditingHost = (
 
     return () => {
       window.removeEventListener("message", onMessage);
+      // The listener that would have answered these is going away, so answer
+      // them here. A popup awaiting a reply that can no longer arrive would
+      // wait for the life of the page — the host side already promises that
+      // every path answers, and this is the page side of that promise.
+      for (const answer of pending.values()) {
+        answer({ ok: false, reason: { code: "notEditable" } });
+      }
+      pending.clear();
       setDiagramEditingHost(null);
     };
   }, [editable, documentKey]);
