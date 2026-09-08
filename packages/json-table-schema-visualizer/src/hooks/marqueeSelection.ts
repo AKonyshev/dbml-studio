@@ -6,6 +6,7 @@ import type { Stage as CoreStage } from "konva/lib/Stage";
 import type { XYWHPosition } from "@/types/positions";
 
 import { useIsSelectMode } from "@/hooks/selection";
+import { columnFocusStore } from "@/stores/columnFocusStore";
 import { selectionStore } from "@/stores/selectionStore";
 import { clearCurrentTarget, selectTables } from "@/stores/currentTarget";
 import {
@@ -87,9 +88,13 @@ export const useMarqueeSelection = ({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      // Nothing pointed at, of either kind, means the key is not ours to spend.
+      const nothingToClear =
+        selectionStore.getSelected().size === 0 &&
+        columnFocusStore.get() === null;
       if (
         event.key !== "Escape" ||
-        selectionStore.getSelected().size === 0 ||
+        nothingToClear ||
         // The one definition of "the reader is busy with this key" — see
         // `isTypingTarget`. Escape in the editor beside the diagram means
         // "dismiss what you are showing me", not "drop my selection".

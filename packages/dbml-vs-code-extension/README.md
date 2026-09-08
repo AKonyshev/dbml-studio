@@ -73,7 +73,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.
 
-`F2` aims at whatever the pointer is on: a column edits that column, anywhere else on a table renames the table. This is the same habit `H` and `T` already have. With the pointer off the diagram it falls back to the last column you clicked, or to a single selected table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
+`F2` aims at whatever the pointer is on: a column edits that column, anywhere else on a table renames the table — a column you clicked earlier and left outlined does not get in the way. Click empty canvas or press `Escape` to drop that outline. This is the same habit `H` and `T` already have. With the pointer off the diagram it falls back to the last column you clicked, or to a single selected table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
 
 Only the ranges you changed are written, so one undo takes back one edit and the rest of your file is untouched. Text that would not parse is refused before it reaches the file, with the parser's own message. A schema that has never been saved offers no editing at all; a file that cannot be written to says so when you apply.
 

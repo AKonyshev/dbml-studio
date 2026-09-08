@@ -51,7 +51,7 @@ The diagram's own level and a single table's, side by side — and **neither wri
 
 The one thing here that **does** write to the file. Automated where it can be: the pure planning is unit-tested, the key map is unit-tested, and one integration suite proves a request from the page turns into a workspace edit that a single undo takes back. What is left below is the part that needs eyes.
 
-1. Click a column: it gets an outline, and any selected tables lose theirs. Click a table: the column loses its outline.
+1. Click a column: it gets an outline, and any selected tables lose theirs. Click a table, click empty canvas, or press **Escape**: the column loses its outline. To rename the table you do not need to: point at its header and press **F2**, the pointer wins over the outlined column.
 2. Press **F2**, or double-click the column. A box opens on the column holding the line exactly as it stands in the file, indentation stripped, comment and inline `ref` and all.
 3. Type a change and press **Enter**. Only that line changes in the text editor beside it; nothing else moves and the file stays dirty rather than saving itself.
 4. Press **Ctrl/Cmd+Z** in the text editor: one press takes the whole edit back.
