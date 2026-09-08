@@ -2,7 +2,7 @@
 // and the coordinates store reaches it through the layout helper.
 import {
   forgetRenames,
-  predictRenamedFullName,
+  isTableKnown,
   reconcileAfterSchemaChange,
   recordRename,
   renameTableState,
@@ -159,7 +159,7 @@ describe("mirroring an undone rename", () => {
   });
 });
 
-describe("carrying the position before the write", () => {
+describe("what a re-key tells the diagram", () => {
   beforeEach(() => {
     localStorage.clear();
     forgetRenames();
@@ -168,59 +168,46 @@ describe("carrying the position before the write", () => {
     tableRelationsVisibilityStore.switchTo("doc-3");
   });
 
-  // The order is the whole point. A table reads its position once, when it is
-  // drawn, and the new schema draws it under the new name — so a position moved
-  // after the write is never read and the table lands in the corner.
-  it("has the position under the new name before anything is written", () => {
-    tableCoordsStore.setCoords("acl.analysis", { x: 300, y: 120 });
-
-    renameTableState("acl.analysis", predictRenamedFullName("acl.analysis1"));
-
-    expect(tableCoordsStore.getCoords("acl.analysis1")).toMatchObject({
-      x: 300,
-      y: 120,
-    });
-  });
-
-  it("puts it back when the write is refused", () => {
-    tableCoordsStore.setCoords("acl.analysis", { x: 300, y: 120 });
-    const predicted = predictRenamedFullName("acl.analysis1");
-
-    renameTableState("acl.analysis", predicted);
-    renameTableState(predicted, "acl.analysis", { announce: true });
-
-    expect(tableCoordsStore.getCoords("acl.analysis")).toMatchObject({
-      x: 300,
-      y: 120,
-    });
-    expect(tableCoordsStore.getAllCoords().has("acl.analysis1")).toBe(false);
-  });
-
-  it("corrects a guess the host disagrees with", () => {
-    tableCoordsStore.setCoords("analytics.users", { x: 40, y: 50 });
-    // The reader typed a bare name for a schema-qualified table.
-    const predicted = predictRenamedFullName("accounts");
-
-    renameTableState("analytics.users", predicted);
-    renameTableState(predicted, "analytics.accounts", { announce: true });
-
-    expect(tableCoordsStore.getCoords("analytics.accounts")).toMatchObject({
-      x: 40,
-      y: 50,
-    });
-  });
-
-  it("tells the diagram to look again when it corrects late", () => {
-    const listener = jest.fn();
-    const unsubscribe = tableCoordsStore.subscribeToReset(listener);
+  // A table reads its position when it is drawn and then listens. A rename
+  // that happened after it was drawn under the new name has to be heard by it,
+  // or it sits in the corner — but the *reset* event re-frames the whole
+  // view, which a rename must not do.
+  it("reaches the tables without re-framing the view", () => {
+    const tables = jest.fn();
+    const framing = jest.fn();
+    const stopTables = tableCoordsStore.subscribeToPositions(tables);
+    const stopFraming = tableCoordsStore.subscribeToReset(framing);
     tableCoordsStore.setCoords("a", { x: 1, y: 2 });
 
     renameTableState("a", "b");
-    expect(listener).not.toHaveBeenCalled();
 
-    renameTableState("b", "c", { announce: true });
-    expect(listener).toHaveBeenCalled();
+    expect(tables).toHaveBeenCalled();
+    expect(framing).not.toHaveBeenCalled();
 
-    unsubscribe();
+    stopTables();
+    stopFraming();
+  });
+
+  it("says whether the diagram already files state under a name", () => {
+    tableCoordsStore.setCoords("taken", { x: 1, y: 2 });
+
+    expect(isTableKnown("taken")).toBe(true);
+    expect(isTableKnown("free")).toBe(false);
+  });
+
+  // The rename is carried ahead of the write only onto a free name. Carried
+  // onto a name another table holds, it would overwrite that table's state
+  // before the host had a chance to refuse the collision.
+  it("is not carried onto another table's name", () => {
+    tableCoordsStore.setCoords("a", { x: 1, y: 2 });
+    tableCoordsStore.setCoords("b", { x: 9, y: 9 });
+
+    // What the popup does: ask first, carry only when free.
+    if (!isTableKnown("b")) {
+      renameTableState("a", "b");
+    }
+
+    expect(tableCoordsStore.getCoords("b")).toMatchObject({ x: 9, y: 9 });
+    expect(tableCoordsStore.getCoords("a")).toMatchObject({ x: 1, y: 2 });
   });
 });

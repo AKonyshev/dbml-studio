@@ -1,4 +1,4 @@
-import { commands } from "vscode";
+import { commands, FilePermission, workspace } from "vscode";
 import {
   DiagramView,
   type DiagramViewDeps,
@@ -296,6 +296,33 @@ describe("telling the diagram whether it may edit", () => {
     expect(panel.webview.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "setSchema", editable: false }),
     );
+
+    view.dispose();
+  });
+});
+
+describe("a read-only file", () => {
+  test("is reported not editable once the file system has said so", async () => {
+    (workspace.fs.stat as jest.Mock).mockResolvedValueOnce({
+      permissions: FilePermission.Readonly,
+    });
+    const panel = makePanel();
+    const view = new DiagramView(
+      panel as never,
+      makeDocument("file:///locked.dbml", "Table a {}") as never,
+      makeDeps(() => emptySchema),
+    );
+    panel.listeners.message({ command: "WEBVIEW_READY" });
+
+    // The stat answers on a later tick; the refresh it triggers is what
+    // carries the corrected flag.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const posted = (panel.webview.postMessage as jest.Mock).mock.calls.map(
+      ([message]) => message as { type?: string; editable?: boolean },
+    );
+    const last = [...posted].reverse().find((m) => m.type === "setSchema");
+    expect(last?.editable).toBe(false);
 
     view.dispose();
   });

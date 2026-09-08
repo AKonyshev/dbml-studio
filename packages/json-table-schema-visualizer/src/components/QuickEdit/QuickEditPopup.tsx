@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { commitOperationFor, quickEditIntent } from "./quickEditIntent";
-import { useQuickEditPosition } from "./useQuickEditPosition";
+import { MIN_POPUP_WIDTH, useQuickEditPosition } from "./useQuickEditPosition";
 
-import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
+import type {
+  EditOperation,
+  EditOutcome,
+  EditRejection,
+} from "shared/types/diagramEdit";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import { FONT_FAMILY } from "@/constants/font";
@@ -16,16 +20,23 @@ import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import {
   closeQuickEdit,
   getQuickEditTarget,
+  openQuickEdit,
   subscribeQuickEdit,
+  type QuickEditTarget,
 } from "@/stores/quickEditStore";
 import {
-  predictRenamedFullName,
+  isTableKnown,
   recordRename,
   renameTableState,
 } from "@/stores/renameReconcile";
+import {
+  getSchemaVersion,
+  isDrawnAtFullDetail,
+  nextDrawnField,
+  subscribeSchema,
+} from "@/stores/schemaIndexStore";
 
 const NEW_COLUMN_TEXT = "new_column varchar";
-const MIN_POPUP_WIDTH = 200;
 
 /**
  * A rejection in the reader's own language, with the parser's own words kept
@@ -40,6 +51,16 @@ const messageForRejection = (reason: EditRejection): string => {
   return t(`quickEdit.${reason.code}` as MessageKey);
 };
 
+const currentTextOf = (target: QuickEditTarget): string => {
+  if (target.field === undefined) {
+    return target.table;
+  }
+
+  return (
+    getDiagramEditingHost()?.readFieldText(target.table, target.field) ?? ""
+  );
+};
+
 /**
  * Editing one column, or one table's name, as the text that is in the file.
  *
@@ -48,7 +69,8 @@ const messageForRejection = (reason: EditRejection): string => {
  * makes the extension's typing-focus guard fire, which is what keeps the
  * workbench's bare-letter shortcuts off the keyboard while a name is typed.
  *
- * Which key means what lives in `quickEditIntent`, where it can be tested.
+ * Which key means what lives in `quickEditIntent`; what the key aims at lives
+ * in `quickEditTarget`. Both are tested without this component.
  */
 const QuickEditPopup = (): JSX.Element | null => {
   const target = useSyncExternalStore(
@@ -56,39 +78,45 @@ const QuickEditPopup = (): JSX.Element | null => {
     getQuickEditTarget,
     getQuickEditTarget,
   );
+  const schemaVersion = useSyncExternalStore(
+    subscribeSchema,
+    getSchemaVersion,
+    getSchemaVersion,
+  );
   const position = useQuickEditPosition(target);
+  const themeColors = useThemeColors();
   const [text, setText] = useState("");
   const [original, setOriginal] = useState("");
   const [error, setError] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const themeColors = useThemeColors();
-  // Read by the pointer listener below, which is registered once and must not
-  // be looking at the text as it was when it was registered.
-  const commitRef = useRef<() => Promise<boolean>>(async () => true);
+  const commitRef = useRef<() => Promise<EditOutcome | null>>(async () => null);
 
+  /**
+   * Load the text when the box opens, and again when a schema arrives — but
+   * only while the reader has not typed. A box opened on a column that was
+   * just added has nothing to show until the document after that edit has
+   * come back; a box the reader is already typing into is theirs.
+   */
   useEffect(() => {
     if (target === null) {
       return;
     }
 
-    const host = getDiagramEditingHost();
-    const current =
-      target.field === undefined
-        ? target.table
-        : host?.readFieldText(target.table, target.field) ?? "";
-
-    setText(current);
+    const current = currentTextOf(target);
+    setText((typed) => (typed === original ? current : typed));
     setOriginal(current);
     setError(null);
-  }, [target]);
+    // `original` is the previous load and is compared against on purpose; it
+    // must not re-run this when it changes.
+  }, [target, schemaVersion]);
 
   /**
    * Grow to whatever the text needs.
    *
    * A column's line is longer than the table is wide once its settings and note
    * are in it, so the field wraps — and a fixed height showed the first wrapped
-   * line and hid the rest, which reads as the box having lost the text.
+   * line and hid the rest, which read as the box having lost the text.
    */
   useEffect(() => {
     const input = inputRef.current;
@@ -120,8 +148,8 @@ const QuickEditPopup = (): JSX.Element | null => {
         return;
       }
 
-      void commitRef.current().then((applied) => {
-        if (applied) closeQuickEdit();
+      void commitRef.current().then((outcome) => {
+        if (outcome?.ok === true) closeQuickEdit();
       });
     };
 
@@ -136,71 +164,74 @@ const QuickEditPopup = (): JSX.Element | null => {
     return null;
   }
 
-  const send = async (operation: EditOperation): Promise<boolean> => {
+  /**
+   * Ask the host for one change, and keep the diagram's own state in step.
+   *
+   * A rename carries the table's saved position, detail level and hidden
+   * relations to the new name. It is carried *ahead* of the write whenever that
+   * is safe, because the write sends a new schema and the diagram draws the
+   * table under its new name — and a table reads its position when it is
+   * drawn. Not safe when the diagram already files something under the new
+   * name: the host's collision check has not run yet, and carrying over it
+   * would overwrite another table's state. Then the move waits for the reply,
+   * and the store's re-key event has the drawn table read its position again.
+   */
+  const send = async (
+    operation: EditOperation,
+    expectedText?: string,
+  ): Promise<EditOutcome | null> => {
     const host = getDiagramEditingHost();
     if (host === null) {
-      return false;
+      return null;
     }
 
-    // A rename moves the table's saved position, detail level and hidden
-    // relations to the new name — and it has to happen *before* the write. The
-    // write changes the document, the document sends a new schema, and the
-    // diagram draws the table under its new name; a table reads its position
-    // once, when it is drawn, so a position that arrives afterwards is never
-    // seen and the table sits in the corner. Refused, it is put straight back.
-    const predicted =
-      operation.kind === "renameTable"
-        ? predictRenamedFullName(operation.newName)
-        : null;
-    if (predicted !== null && operation.kind === "renameTable") {
-      renameTableState(operation.table, predicted);
+    let carried: string | null = null;
+    if (operation.kind === "renameTable") {
+      const guess = operation.newName.trim();
+      if (guess !== operation.table && !isTableKnown(guess)) {
+        renameTableState(operation.table, guess);
+        carried = guess;
+      }
     }
 
-    const outcome = await host.submit(
-      operation,
-      operation.kind === "renameTable" ? undefined : original,
-    );
+    const outcome = await host.submit(operation, expectedText);
 
     if (!outcome.ok) {
-      if (predicted !== null && operation.kind === "renameTable") {
-        renameTableState(predicted, operation.table, { announce: true });
+      if (carried !== null) {
+        renameTableState(carried, operation.table);
+      }
+      if (outcome.reason.code === "staleText") {
+        // Offered by doing it: the box now holds the line as it stands, and
+        // the message says why the typed one was not taken.
+        const current = currentTextOf(target);
+        setText(current);
+        setOriginal(current);
       }
       setError(messageForRejection(outcome.reason));
 
-      return false;
+      return outcome;
     }
 
     setError(null);
 
     if (operation.kind === "renameTable") {
-      // The host decides the real name — a schema prefix may survive that the
-      // guess above dropped. Correcting late means the table may already be
-      // drawn, so this one announces.
-      if (predicted !== null && predicted !== outcome.table) {
-        renameTableState(predicted, outcome.table, { announce: true });
-      }
+      // The host decides the real name; a guess may differ on a schema prefix.
+      renameTableState(carried ?? operation.table, outcome.table);
       recordRename(operation.table, outcome.table);
     }
 
-    if (outcome.field !== undefined) {
-      // A column added below sits one row further down; anything else is the
-      // row the popup is already on.
-      const offsetY =
-        operation.kind === "insertFieldAfter"
-          ? target.offsetY + COLUMN_HEIGHT
-          : target.offsetY;
-      focusColumn(outcome.table, outcome.field, offsetY);
-    }
-
-    return true;
+    return outcome;
   };
 
-  const commit = async (): Promise<boolean> => {
+  const commit = async (): Promise<EditOutcome | null> => {
     if (text === original) {
-      return true;
+      return { ok: true, table: target.table, field: target.field };
     }
 
-    return await send(commitOperationFor(target, text));
+    return await send(
+      commitOperationFor(target, text),
+      target.field === undefined ? undefined : original,
+    );
   };
 
   commitRef.current = commit;
@@ -222,38 +253,86 @@ const QuickEditPopup = (): JSX.Element | null => {
     }
 
     if (intent.kind === "delete" && target.field !== undefined) {
-      await send({
+      const outcome = await send({
         kind: "deleteField",
         table: target.table,
         field: target.field,
       });
-      closeQuickEdit();
+      if (outcome?.ok === true) closeQuickEdit();
 
       return;
     }
 
     if (intent.kind === "move" && target.field !== undefined) {
-      await send({
+      const outcome = await send({
         kind: "moveField",
         table: target.table,
         field: target.field,
         direction: intent.direction,
       });
+      if (outcome?.ok !== true) return;
+
+      // The box follows the row it is editing.
+      const offsetY =
+        target.offsetY +
+        (intent.direction === "up" ? -COLUMN_HEIGHT : COLUMN_HEIGHT);
+      focusColumn(target.table, target.field, offsetY);
+      openQuickEdit({ table: target.table, field: target.field, offsetY });
 
       return;
     }
 
-    if (!(await commit())) {
+    const committed = await commit();
+    if (committed?.ok !== true) {
       return;
     }
 
-    if (intent.kind === "commitAndAddBelow" && target.field !== undefined) {
-      await send({
+    // The column may have been renamed in the same keystroke: everything after
+    // this aims at the name the host reports, not the one the box opened on.
+    const field = committed.field ?? target.field;
+
+    if (intent.kind === "commitAndAddBelow" && field !== undefined) {
+      const added = await send({
         kind: "insertFieldAfter",
         table: target.table,
-        field: target.field,
+        field,
         text: NEW_COLUMN_TEXT,
       });
+      if (added?.ok !== true || added.field === undefined) return;
+
+      // Rows are drawn only at full detail, so that is the only level at
+      // which a box can sit on the new one.
+      if (!isDrawnAtFullDetail(target.table)) {
+        closeQuickEdit();
+
+        return;
+      }
+
+      const offsetY = target.offsetY + COLUMN_HEIGHT;
+      focusColumn(target.table, added.field, offsetY);
+      openQuickEdit({ table: target.table, field: added.field, offsetY });
+
+      return;
+    }
+
+    if (intent.kind === "commitAndNext" && target.field !== undefined) {
+      // Looked up by the name the box opened on: the order of rows has not
+      // changed, whatever this one is now called.
+      const next = nextDrawnField(target.table, target.field);
+      if (next === null) {
+        closeQuickEdit();
+
+        return;
+      }
+
+      focusColumn(target.table, next.field, next.offsetY);
+      openQuickEdit({
+        table: target.table,
+        field: next.field,
+        offsetY: next.offsetY,
+      });
+
+      return;
     }
 
     closeQuickEdit();

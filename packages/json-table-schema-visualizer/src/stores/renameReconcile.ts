@@ -8,14 +8,11 @@ import { tableRelationsVisibilityStore } from "./tableRelationsVisibilityStore";
  * but it can be carried exactly rather than guessed at, because the rename came
  * from us and both names are known.
  *
- * Called only after the host confirms the write. A rejected rename must not
- * leave the stores describing a document that does not exist.
+ * Each store announces the move to the tables that draw from it, so a table
+ * already drawn under the new name reads its position again. Nothing on the
+ * canvas moves, and the view is not re-framed.
  */
-export const renameTableState = (
-  oldName: string,
-  newName: string,
-  options: { announce?: boolean } = {},
-): void => {
+export const renameTableState = (oldName: string, newName: string): void => {
   if (oldName === newName) {
     return;
   }
@@ -23,29 +20,17 @@ export const renameTableState = (
   tableCoordsStore.renameKey(oldName, newName);
   tableRelationsVisibilityStore.renameKey(oldName, newName);
   tableDetailLevelStore.renameKey(oldName, newName);
-
-  // Only when the diagram may already have drawn the table under its new name
-  // and found no position for it. Carried out *before* the write, which is the
-  // normal path, nothing has drawn yet and there is nothing to tell.
-  if (options.announce === true) {
-    tableCoordsStore.announcePositions();
-  }
 };
 
 /**
- * What the table will be called once the host has renamed it, as far as the
- * page can tell.
+ * Whether the diagram already files state under this name.
  *
- * A guess, and it has to be: only the host knows whether the qualified name the
- * reader edited has a schema of its own or is one quoted identifier with a dot
- * in it. It is right whenever the reader keeps the name they were shown, which
- * is the ordinary case, and the caller corrects it against the host's answer.
- *
- * It exists because the alternative is worse. The state has to move before the
- * write, or the new schema reaches the diagram first, the table is drawn under
- * a name nothing has coordinates for, and it lands in the corner.
+ * Asked before a rename is carried ahead of the write: carrying it onto a name
+ * another table holds would overwrite that table's state, and the host's own
+ * collision check has not run yet at that point.
  */
-export const predictRenamedFullName = (typed: string): string => typed.trim();
+export const isTableKnown = (name: string): boolean =>
+  tableCoordsStore.hasCoords(name);
 
 interface RenamePair {
   from: string;

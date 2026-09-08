@@ -68,7 +68,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 | `Ctrl+Enter`            | Apply, then add a column below             |
 | `Ctrl+Delete`           | Delete the column                          |
 | `Ctrl+Up` / `Ctrl+Down` | Move the column                            |
-| `Tab`                   | Apply and close                            |
+| `Tab`                   | Apply and move to the row below            |
 | `Escape`                | Throw the edit away                        |
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.

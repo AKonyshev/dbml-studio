@@ -11,6 +11,12 @@ import {
 import { tableCoordsStore } from "@/stores/tableCoords";
 import { viewportStore } from "@/stores/viewportStore";
 
+/**
+ * Narrower than this and a line of DBML is not worth reading in the box. Also
+ * what a table that has not been measured yet is assumed to be.
+ */
+export const MIN_POPUP_WIDTH = 200;
+
 export interface QuickEditRect {
   x: number;
   y: number;
@@ -46,7 +52,7 @@ export const useQuickEditPosition = (
     target.field === undefined
       ? TABLE_COLOR_HEIGHT
       : TABLE_HEADER_HEIGHT + target.offsetY;
-  const width = coords.w > 0 ? coords.w : 240;
+  const width = coords.w > 0 ? coords.w : MIN_POPUP_WIDTH;
 
   return {
     x: (coords.x + DIAGRAM_PADDING) * viewport.scale + viewport.x,

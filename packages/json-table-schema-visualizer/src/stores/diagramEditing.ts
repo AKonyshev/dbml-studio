@@ -1,7 +1,6 @@
 import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 
 export interface DiagramEditingHost {
-  isEditable: () => boolean;
   /** The current source text of one column, for the popup to open against. */
   readFieldText: (table: string, field: string) => string | null;
   submit: (

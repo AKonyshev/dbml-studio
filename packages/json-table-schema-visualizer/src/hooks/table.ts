@@ -40,7 +40,7 @@ export const useTablePositionContext = (): TablesPositionsContextValue => {
 export const useTableDefaultPosition = (tableName: string): XYPosition => {
   const tablesPositions = useSyncExternalStore(
     (callback) => {
-      return tableCoordsStore.subscribeToReset(callback);
+      return tableCoordsStore.subscribeToPositions(callback);
     },
     () => {
       return tableCoordsStore.getCoords(tableName);

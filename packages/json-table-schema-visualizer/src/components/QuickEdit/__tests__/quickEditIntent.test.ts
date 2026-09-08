@@ -50,8 +50,14 @@ describe("quickEditIntent", () => {
     expect(quickEditIntent({ key: "ArrowUp" }, true)).toBeNull();
   });
 
-  it("applies and closes on Tab", () => {
+  it("applies and moves to the next column on Tab", () => {
     expect(quickEditIntent({ key: "Tab" }, true)).toEqual({
+      kind: "commitAndNext",
+    });
+  });
+
+  it("has no next column when a table name is being edited, so Tab closes", () => {
+    expect(quickEditIntent({ key: "Tab" }, false)).toEqual({
       kind: "commitAndClose",
     });
   });

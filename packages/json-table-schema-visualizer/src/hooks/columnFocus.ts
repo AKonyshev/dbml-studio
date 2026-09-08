@@ -1,16 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 
-import {
-  columnFocusStore,
-  type FocusedColumn,
-} from "@/stores/columnFocusStore";
-
-export const useFocusedColumn = (): FocusedColumn | null =>
-  useSyncExternalStore(
-    columnFocusStore.subscribe,
-    columnFocusStore.get,
-    columnFocusStore.get,
-  );
+import { columnFocusStore } from "@/stores/columnFocusStore";
 
 /**
  * One boolean per column, which is what keeps moving the focus from

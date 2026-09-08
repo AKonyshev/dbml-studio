@@ -1,6 +1,4 @@
-import { Parser } from "@dbml/core";
-
-import { validateSchema } from "../../validators";
+import { parseDBMLToJSON } from "../../parseDbml";
 
 import { planColumnEdit } from "./columnOps";
 import { planRename } from "./renameOp";
@@ -42,15 +40,14 @@ const parseErrorOf = (error: unknown): EditRejection => {
 /**
  * The reason a candidate document cannot be written, or null if it is fine.
  *
- * "Fine" means exactly what it means to the rest of this product: the soft
- * parse the diagram uses, plus this package's own validators. Building the full
- * model instead would reject documents the diagram renders every day — an index
- * naming a column that is not there is enough — and it would reject them
- * wherever the reader was editing, naming a table they had not touched.
+ * "Fine" means exactly what it means to the rest of this product, so the
+ * product's own reader decides — not a re-implementation of its first two
+ * lines, which is what stood here for a day and had already drifted: it did
+ * not run the metainfo stage, and a rename edits that block by offset.
  */
 const parseFailureOf = (candidate: string): EditRejection | null => {
   try {
-    validateSchema(Parser.parseDBMLToJSON(candidate));
+    parseDBMLToJSON(candidate);
 
     return null;
   } catch (error) {

@@ -92,7 +92,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "md.columns": "| 名称 | 类型 | 说明 |",
   "md.relations": "关系：",
   "quickEdit.rejected": "未应用此修改。",
-  "quickEdit.staleText": "编辑期间文档已更改。请重新打开该列。",
+  "quickEdit.staleText":
+    "编辑期间文档已更改。输入框现在显示当前行；您的文本未应用。",
   "quickEdit.nameTaken": "该名称已被其他表使用。",
   "quickEdit.notEditable": "此文档无法编辑。",
   "quickEdit.atBoundary": "该列已在边缘。",

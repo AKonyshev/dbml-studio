@@ -15,7 +15,7 @@ const DbmlFileSyncEffects = ({
   documentKey,
   editable,
 }: DbmlFileSyncEffectsProps) => {
-  useDbmlMetaInfoSync(true, rawContent, documentKey);
+  useDbmlMetaInfoSync(true, documentKey);
   useDiagramEditingHost(editable, rawContent, documentKey);
 
   return null;

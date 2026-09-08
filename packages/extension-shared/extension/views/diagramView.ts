@@ -1,4 +1,5 @@
 import {
+  FilePermission,
   Diagnostic,
   type DiagnosticCollection,
   DiagnosticSeverity,
@@ -137,6 +138,7 @@ export class DiagramView implements Disposable {
     );
 
     this.refresh();
+    void this.learnReadOnly();
   }
 
   public get isActive(): boolean {
@@ -182,8 +184,30 @@ export class DiagramView implements Disposable {
     return (
       !this.document.isUntitled &&
       !this.document.isClosed &&
+      !this.readOnly &&
       this.document.languageId === this.deps.fileExt
     );
+  }
+
+  /**
+   * Whether the file system will refuse a write, asked once when the view is
+   * made. A refusal before the reader reaches for a column is kinder than one
+   * after they have typed a line, and only `stat` can say so — the document
+   * itself does not know.
+   */
+  private readOnly = false;
+
+  private async learnReadOnly(): Promise<void> {
+    try {
+      const stat = await workspace.fs.stat(this.uri);
+      const readonly = (stat.permissions ?? 0) & FilePermission.Readonly;
+      if (readonly !== 0 && !this.readOnly) {
+        this.readOnly = true;
+        this.refresh();
+      }
+    } catch {
+      // A scheme with no stat — leave it writable and let the write decide.
+    }
   }
 
   public refresh(): void {

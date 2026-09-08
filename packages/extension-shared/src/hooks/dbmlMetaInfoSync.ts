@@ -12,14 +12,11 @@ const DEBOUNCE_MS = 400;
 
 export const useDbmlMetaInfoSync = (
   enabled: boolean,
-  rawContent: string | null,
   documentKey: string | null,
 ): void => {
-  const rawContentRef = useRef(rawContent);
   const documentKeyRef = useRef(documentKey);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  rawContentRef.current = rawContent;
   documentKeyRef.current = documentKey;
 
   useEffect(() => {

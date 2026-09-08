@@ -140,6 +140,8 @@ export class WorkspaceEdit {
 
 export const DiagnosticSeverity = { Error: 0 } as const;
 
+export const FilePermission = { Readonly: 1 } as const;
+
 export class Diagnostic {
   constructor(
     readonly range: Range,

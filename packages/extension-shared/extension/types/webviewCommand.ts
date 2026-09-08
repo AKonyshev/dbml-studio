@@ -24,7 +24,6 @@ export interface WebviewPostMessage {
    */
   coords?: TableCoordEntry[];
   message?: string;
-  content?: string;
   documentUri?: string;
   data?: string;
   filename?: string;

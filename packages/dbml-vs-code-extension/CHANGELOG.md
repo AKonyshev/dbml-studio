@@ -8,6 +8,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
+- **Editing chains work, and a collision cannot hurt a neighbour.** `Ctrl+Enter` used to fail whenever the line had actually changed, because the follow-up aimed at the column's old name with its old text; it now follows the name the file reports. `Tab` moves to the row drawn below, as documented, rather than closing. `Ctrl+Up`/`Ctrl+Down` take the box along with the row. Renaming a table onto a name another table holds is refused _before_ that table's saved position could be touched. And a rename no longer re-frames the whole diagram on its way through.
+
 - **A renamed table keeps its place.** It jumped to the top-left corner instead. A table reads its position once, when it is drawn, and the rename drew it under its new name before the saved position had been moved there — so it found nothing and used the origin. The position, the detail level and the hidden-relations flag now move before the write, and go back if the write is refused.
 
 - **`F2` aims at what the pointer is on.** Clicking a column left it pointed at until something else took over, and the key checked that before anything else — so after one click on any column, `F2` re-opened that column wherever you pressed it, and renaming a table appeared not to work at all. The pointer now decides: a column under it edits that column, a table under it renames the table, and the clicked column is only a fallback for a pointer that is off the diagram.

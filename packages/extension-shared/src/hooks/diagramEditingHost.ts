@@ -49,7 +49,6 @@ export const useDiagramEditingHost = (
     window.addEventListener("message", onMessage);
 
     setDiagramEditingHost({
-      isEditable: () => true,
       readFieldText: (table, field) => {
         const content = rawContentRef.current;
 

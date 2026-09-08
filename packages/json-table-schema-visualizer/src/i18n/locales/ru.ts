@@ -97,7 +97,7 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "md.relations": "Связи:",
   "quickEdit.rejected": "Правка не применена.",
   "quickEdit.staleText":
-    "Документ изменился во время правки. Откройте колонку заново.",
+    "Документ изменился во время правки. В поле теперь текущая строка, ваш текст не применён.",
   "quickEdit.nameTaken": "Такое имя уже занято другой таблицей.",
   "quickEdit.notEditable": "Этот документ нельзя редактировать.",
   "quickEdit.atBoundary": "Колонка уже с краю.",

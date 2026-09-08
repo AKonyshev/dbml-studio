@@ -30,24 +30,24 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
 
   static RESET_POS_EVENT_NAME = "tableCoords:resetTablesPositions";
 
+  /**
+   * A table's arrangement is now filed under another name.
+   *
+   * Its own event, apart from the reset above, because the two mean different
+   * things to their listeners. A reset replaces the whole arrangement and the
+   * diagram re-frames the view for it; a rename moves nothing on the canvas,
+   * and re-framing the view for it took the reader's pan away. Only the tables
+   * themselves need to hear this, so that one drawn before its position
+   * arrived under the new name reads it again.
+   */
+  static REKEYED_EVENT_NAME = "tableCoords:rekeyed";
+
   constructor() {
     super("tableCoords");
   }
 
   public getCurrentStore(): Map<string, XYWHPosition> {
     return this.tableCoords;
-  }
-
-  /**
-   * Tell every table to read its position again.
-   *
-   * A table reads `getCoords` once and then listens only for this, so a
-   * coordinate that arrives under a new key after the table has drawn is
-   * invisible until something says so. Used by a rename that could not be
-   * carried out before the diagram redrew.
-   */
-  public announcePositions(): void {
-    eventEmitter.emit(TableCoordsStore.RESET_POS_EVENT_NAME, this.tableCoords);
   }
 
   public subscribeToReset(
@@ -58,6 +58,21 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     return () => {
       eventEmitter.off(TableCoordsStore.RESET_POS_EVENT_NAME, callback);
     };
+  }
+
+  /** What a table subscribes to: the arrangement replaced, or its key moved. */
+  public subscribeToPositions(callback: () => void): () => void {
+    eventEmitter.on(TableCoordsStore.RESET_POS_EVENT_NAME, callback);
+    eventEmitter.on(TableCoordsStore.REKEYED_EVENT_NAME, callback);
+
+    return () => {
+      eventEmitter.off(TableCoordsStore.RESET_POS_EVENT_NAME, callback);
+      eventEmitter.off(TableCoordsStore.REKEYED_EVENT_NAME, callback);
+    };
+  }
+
+  public hasCoords(table: string): boolean {
+    return this.tableCoords.has(table);
   }
 
   public resetPositions(
@@ -317,11 +332,12 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
       this.persist(storeKey, Array.from(stored));
     }
 
-    // Deliberately silent. Nothing moved — a table's arrangement is now filed
-    // under a different name, which is not news to anything that draws it. The
-    // announcement is what the position write-back listens for, and answering a
-    // rename with a whole-file write built from the page's copy of the text is
-    // how a rename used to undo itself.
+    // Not the reset event: that one re-frames the whole view, and nothing on
+    // the canvas has moved. `table:coords:updated` is not it either — that is
+    // what the position write-back listens for, and a rename is not a move.
+    // Only a table drawn under the new name before its position was filed
+    // there needs to hear this, and this is what it listens to.
+    eventEmitter.emit(TableCoordsStore.REKEYED_EVENT_NAME);
   }
 
   private storedCoordsFor(

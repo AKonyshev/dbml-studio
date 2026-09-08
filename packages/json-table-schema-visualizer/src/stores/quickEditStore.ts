@@ -41,12 +41,12 @@ export const getQuickEditTarget = (): QuickEditTarget | null => target;
  *
  * Editing is a capability a host lends the diagram, and the web app and the
  * Antora embed lend none — a double-click there would otherwise open a box that
- * looks like an editor and silently swallows everything typed into it. The same
- * guard covers a document the extension has said it cannot write to.
+ * looks like an editor and silently swallows everything typed into it. A
+ * document the extension cannot write to lends nothing either, so the same
+ * check covers it.
  */
 export const openQuickEdit = (next: QuickEditTarget): void => {
-  const host = getDiagramEditingHost();
-  if (host === null || !host.isEditable()) {
+  if (getDiagramEditingHost() === null) {
     return;
   }
 

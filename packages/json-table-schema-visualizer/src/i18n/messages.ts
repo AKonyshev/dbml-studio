@@ -95,7 +95,7 @@ export const MESSAGES_EN = {
   "md.relations": "Relations:",
   "quickEdit.rejected": "The edit was not applied.",
   "quickEdit.staleText":
-    "The document changed while you were editing. Reopen the column.",
+    "The document changed while you were editing. The box now shows the current line; your text was not applied.",
   "quickEdit.nameTaken": "Another table already uses that name.",
   "quickEdit.notEditable": "This document cannot be edited.",
   "quickEdit.atBoundary": "The column is already at the end.",

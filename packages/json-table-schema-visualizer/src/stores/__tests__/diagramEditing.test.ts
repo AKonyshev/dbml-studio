@@ -17,14 +17,12 @@ describe("diagram editing host", () => {
       async () => await Promise.resolve({ ok: true as const, table: "users" }),
     );
     setDiagramEditingHost({
-      isEditable: () => true,
       readFieldText: () => "id integer",
       submit,
     });
 
     const host = getDiagramEditingHost();
 
-    expect(host?.isEditable()).toBe(true);
     expect(host?.readFieldText("users", "id")).toBe("id integer");
 
     await host?.submit({ kind: "deleteField", table: "users", field: "id" });
@@ -34,7 +32,6 @@ describe("diagram editing host", () => {
 
   it("withdraws on null", () => {
     setDiagramEditingHost({
-      isEditable: () => true,
       readFieldText: () => null,
       submit: async () => await Promise.resolve({ ok: true, table: "users" }),
     });

@@ -15,6 +15,8 @@ export type QuickEditIntent =
   | { kind: "passThrough" }
   | { kind: "commitAndClose" }
   | { kind: "commitAndAddBelow" }
+  /** Apply, then open the row drawn below — StarUML's Tab. */
+  | { kind: "commitAndNext" }
   | { kind: "delete" }
   | { kind: "move"; direction: "up" | "down" };
 
@@ -57,7 +59,11 @@ export const quickEditIntent = (
     return { kind: "move", direction: event.key === "ArrowUp" ? "up" : "down" };
   }
 
-  if (event.key === "Enter" || event.key === "Tab") {
+  if (event.key === "Tab") {
+    return hasField ? { kind: "commitAndNext" } : { kind: "commitAndClose" };
+  }
+
+  if (event.key === "Enter") {
     return { kind: "commitAndClose" };
   }
 

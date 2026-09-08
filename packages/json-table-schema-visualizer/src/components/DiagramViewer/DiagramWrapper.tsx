@@ -49,6 +49,7 @@ import {
 } from "@/stores/renameReconcile";
 import { selectionStore } from "@/stores/selectionStore";
 import { openQuickEdit } from "@/stores/quickEditStore";
+import { setSchemaTables } from "@/stores/schemaIndexStore";
 import { quickEditTargetFor } from "@/components/QuickEdit/quickEditTarget";
 import {
   useDiagramActions,
@@ -469,6 +470,7 @@ const DiagramWrapper = ({
    * `reconcileAfterSchemaChange`.
    */
   useEffect(() => {
+    setSchemaTables(tablesMeta);
     reconcileAfterSchemaChange(tablesMeta.map((table) => table.name));
   }, [tablesMeta]);
 
