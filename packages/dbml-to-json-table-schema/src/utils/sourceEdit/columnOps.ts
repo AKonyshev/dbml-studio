@@ -1,0 +1,104 @@
+import { findTable } from "./sourceIndex";
+
+import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
+import type { SourceIndex, TextEdit } from "./types";
+
+export type ColumnEditResult =
+  | { ok: true; edits: TextEdit[] }
+  | { ok: false; reason: EditRejection };
+
+const reject = (reason: EditRejection): ColumnEditResult => ({
+  ok: false,
+  reason,
+});
+
+/**
+ * A column operation as the characters it changes and nothing more.
+ *
+ * Every range here comes from the index, which measured it from the text rather
+ * than from a parser token, so no edit ever contains a line break. What the
+ * reader did not aim at — their comments, their spacing, an inline `ref:` in
+ * the part of the line they left alone — is not in any range and therefore
+ * cannot be lost.
+ */
+export const planColumnEdit = (
+  text: string,
+  index: SourceIndex,
+  operation: EditOperation,
+): ColumnEditResult => {
+  if (operation.kind === "renameTable") {
+    return reject({ code: "tableNotFound" });
+  }
+
+  const table = findTable(index, operation.table);
+  if (table === null) return reject({ code: "tableNotFound" });
+
+  const position = table.fields.findIndex(
+    (field) => field.name === operation.field,
+  );
+  if (position === -1) return reject({ code: "fieldNotFound" });
+  const field = table.fields[position];
+
+  if (operation.kind === "replaceField") {
+    if (operation.text.trim() === "") return reject({ code: "emptyText" });
+
+    return {
+      ok: true,
+      edits: [
+        {
+          start: field.range.start,
+          end: field.range.end,
+          text: operation.text,
+        },
+      ],
+    };
+  }
+
+  if (operation.kind === "insertFieldAfter") {
+    if (operation.text.trim() === "") return reject({ code: "emptyText" });
+
+    return {
+      ok: true,
+      edits: [
+        {
+          start: field.range.end,
+          end: field.range.end,
+          text: `\n${field.indent}${operation.text}`,
+        },
+      ],
+    };
+  }
+
+  if (operation.kind === "deleteField") {
+    // The indentation and the newline go with it, or a blank line is left
+    // where the column was.
+    const start = field.range.start - field.indent.length;
+    const end =
+      text[field.range.end] === "\n" ? field.range.end + 1 : field.range.end;
+
+    return { ok: true, edits: [{ start, end, text: "" }] };
+  }
+
+  const neighbourAt =
+    operation.direction === "up" ? position - 1 : position + 1;
+  if (neighbourAt < 0 || neighbourAt >= table.fields.length) {
+    return reject({ code: "atBoundary" });
+  }
+  const neighbour = table.fields[neighbourAt];
+
+  return {
+    ok: true,
+    edits: [
+      {
+        start: field.range.start,
+        end: field.range.end,
+        text: text.slice(neighbour.range.start, neighbour.range.end),
+      },
+      {
+        start: neighbour.range.start,
+        end: neighbour.range.end,
+        text: text.slice(field.range.start, field.range.end),
+      },
+    ],
+  };
+};
