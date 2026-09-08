@@ -6,7 +6,9 @@ import { useQuickEditPosition } from "./useQuickEditPosition";
 import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
-import { COLUMN_HEIGHT } from "@/constants/sizing";
+import { FONT_FAMILY } from "@/constants/font";
+import { COLUMN_HEIGHT, FONT_SIZES, PADDINGS } from "@/constants/sizing";
+import { useThemeColors } from "@/hooks/theme";
 import { type MessageKey } from "@/i18n/messages";
 import { t } from "@/i18n/t";
 import { focusColumn } from "@/stores/currentTarget";
@@ -55,6 +57,8 @@ const QuickEditPopup = (): JSX.Element | null => {
   const [original, setOriginal] = useState("");
   const [error, setError] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const themeColors = useThemeColors();
   // Read by the pointer listener below, which is registered once and must not
   // be looking at the text as it was when it was registered.
   const commitRef = useRef<() => Promise<boolean>>(async () => true);
@@ -74,6 +78,21 @@ const QuickEditPopup = (): JSX.Element | null => {
     setOriginal(current);
     setError(null);
   }, [target]);
+
+  /**
+   * Grow to whatever the text needs.
+   *
+   * A column's line is longer than the table is wide once its settings and note
+   * are in it, so the field wraps — and a fixed height showed the first wrapped
+   * line and hid the rest, which reads as the box having lost the text.
+   */
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input === null) return;
+
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, [text, position?.scale]);
 
   /**
    * A click anywhere else ends the edit, the way it does in a spreadsheet cell.
@@ -216,21 +235,35 @@ const QuickEditPopup = (): JSX.Element | null => {
     closeQuickEdit();
   };
 
+  // Typed and coloured like the row it covers, and scaled with the diagram, so
+  // it reads as that row opened for editing rather than a dialog on top of it.
+  const fontSize = FONT_SIZES.md * position.scale;
+
   return (
     <div
       ref={boxRef}
-      className="absolute z-50 rounded border border-neutral-400 bg-white p-1 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
+      className="absolute z-50 overflow-hidden rounded shadow-lg"
       style={{
         left: position.x,
         top: position.y,
         width: Math.max(position.width, MIN_POPUP_WIDTH),
+        backgroundColor: themeColors.table.bg,
+        outline: `${Math.max(1, position.scale)}px solid ${themeColors.selection.stroke}`,
       }}
     >
       <textarea
+        ref={inputRef}
         autoFocus
         aria-label={target.field ?? target.table}
-        rows={Math.max(1, text.split("\n").length)}
-        className="w-full resize-none bg-transparent font-mono text-xs text-neutral-900 outline-none dark:text-neutral-100"
+        rows={1}
+        className="block w-full resize-none overflow-hidden bg-transparent outline-none"
+        style={{
+          color: themeColors.text[900],
+          fontFamily: FONT_FAMILY,
+          fontSize,
+          lineHeight: `${COLUMN_HEIGHT * position.scale}px`,
+          padding: `0 ${PADDINGS.sm * position.scale}px`,
+        }}
         value={text}
         onChange={(event) => {
           setText(event.target.value);
@@ -240,7 +273,19 @@ const QuickEditPopup = (): JSX.Element | null => {
         }}
       />
       {error !== null && (
-        <p className="mt-1 whitespace-pre-wrap text-xs text-red-600 dark:text-red-400">
+        // On the note bubble's own surface, which is the one pair of colours
+        // this palette guarantees reads in both themes; the table surface
+        // behind it is chosen against the canvas, not against a warning.
+        <p
+          className="whitespace-pre-wrap"
+          style={{
+            backgroundColor: themeColors.note.bg,
+            color: themeColors.note.danger,
+            fontFamily: FONT_FAMILY,
+            fontSize: FONT_SIZES.badge * position.scale,
+            padding: `0 ${PADDINGS.sm * position.scale}px ${PADDINGS.xs * position.scale}px`,
+          }}
+        >
           {error}
         </p>
       )}

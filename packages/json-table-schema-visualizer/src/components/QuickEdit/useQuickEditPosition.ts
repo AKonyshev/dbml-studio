@@ -16,6 +16,8 @@ export interface QuickEditRect {
   y: number;
   width: number;
   height: number;
+  /** The diagram's own scale, so the box can be typed like the rows it covers. */
+  scale: number;
 }
 
 /**
@@ -51,5 +53,6 @@ export const useQuickEditPosition = (
     y: (coords.y + DIAGRAM_PADDING + localY) * viewport.scale + viewport.y,
     width: width * viewport.scale,
     height: COLUMN_HEIGHT * viewport.scale,
+    scale: viewport.scale,
   };
 };
