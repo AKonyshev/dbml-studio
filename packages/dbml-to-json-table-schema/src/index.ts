@@ -14,6 +14,11 @@ export { upsertMetaInfoInDbml } from "./utils/metainfo";
 export { METAINFO_END, METAINFO_START } from "./utils/metainfo";
 export type { TableCoordEntry } from "./utils/metainfo";
 
+// Editing the source from a diagram: the caller supplies the document text and
+// an intent, and gets back the ranges to change, already proved to parse.
+export { planEdit, readFieldText } from "./utils/sourceEdit";
+export type { EditPlan, TextEdit } from "./utils/sourceEdit";
+
 export const parseDBMLToJSON = (dbmlCode: string): JSONTableSchema => {
   try {
     const rawParsedSchema = Parser.parseDBMLToJSON(dbmlCode);
