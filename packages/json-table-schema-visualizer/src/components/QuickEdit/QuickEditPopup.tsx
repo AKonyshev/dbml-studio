@@ -28,6 +28,7 @@ import {
   isTableKnown,
   recordRename,
   renameTableState,
+  retireTableState,
 } from "@/stores/renameReconcile";
 import {
   getSchemaVersion,
@@ -187,7 +188,18 @@ const QuickEditPopup = (): JSX.Element | null => {
 
     let carried: string | null = null;
     if (operation.kind === "renameTable") {
-      const guess = operation.newName.trim();
+      // The host is asked what the name will be rather than the typed text
+      // being taken for it. They differ whenever a schema is in play: the
+      // reader edits `acl.analysis` down to `analysis111` and the table comes
+      // back as `acl.analysis111`. Carrying the position to the typed text
+      // filed it under a name no table ever had, so the table arrived with no
+      // coordinates and was drawn at the origin until the reply re-keyed it —
+      // half a second of the table sitting in the top-left corner.
+      const guess =
+        getDiagramEditingHost()?.resolveRenamedTable?.(
+          operation.table,
+          operation.newName,
+        ) ?? operation.newName.trim();
       if (guess !== operation.table && !isTableKnown(guess)) {
         renameTableState(operation.table, guess);
         carried = guess;
@@ -198,7 +210,12 @@ const QuickEditPopup = (): JSX.Element | null => {
 
     if (!outcome.ok) {
       if (carried !== null) {
+        // Back, and then gone: the carry copies rather than moves, so putting
+        // the state back under the old name leaves the guessed one behind, and
+        // a name the diagram still files something under is a name the next
+        // carry refuses to use.
         renameTableState(carried, operation.table);
+        retireTableState(carried);
       }
       if (outcome.reason.code === "staleText") {
         // Offered by doing it: the box now holds the line as it stands, and

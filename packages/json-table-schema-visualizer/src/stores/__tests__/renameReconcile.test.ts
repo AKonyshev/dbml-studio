@@ -59,7 +59,14 @@ describe("renameTableState", () => {
     tableRelationsVisibilityStore.switchTo("doc-1");
   });
 
-  it("moves the position to the new name", () => {
+  // Both names answer, and that is the point. The rename is carried ahead of
+  // the write, so for as long as the host takes to reply the table on the
+  // canvas is still the one drawn under the old name — and it re-reads its
+  // position when it hears the key moved. Taking the old entry away at that
+  // moment left it with no coordinates and it was drawn at the origin: half a
+  // second of the table sitting in the corner before the new schema replaced
+  // it. The old name is retired later, when a schema arrives without it.
+  it("files the position under the new name and leaves the old one readable", () => {
     tableCoordsStore.setCoords("users", { x: 42, y: 7 });
 
     renameTableState("users", "accounts");
@@ -68,10 +75,10 @@ describe("renameTableState", () => {
       x: 42,
       y: 7,
     });
-    expect(tableCoordsStore.getAllCoords().has("users")).toBe(false);
+    expect(tableCoordsStore.getCoords("users")).toMatchObject({ x: 42, y: 7 });
   });
 
-  it("moves the hidden-relations flag", () => {
+  it("files the hidden-relations flag under the new name", () => {
     tableRelationsVisibilityStore.toggleTableRelations("users");
 
     renameTableState("users", "accounts");
@@ -79,19 +86,19 @@ describe("renameTableState", () => {
     expect(
       tableRelationsVisibilityStore.areTableRelationsHidden("accounts"),
     ).toBe(true);
-    expect(tableRelationsVisibilityStore.areTableRelationsHidden("users")).toBe(
-      false,
-    );
   });
 
-  it("moves the per-table detail level", () => {
+  it("files the per-table detail level under the new name", () => {
     tableDetailLevelStore.cycle("users");
     const level = tableDetailLevelStore.levelFor("users");
 
     renameTableState("users", "accounts");
 
     expect(tableDetailLevelStore.levelFor("accounts")).toBe(level);
-    expect(tableDetailLevelStore.levelFor("users")).toBeNull();
+    // Still answering for the old name, for the reason the position does: the
+    // table drawn under it has not been replaced yet, and a table that lost
+    // its level would change height on the spot.
+    expect(tableDetailLevelStore.levelFor("users")).toBe(level);
   });
 
   it("does nothing when the old name holds no state", () => {
@@ -146,6 +153,36 @@ describe("mirroring an undone rename", () => {
     expect(() => {
       reconcileAfterSchemaChange(["posts"]);
     }).not.toThrow();
+  });
+
+  it("retires the old name once a schema arrives without it", () => {
+    tableCoordsStore.setCoords("stock", { x: 8, y: 9 });
+    tableDetailLevelStore.cycle("stock");
+    tableRelationsVisibilityStore.toggleTableRelations("stock");
+    renameTableState("stock", "inventory");
+    recordRename("stock", "inventory");
+
+    reconcileAfterSchemaChange(["inventory", "posts"]);
+
+    expect(tableCoordsStore.getAllCoords().has("stock")).toBe(false);
+    expect(tableDetailLevelStore.levelFor("stock")).toBeNull();
+    expect(tableRelationsVisibilityStore.areTableRelationsHidden("stock")).toBe(
+      false,
+    );
+    expect(tableCoordsStore.getCoords("inventory")).toMatchObject({
+      x: 8,
+      y: 9,
+    });
+  });
+
+  it("retires the new name when the rename is undone", () => {
+    tableCoordsStore.setCoords("invoices", { x: 5, y: 6 });
+    recordRename("orders", "invoices");
+
+    reconcileAfterSchemaChange(["orders", "posts"]);
+
+    expect(tableCoordsStore.getAllCoords().has("invoices")).toBe(false);
+    expect(tableCoordsStore.getCoords("orders")).toMatchObject({ x: 5, y: 6 });
   });
 
   it("forgets everything when the diagram closes", () => {

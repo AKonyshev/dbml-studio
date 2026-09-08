@@ -131,8 +131,21 @@ class TableDetailLevelStore extends PersistableStore<
       return;
     }
 
-    overrides.delete(oldName);
+    // Copied rather than moved, for the reason `tableCoords.renameKey` gives:
+    // the table drawn under the old name is still on the canvas until the new
+    // schema arrives, and one that lost its level would change height on the
+    // spot. `retireKey` drops the old name once that schema has come.
     overrides.set(newName, existing);
+    this.persistCurrent();
+    this.announce();
+  }
+
+  /** Forget a name the document no longer has. */
+  public retireKey(name: string): void {
+    if (!this.current().delete(name)) {
+      return;
+    }
+
     this.persistCurrent();
     this.announce();
   }

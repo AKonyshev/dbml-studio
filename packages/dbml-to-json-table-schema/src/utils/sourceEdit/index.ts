@@ -1,4 +1,4 @@
-export { planEdit, readFieldText } from "./planEdit";
+export { planEdit, readFieldText, resolveRenamedTable } from "./planEdit";
 export type { EditPlan } from "./planEdit";
 export { buildSourceIndex, findField, findTable } from "./sourceIndex";
 export type {

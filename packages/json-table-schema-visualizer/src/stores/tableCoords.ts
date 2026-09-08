@@ -310,11 +310,17 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
    * with the headers showing and then again at full detail owns two layouts,
    * and a rename that moved only one of them would silently throw the other
    * away. See `renameTableState` for why this is done rather than detected.
+   *
+   * A copy, not a move. This runs before the write, so the table on the canvas
+   * is still the one drawn under the old name — and the event below has it read
+   * its position again. Taking the old entry away here left that table with no
+   * coordinates at all, and it was drawn at the origin until the new schema
+   * replaced it: the half-second flight into the top-left corner. `retireKey`
+   * drops the old name once a schema proves it is gone.
    */
   public renameKey(oldName: string, newName: string): void {
     const current = this.tableCoords.get(oldName);
     if (current !== undefined) {
-      this.tableCoords.delete(oldName);
       this.tableCoords.set(newName, current);
       this.persist(this.currentStoreKey, Array.from(this.tableCoords));
     }
@@ -327,7 +333,6 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
       const entry = stored?.get(oldName);
       if (stored == null || entry === undefined) continue;
 
-      stored.delete(oldName);
       stored.set(newName, entry);
       this.persist(storeKey, Array.from(stored));
     }
@@ -338,6 +343,30 @@ class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
     // Only a table drawn under the new name before its position was filed
     // there needs to hear this, and this is what it listens to.
     eventEmitter.emit(TableCoordsStore.REKEYED_EVENT_NAME);
+  }
+
+  /**
+   * Forget a name the document no longer has.
+   *
+   * The other half of `renameKey`, which copies rather than moves. Called from
+   * `reconcileAfterSchemaChange` once a schema has arrived proving the name is
+   * gone — by then nothing is drawn under it, so there is nothing to announce
+   * and no table to send back to the origin.
+   */
+  public retireKey(name: string): void {
+    if (this.tableCoords.delete(name)) {
+      this.persist(this.currentStoreKey, Array.from(this.tableCoords));
+    }
+
+    for (const level of Object.values(TableDetailLevel)) {
+      const storeKey = storeKeyFor(this.currentDocumentKey, level);
+      if (storeKey === this.currentStoreKey) continue;
+
+      const stored = this.storedCoordsFor(level);
+      if (stored == null || !stored.delete(name)) continue;
+
+      this.persist(storeKey, Array.from(stored));
+    }
   }
 
   private storedCoordsFor(

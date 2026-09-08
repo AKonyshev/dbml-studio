@@ -50,8 +50,16 @@ const submitting = (
     typeof outcome === "function" ? outcome(operation) : outcome,
   );
 
-const host = (submit: jest.Mock, line = "email varchar"): void => {
-  setDiagramEditingHost({ readFieldText: () => line, submit });
+const host = (
+  submit: jest.Mock,
+  line = "email varchar",
+  resolveRenamedTable?: (table: string, newName: string) => string | null,
+): void => {
+  setDiagramEditingHost({
+    readFieldText: () => line,
+    submit,
+    resolveRenamedTable,
+  });
 };
 
 const open = (): void => {
@@ -212,6 +220,36 @@ describe("QuickEditPopup", () => {
     expect(submit).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: "insertFieldAfter", field: "contact" }),
       undefined,
+    );
+  });
+
+  // The reader renames a table the diagram shows schema-qualified, and types a
+  // name that does not repeat the prefix. The host puts the prefix back, so the
+  // table arrives under a name the typed text never spelled — and the position
+  // carried ahead of the write has to be filed under *that* name, or the table
+  // is drawn with no coordinates and paints at the origin until the reply lands.
+  it("carries the position to the name the host will answer with", async () => {
+    tableCoordsStore.setCoords("acl.analysis", { x: 400, y: 250 });
+    let knownAtSubmit: boolean | null = null;
+    const submit = jest.fn(async (): Promise<EditOutcome> => {
+      knownAtSubmit = tableCoordsStore.hasCoords("acl.analysis111");
+
+      return { ok: true, table: "acl.analysis111" };
+    });
+    host(submit, "email varchar", (_table, typed) => `acl.${typed}`);
+    render(<QuickEditPopup />);
+    act(() => {
+      openQuickEdit({ table: "acl.analysis", offsetY: 0 });
+    });
+
+    fireEvent.change(box(), { target: { value: "analysis111" } });
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+
+    expect(knownAtSubmit).toBe(true);
+    expect(tableCoordsStore.getCoords("acl.analysis111")).toEqual(
+      expect.objectContaining({ x: 400, y: 250 }),
     );
   });
 

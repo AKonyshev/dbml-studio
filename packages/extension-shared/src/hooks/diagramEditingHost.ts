@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { readFieldText } from "dbml-to-json-table-schema";
+import { readFieldText, resolveRenamedTable } from "dbml-to-json-table-schema";
 import { setDiagramEditingHost } from "json-table-schema-visualizer/src/stores/diagramEditing";
 
 import {
@@ -53,6 +53,13 @@ export const useDiagramEditingHost = (
         const content = rawContentRef.current;
 
         return content === null ? null : readFieldText(content, table, field);
+      },
+      resolveRenamedTable: (table, newName) => {
+        const content = rawContentRef.current;
+
+        return content === null
+          ? null
+          : resolveRenamedTable(content, table, newName);
       },
       submit: async (operation: EditOperation, expectedText?: string) => {
         requestCounter += 1;

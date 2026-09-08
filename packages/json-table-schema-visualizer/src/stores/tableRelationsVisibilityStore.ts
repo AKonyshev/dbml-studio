@@ -98,8 +98,22 @@ class TableRelationsVisibilityStore extends PersistableStore<
       return;
     }
 
-    hiddenSet.delete(oldName);
+    // Copied rather than moved, for the reason `tableCoords.renameKey` gives:
+    // the table drawn under the old name is still on the canvas until the new
+    // schema arrives.
     hiddenSet.add(newName);
+    this.persist(key, this.getCurrentState());
+    eventEmitter.emit(RELATIONS_TOGGLE_EVENT);
+  }
+
+  /** Forget a name the document no longer has. */
+  public retireKey(name: string): void {
+    const key = this.activeKey ?? "default";
+    const hiddenSet = this.hiddenRelationsByKey.get(key);
+    if (hiddenSet == null || !hiddenSet.delete(name)) {
+      return;
+    }
+
     this.persist(key, this.getCurrentState());
     eventEmitter.emit(RELATIONS_TOGGLE_EVENT);
   }

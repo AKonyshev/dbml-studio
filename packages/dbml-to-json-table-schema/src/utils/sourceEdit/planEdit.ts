@@ -77,6 +77,42 @@ export const readFieldText = (
 };
 
 /**
+ * The full name a rename would produce, without writing anything.
+ *
+ * The same question `planRename` answers on its way to an edit, asked on its
+ * own — because the diagram needs the answer before the write, not after it.
+ * What the reader types is not always the whole name: a table declared in a
+ * schema keeps that schema, so `analysis111` typed over `acl.analysis` becomes
+ * `acl.analysis111`. Whether a dot is a schema separator or part of a quoted
+ * name is a question only the parser can answer, which is why this lives here
+ * and the diagram asks rather than guesses.
+ *
+ * Null when the rename could not go ahead at all — an unknown table, an empty
+ * name, or one already taken. The caller then has no name to carry state to,
+ * and the write it is about to attempt will be refused for the same reason.
+ */
+export const resolveRenamedTable = (
+  text: string,
+  tableName: string,
+  newName: string,
+): string | null => {
+  let index: SourceIndex;
+  try {
+    index = buildSourceIndex(text);
+  } catch {
+    return null;
+  }
+
+  const planned = planRename(index, {
+    kind: "renameTable",
+    table: tableName,
+    newName,
+  });
+
+  return planned.ok ? planned.newFullName : null;
+};
+
+/**
  * The one door an edit comes through.
  *
  * Nothing is written anywhere: the caller gets the ranges to apply and the

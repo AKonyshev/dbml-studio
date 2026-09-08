@@ -1,3 +1,4 @@
+import { resolveRenamedTable } from "./planEdit";
 import { planRename } from "./renameOp";
 import { buildSourceIndex } from "./sourceIndex";
 
@@ -131,5 +132,42 @@ describe("planRename", () => {
         newName: "spirits",
       }),
     ).toEqual({ ok: false, reason: { code: "tableNotFound" } });
+  });
+});
+
+describe("resolveRenamedTable", () => {
+  const schemaSrc = [
+    "Table analytics.users {",
+    "  id integer [pk]",
+    "}",
+    "",
+  ].join("\n");
+
+  it("answers with the schema kept, which the typed name does not carry", () => {
+    expect(resolveRenamedTable(schemaSrc, "analytics.users", "accounts")).toBe(
+      "analytics.accounts",
+    );
+  });
+
+  it("does not double the prefix the reader left in place", () => {
+    expect(
+      resolveRenamedTable(schemaSrc, "analytics.users", "analytics.accounts"),
+    ).toBe("analytics.accounts");
+  });
+
+  it("leaves a dot inside a quoted name where it is", () => {
+    const quoted = ['Table "sch.users" {', "  id integer [pk]", "}", ""].join(
+      "\n",
+    );
+
+    expect(resolveRenamedTable(quoted, "sch.users", "sch.accounts")).toBe(
+      "sch.accounts",
+    );
+  });
+
+  it("answers null when the rename could not go ahead", () => {
+    expect(resolveRenamedTable(src, "users", "posts")).toBeNull();
+    expect(resolveRenamedTable(src, "ghosts", "spirits")).toBeNull();
+    expect(resolveRenamedTable(src, "users", "  ")).toBeNull();
   });
 });

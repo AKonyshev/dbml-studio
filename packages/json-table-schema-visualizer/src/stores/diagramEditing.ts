@@ -3,6 +3,21 @@ import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 export interface DiagramEditingHost {
   /** The current source text of one column, for the popup to open against. */
   readFieldText: (table: string, field: string) => string | null;
+  /**
+   * The name a rename would actually produce, asked before anything is written.
+   *
+   * The diagram cannot work it out for itself. What the reader types is not
+   * necessarily the whole name: DBML keeps a table in its schema, so renaming
+   * `acl.analysis` to `analysis111` yields `acl.analysis111` — and telling that
+   * apart from a table whose own name contains a dot needs the parser. The
+   * diagram has to know the answer *before* the write, because the write brings
+   * back a schema in which the table is already drawn under its new name, and a
+   * table reads its position by name when it is drawn.
+   *
+   * Optional: a host that cannot answer leaves the diagram with the typed text,
+   * which is right whenever no schema prefix is in play.
+   */
+  resolveRenamedTable?: (table: string, newName: string) => string | null;
   submit: (
     operation: EditOperation,
     expectedText?: string,

@@ -32,6 +32,21 @@ export const renameTableState = (oldName: string, newName: string): void => {
 export const isTableKnown = (name: string): boolean =>
   tableCoordsStore.hasCoords(name);
 
+/**
+ * Forget every trace of a name the document no longer has.
+ *
+ * The other half of `renameTableState`, which copies rather than moves so that
+ * the table still drawn under the old name keeps its position, its level and
+ * its hidden relations while the write is in flight. This is what finally lets
+ * the old name go, and it is called only once a schema has arrived proving the
+ * table is no longer called that.
+ */
+export const retireTableState = (name: string): void => {
+  tableCoordsStore.retireKey(name);
+  tableRelationsVisibilityStore.retireKey(name);
+  tableDetailLevelStore.retireKey(name);
+};
+
 interface RenamePair {
   from: string;
   to: string;
@@ -80,13 +95,27 @@ export const reconcileAfterSchemaChange = (
 
     if (pair.appliedForward && hasOld && !hasNew) {
       renameTableState(pair.to, pair.from);
+      retireTableState(pair.to);
       pair.appliedForward = false;
       continue;
     }
 
     if (!pair.appliedForward && hasNew && !hasOld) {
       renameTableState(pair.from, pair.to);
+      retireTableState(pair.from);
       pair.appliedForward = true;
+      continue;
+    }
+
+    // Already pointing the way the document does. The name on the other side
+    // is what the carry left behind, and this schema says nothing is called
+    // that any more — but only when the side that *is* live is here to prove
+    // it. Halfway through a chain of renames both names are absent, and
+    // dropping one there would leave a second undo with nothing to carry back.
+    if (pair.appliedForward && hasNew && !hasOld) {
+      retireTableState(pair.from);
+    } else if (!pair.appliedForward && hasOld && !hasNew) {
+      retireTableState(pair.to);
     }
   }
 };
