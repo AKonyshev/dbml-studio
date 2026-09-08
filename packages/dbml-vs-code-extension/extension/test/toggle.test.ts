@@ -1,14 +1,16 @@
 import * as assert from "assert";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
 
 import * as vscode from "vscode";
 
 import { DIAGRAM_ACTION_COMMANDS } from "../diagramActionCommands";
 
-const EXTENSION_ID = "konyshevav.dbml-studio";
-const DIAGRAM_VIEW_TYPE = "dbml-studio-diagram";
+import {
+  DIAGRAM_VIEW_TYPE,
+  EXTENSION_ID,
+  openTabs,
+  waitFor,
+  writeFixture,
+} from "./helpers";
 
 const SAMPLE_DBML = `Table users {
   id uuid [pk]
@@ -21,35 +23,6 @@ Table orders {
 
 Ref: orders.user_id > users.id
 `;
-
-const openTabs = (): readonly vscode.Tab[] =>
-  vscode.window.tabGroups.all.flatMap((group) => group.tabs);
-
-/**
- * The commands kick their work off without awaiting it, so the assertions have
- * to wait for the workbench to settle rather than for the command to return.
- */
-const waitFor = async (
-  describe: string,
-  predicate: () => boolean,
-  timeoutMs = 15000,
-): Promise<void> => {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < timeoutMs) {
-    if (predicate()) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-
-  const seen = openTabs().map((tab) => {
-    const input = tab.input as { viewType?: string } | undefined;
-    return `${tab.label}${input?.viewType ? ` (${input.viewType})` : " (text)"}`;
-  });
-  assert.fail(
-    `timed out waiting for ${describe}; tabs: ${JSON.stringify(seen)}`,
-  );
-};
 
 const tabsFor = (uri: vscode.Uri, viewType?: string): vscode.Tab[] =>
   openTabs().filter((tab) => {
@@ -71,12 +44,7 @@ suite("text/diagram toggle", () => {
     assert.ok(extension, `extension ${EXTENSION_ID} not found`);
     await extension.activate();
 
-    const file = path.join(
-      fs.mkdtempSync(path.join(os.tmpdir(), "dbml-toggle-")),
-      "schema.dbml",
-    );
-    fs.writeFileSync(file, SAMPLE_DBML, "utf8");
-    uri = vscode.Uri.file(file);
+    uri = writeFixture("dbml-toggle-", SAMPLE_DBML);
   });
 
   teardown(async () => {

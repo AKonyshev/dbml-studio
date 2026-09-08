@@ -13,13 +13,13 @@ import { readDiagramAction } from "../../extension/types/webviewCommand";
  * extension each toggled, and the two cancelled out.
  *
  * Which message counts is decided by `readDiagramAction`, so that the one part
- * of this worth getting wrong can be tested without a browser.
+ * of this worth getting wrong can be tested without a browser. See it for why
+ * the sender is not checked.
  */
 export const useHostActions = (): void => {
   useEffect(() => {
     const onMessage = (event: MessageEvent): void => {
-      // The extension reaches this page through the frame above it.
-      const action = readDiagramAction(event, window.parent);
+      const action = readDiagramAction(event);
       if (action === null) {
         return;
       }

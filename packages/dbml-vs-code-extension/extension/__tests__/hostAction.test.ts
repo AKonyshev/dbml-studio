@@ -6,55 +6,43 @@ import {
   WebviewCommand,
 } from "extension-shared/extension/types/webviewCommand";
 
-const HOST = { name: "the frame above the page" };
-
 describe("readDiagramAction", () => {
-  test("takes the action out of a message from the host", () => {
+  test("takes the action out of the message, whoever sent it", () => {
+    // Measured inside a real VS Code webview: the sender is the shell frame
+    // between the page and the workbench. It is neither the page's `parent`
+    // nor its `top` nor itself, and the page holds no reference to it — so a
+    // guard comparing windows rejected the one message that matters, and every
+    // diagram command in VS Code silently did nothing. The sender is no longer
+    // looked at, which is what this asserts: an unrecognisable one is fine, and
+    // so is a message that carries no sender at all.
     expect(
-      readDiagramAction(
-        { data: runDiagramActionMessage("toggleRefs"), source: HOST },
-        HOST,
-      ),
+      readDiagramAction({
+        data: runDiagramActionMessage("toggleRefs"),
+        source: { aFrameWeCannotName: true },
+      } as { data: unknown }),
     ).toBe("toggleRefs");
-  });
 
-  test("takes a message whose sender cannot be named at all", () => {
-    // Several hosts deliver an extension message with no `source`. Refusing
-    // those would close the only way in, and close it silently: every command
-    // in the extension would simply stop doing anything.
     expect(
-      readDiagramAction({ data: runDiagramActionMessage("fitToView") }, HOST),
+      readDiagramAction({ data: runDiagramActionMessage("fitToView") }),
     ).toBe("fitToView");
-  });
-
-  test("refuses a sender it can name as something other than the host", () => {
-    expect(
-      readDiagramAction(
-        { data: runDiagramActionMessage("fitToView"), source: { other: true } },
-        HOST,
-      ),
-    ).toBeNull();
   });
 
   test("ignores the other messages the page receives", () => {
     // The schema arrives through the same listener; it must fall through here.
-    expect(
-      readDiagramAction({ data: { type: "setSchema" }, source: HOST }, HOST),
-    ).toBeNull();
-    expect(readDiagramAction({ source: HOST }, HOST)).toBeNull();
-    expect(readDiagramAction({ data: "not an object" }, HOST)).toBeNull();
-    expect(readDiagramAction({ data: null }, HOST)).toBeNull();
+    expect(readDiagramAction({ data: { type: "setSchema" } })).toBeNull();
+    expect(readDiagramAction({} as { data: unknown })).toBeNull();
+    expect(readDiagramAction({ data: "not an object" })).toBeNull();
+    expect(readDiagramAction({ data: null })).toBeNull();
   });
 
   test("refuses an action that is not a name", () => {
+    // The type alone is not enough: what keeps this narrow is the name, which
+    // `runDiagramAction` then matches against the actions the diagram declares.
     expect(
-      readDiagramAction({ data: { type: RUN_DIAGRAM_ACTION } }, HOST),
+      readDiagramAction({ data: { type: RUN_DIAGRAM_ACTION } }),
     ).toBeNull();
     expect(
-      readDiagramAction(
-        { data: { type: RUN_DIAGRAM_ACTION, action: 7 } },
-        HOST,
-      ),
+      readDiagramAction({ data: { type: RUN_DIAGRAM_ACTION, action: 7 } }),
     ).toBeNull();
   });
 });

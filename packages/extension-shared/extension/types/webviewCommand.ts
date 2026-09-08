@@ -43,23 +43,30 @@ export const runDiagramActionMessage = (
  *
  * A function rather than a few lines inside the listener, because it is the one
  * part of the relay that can be tested without a browser — and because getting
- * it wrong fails silently: a guard that rejects the host would leave every
- * command in the extension doing nothing at all, with nothing to see.
+ * it wrong fails silently: a message the page drops leaves every command in the
+ * extension doing nothing at all, with nothing to see.
  *
- * `host` is the window the extension reaches this page through. A sender we can
- * identify as anything else has no business driving the diagram. Deliberately
- * permissive where the sender cannot be identified at all: several hosts
- * deliver an extension message with no `source`, and refusing those would close
- * the only way in.
+ * The sender is deliberately not checked, and that is the whole history of this
+ * function. It used to demand that `event.source` be the window the extension
+ * was assumed to post through — `window.parent` — and inside VS Code that is
+ * never true. Measured in a running webview, the sender is the shell frame
+ * between the page and the workbench: not `parent`, not `top`, not the page
+ * itself, and the page holds no reference to it by which it could be named. So
+ * the guard rejected every command a reader ran, in silence, and the keys
+ * looked broken while the palette looked broken too.
+ *
+ * What limits this is below: the message must carry this exact type, and the
+ * action must be one the diagram declares — `runDiagramAction` refuses anything
+ * else. That is a real bound but not a small one: `autoArrange` moves the
+ * tables, and moved tables reach the `.dbml` through `useDbmlMetaInfoSync`. It
+ * is enough because of who can post here at all — only code already running in
+ * the webview's own origin, which by then holds `acquireVsCodeApi` and can send
+ * `UPDATE_DBML_CONTENT` itself, with no help from this door.
+ *
+ * `source` is not in the parameter type, so that the signature says what the
+ * body does rather than leaving a field a reader has to check is unused.
  */
-export const readDiagramAction = (
-  event: { data?: unknown; source?: unknown },
-  host: unknown,
-): string | null => {
-  if (event.source != null && event.source !== host) {
-    return null;
-  }
-
+export const readDiagramAction = (event: { data?: unknown }): string | null => {
   const message = event.data as Partial<RunDiagramActionMessage> | null;
   if (message?.type !== RUN_DIAGRAM_ACTION) {
     return null;

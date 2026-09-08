@@ -198,13 +198,26 @@ its own:
   `testMatch` covers only the latter, so the two suites in this package do not
   collide, and `scripts/test.js` still finds the package's `test` script.
 
-Two host-specific settings in `.vscode-test.mjs` are worth knowing, because both
-were failures first:
+Four settings in `.vscode-test.mjs` are worth knowing. The first two were
+failures first; the last two are what one test needs to see anything at all:
 
 - **`--user-data-dir /tmp/dbml-vscode-test`.** VS Code puts its IPC socket in the
   user-data directory, and a unix socket path cannot exceed 104 bytes on macOS.
   The default inside this package is already over the limit, and the failure
   reads `listen EINVAL`, which does not name the cause.
+- **`--remote-debugging-port=9333` and `--disable-site-isolation-trials`.**
+  `hostRelay.test.ts` is the only test that watches a command arrive in the
+  page, and it can only do that from outside: the extension can post into a
+  webview, but a test cannot read one. So it attaches over the debugging port
+  with Playwright and reads the page's `localStorage`. Two consequences worth
+  writing down. The port is fixed, so two runs at once cannot both have it, and
+  the number is repeated in `extension/test/helpers.ts` because a launch config
+  cannot import from the build output. And with site isolation off, the suite
+  runs a process model no reader has — the diagram's frame is otherwise in a
+  process of its own, which the debugging port does not enumerate, so the test
+  would find no frame rather than a wrong answer. That does not change how a
+  message is delivered or what its `source` is, but a fault that depends on the
+  process split would not show up here.
 - **Current stable, not the `^1.87.0` engine floor.** An Electron from early 2024
   segfaults on macOS 26, so the oldest supported version cannot be exercised on
   this host at all. Nothing in the suite uses API newer than 1.87 —
