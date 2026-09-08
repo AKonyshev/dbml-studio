@@ -33,6 +33,7 @@ import { tableDetailLevelStore } from "@/stores/tableDetailLevelStore";
 import { useTablePositionContext } from "@/hooks/table";
 import {
   getHighlightedColumns,
+  getHoveredColumn,
   getHoveredTableName,
   setHighlightedColumns,
   setHoveredTableName,
@@ -48,6 +49,7 @@ import {
 } from "@/stores/renameReconcile";
 import { selectionStore } from "@/stores/selectionStore";
 import { openQuickEdit } from "@/stores/quickEditStore";
+import { quickEditTargetFor } from "@/components/QuickEdit/quickEditTarget";
 import {
   useDiagramActions,
   useKeyboardShortcuts,
@@ -521,42 +523,24 @@ const DiagramWrapper = ({
         tableDetailLevelStore.resetAll();
       },
       /**
-       * One key for all of it, because the reader is only ever pointing at one
-       * thing: a focused column wins, then a single selected table, then the
-       * table under the pointer.
+       * What the key opens is decided by `quickEditTargetFor`, where it can be
+       * tested — the ordering there is subtle and got it wrong twice.
        *
-       * That last fallback is what makes renaming reachable. A table can only
-       * be selected in select mode, so requiring a selection meant pressing
-       * `V`, clicking, renaming, and pressing `V` back — a ritual nobody
-       * guesses, and nobody did. `H` and `T` already act on the hovered table,
-       * so this is the diagram's own idiom rather than a new one.
-       *
-       * One command rather than two on the same chord, which would have needed
-       * a context key the webview kept the workbench told about: a whole
-       * channel of state to keep in step, for a choice already made here.
-       *
-       * All of it read at the keypress rather than subscribed to: pointing at
-       * something is no reason to re-render the diagram. Aimed at nothing, this
-       * does nothing.
+       * Everything read at the keypress rather than subscribed to, the way
+       * `toggleRefs` reads the hovered table: pointing at something is no
+       * reason to re-render the diagram. Aimed at nothing, this does nothing.
        */
       quickEdit: () => {
-        const focused = columnFocusStore.get();
-        if (focused !== null) {
-          openQuickEdit({
-            table: focused.table,
-            field: focused.field,
-            offsetY: focused.offsetY,
-          });
+        const target = quickEditTargetFor({
+          hoveredColumn: getHoveredColumn(),
+          hoveredTable: getHoveredTableName(),
+          focusedColumn: columnFocusStore.get(),
+          selectedTables: [...selectionStore.getSelected()],
+        });
 
-          return;
-        }
+        if (target === null) return;
 
-        const selected = [...selectionStore.getSelected()];
-        const table =
-          selected.length === 1 ? selected[0] : getHoveredTableName();
-        if (table == null || table === "") return;
-
-        openQuickEdit({ table, offsetY: 0 });
+        openQuickEdit(target);
       },
     },
     !isLegendOpen,

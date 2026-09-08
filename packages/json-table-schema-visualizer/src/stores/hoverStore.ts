@@ -13,8 +13,16 @@ type Listener = () => void;
  * a component only when its own slice changes, so hovering a table now costs the
  * two tables involved and the connections between them, not the whole diagram.
  */
+/** The column the pointer is over, and where its row is drawn. */
+export interface HoveredColumn {
+  table: string;
+  field: string;
+  offsetY: number;
+}
+
 class HoverStore {
   private hoveredTableName: string | null = null;
+  private hoveredColumn: HoveredColumn | null = null;
   private highlightedColumns: string[] = [];
   private readonly listeners = new Set<Listener>();
 
@@ -28,6 +36,21 @@ class HoverStore {
 
   public readonly getHoveredTableName = (): string | null =>
     this.hoveredTableName;
+
+  public readonly getHoveredColumn = (): HoveredColumn | null =>
+    this.hoveredColumn;
+
+  /**
+   * Set by the column under the pointer, so that a key aimed at "this column"
+   * can mean the one being pointed at rather than one clicked long ago.
+   *
+   * No listeners are told: every reader of this asks at the keypress, the way
+   * `H` and `T` ask for the hovered table, and re-rendering on pointer movement
+   * is exactly what this store exists to avoid.
+   */
+  public readonly setHoveredColumn = (next: HoveredColumn | null): void => {
+    this.hoveredColumn = next;
+  };
 
   public readonly getHighlightedColumns = (): string[] =>
     this.highlightedColumns;
@@ -69,3 +92,5 @@ export const setHoveredTableName = hoverStore.setHoveredTableName;
 export const setHighlightedColumns = hoverStore.setHighlightedColumns;
 export const getHoveredTableName = hoverStore.getHoveredTableName;
 export const getHighlightedColumns = hoverStore.getHighlightedColumns;
+export const setHoveredColumn = hoverStore.setHoveredColumn;
+export const getHoveredColumn = hoverStore.getHoveredColumn;
