@@ -32,6 +32,7 @@ import { useForeignKeys } from "@/hooks/foreignKeys";
 import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
 import { SELECTED_OUTLINE_NAME } from "@/constants/selection";
 import { selectionStore } from "@/stores/selectionStore";
+import { selectTables, toggleTableSelection } from "@/stores/currentTarget";
 import {
   beginGroupDrag,
   endGroupDrag,
@@ -149,7 +150,7 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     // selection, and the group they had is let go. Without this the outlines
     // would go on claiming a group that is not the one moving.
     if (isSelectMode && !selectionStore.isSelected(name)) {
-      selectionStore.setSelected(new Set([name]));
+      selectTables(new Set([name]));
     }
 
     beginGroupDrag(name);
@@ -208,11 +209,11 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     // Konva raises `click` only when the pointer did not drag, so there is
     // nothing to tell a click from a move by hand.
     if (event.evt.shiftKey) {
-      selectionStore.toggle(name);
+      toggleTableSelection(name);
       return;
     }
 
-    selectionStore.setSelected(new Set([name]));
+    selectTables(new Set([name]));
   };
 
   return (

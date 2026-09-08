@@ -1,9 +1,14 @@
 import { type ReactNode, useState } from "react";
 import { Group, Rect } from "react-konva";
 
-import { COLUMN_HEIGHT } from "@/constants/sizing";
+import type { KonvaEventObject } from "konva/lib/Node";
+
+import { COLUMN_HEIGHT, PADDINGS } from "@/constants/sizing";
 import { useTableWidth } from "@/hooks/table";
 import { useIsColumnHighlighted } from "@/hooks/hover";
+import { useIsColumnFocused } from "@/hooks/columnFocus";
+import { focusColumn } from "@/stores/currentTarget";
+import { useThemeColors } from "@/hooks/theme";
 
 interface ColumnWrapperProps {
   children: (highlighted: boolean) => ReactNode;
@@ -24,6 +29,17 @@ const ColumnWrapper = ({
 }: ColumnWrapperProps) => {
   const [hovered, setHovered] = useState(false);
   const tablePreferredWidth = useTableWidth();
+  const isFocused = useIsColumnFocused(tableName, columnName);
+  const themeColors = useThemeColors();
+
+  const handleClick = (
+    event: KonvaEventObject<MouseEvent | TouchEvent>,
+  ): void => {
+    // Without this the same click also reaches the table's drag and its
+    // selection, and the column would lose the focus it just took.
+    event.cancelBubble = true;
+    focusColumn(tableName, columnName);
+  };
 
   const handleOnHover = () => {
     setHovered(true);
@@ -43,12 +59,28 @@ const ColumnWrapper = ({
   const highlighted = hovered || highlightedByHover;
 
   return (
-    <Group onMouseOver={handleOnHover} onMouseLeave={handleOnLeave} y={offsetY}>
+    <Group
+      onMouseOver={handleOnHover}
+      onMouseLeave={handleOnLeave}
+      onClick={handleClick}
+      onTap={handleClick}
+      y={offsetY}
+    >
       <Rect
         fill={highlighted ? highlightColor : "transparent"}
         width={tablePreferredWidth}
         height={COLUMN_HEIGHT}
       />
+      {isFocused && (
+        <Rect
+          listening={false}
+          stroke={themeColors.text[900]}
+          strokeWidth={1}
+          cornerRadius={PADDINGS.xs}
+          width={tablePreferredWidth}
+          height={COLUMN_HEIGHT}
+        />
+      )}
       {children(highlighted)}
     </Group>
   );

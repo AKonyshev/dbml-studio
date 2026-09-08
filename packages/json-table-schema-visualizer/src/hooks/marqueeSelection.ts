@@ -7,6 +7,7 @@ import type { XYWHPosition } from "@/types/positions";
 
 import { useIsSelectMode } from "@/hooks/selection";
 import { selectionStore } from "@/stores/selectionStore";
+import { clearCurrentTarget, selectTables } from "@/stores/currentTarget";
 import {
   normalizeMarquee,
   selectionFromMarquee,
@@ -102,7 +103,7 @@ export const useMarqueeSelection = ({
       // the reader asking for the page back. Without it one keypress would both
       // drop the selection and collapse an expanded frame.
       event.preventDefault();
-      selectionStore.clear();
+      clearCurrentTarget();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -118,7 +119,7 @@ export const useMarqueeSelection = ({
     // does to the diagram. Without this, opening another schema leaves a
     // selection naming tables that are not on the canvas.
     return () => {
-      selectionStore.clear();
+      clearCurrentTarget();
     };
   }, []);
 
@@ -128,7 +129,7 @@ export const useMarqueeSelection = ({
       // drag does, in the mode whose whole point is that a drag moves the
       // canvas. Panning stays reachable inside select mode, so nobody has to
       // leave it mid-task.
-      selectionStore.clear();
+      clearCurrentTarget();
     }
   }, [isSelectMode]);
 
@@ -215,7 +216,7 @@ export const useMarqueeSelection = ({
       return;
     }
 
-    selectionStore.setSelected(
+    selectTables(
       selectionFromMarquee(
         boxes(),
         marqueeFrom(start, pointerInDiagram()),
