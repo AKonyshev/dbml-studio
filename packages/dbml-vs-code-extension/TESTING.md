@@ -43,6 +43,24 @@ The diagram's own level and a single table's, side by side — and **neither wri
 8. Open the legend with **?**: the notation list names the double-click gesture, and the shortcut list has **T** and **U**.
 9. Reload the diagram; the levels you set are still set. Remembered per document, in the browser, not in the `.dbml`.
 
+## Editing from the diagram
+
+The one thing here that **does** write to the file. Automated where it can be: the pure planning is unit-tested, the key map is unit-tested, and one integration suite proves a request from the page turns into a workspace edit that a single undo takes back. What is left below is the part that needs eyes.
+
+1. Click a column: it gets an outline, and any selected tables lose theirs. Click a table: the column loses its outline.
+2. Press **F2**, or double-click the column. A box opens on the column holding the line exactly as it stands in the file, indentation stripped, comment and inline `ref` and all.
+3. Type a change and press **Enter**. Only that line changes in the text editor beside it; nothing else moves and the file stays dirty rather than saving itself.
+4. Press **Ctrl/Cmd+Z** in the text editor: one press takes the whole edit back.
+5. Open the box again, type something DBML cannot parse, press **Enter**. The box stays open with your text, the parser's own message under it in English, and the file is untouched.
+6. Press **Escape** with the text changed: nothing is written.
+7. **Shift+Enter** adds a line break rather than applying. **Ctrl+Enter** applies and leaves a new column below. **Ctrl+Delete** removes the column. **Ctrl+Up** and **Ctrl+Down** move it.
+8. While the box is open, press **T** or **D**: the letters go into the text and the diagram does not toggle anything.
+9. Delete a column another table's `Ref` points at: refused, with the parser's message, and the file is untouched.
+10. Select one table, no column pointed at, and press **F2**: the table's name is what opens. Rename it. Every `Ref` that named it follows, the table keeps its position and its detail level, its colour changes because the colour is derived from the name. Undo: the name goes back and the position comes back with it.
+11. Rename a table that has an alias (`Table users as u`) with relations written through the alias: the alias is untouched and those relations still draw.
+12. Open a `.dbml` that has never been saved (**File → New**, paste a schema, show the diagram): clicking a column gives no editing box at all.
+13. The site is unaffected. Open the same schema at the web app: columns do not take a focus outline and **F2** does nothing.
+
 ## Colored relations
 
 1. With **Colored relations** off, relations are grey; hovering a table colours only its own relations.

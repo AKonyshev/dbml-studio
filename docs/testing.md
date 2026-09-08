@@ -206,9 +206,14 @@ failures first; the last two are what one test needs to see anything at all:
   The default inside this package is already over the limit, and the failure
   reads `listen EINVAL`, which does not name the cause.
 - **`--remote-debugging-port=9333` and `--disable-site-isolation-trials`.**
-  `hostRelay.test.ts` is the only test that watches a command arrive in the
-  page, and it can only do that from outside: the extension can post into a
-  webview, but a test cannot read one. So it attaches over the debugging port
+  `hostRelay.test.ts` and `fieldEditing.test.ts` are the tests that watch the
+  page and the extension talk to each other, and they can only do that from
+  outside: the extension can post into a webview, but a test cannot read one.
+  The first watches a command arrive in the page; the second sends the page's
+  own edit request back the other way and checks that the document changed and
+  that one undo took it back. It posts through `window.vsCodeWebviewAPI` rather
+  than clicking a column, because hit-testing a canvas from a test would be
+  measuring Konva's arithmetic instead of the thing at risk. So it attaches over the debugging port
   with Playwright and reads the page's `localStorage`. Two consequences worth
   writing down. The port is fixed, so two runs at once cannot both have it, and
   the number is repeated in `extension/test/helpers.ts` because a launch config
