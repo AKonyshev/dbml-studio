@@ -164,3 +164,54 @@ describe("planColumnEdit", () => {
     ).toEqual({ ok: false, reason: { code: "fieldNotFound" } });
   });
 });
+
+describe("planColumnEdit on a file written with CRLF", () => {
+  const windows = [
+    "Table users {",
+    "  id integer [pk]",
+    "  email varchar",
+    "  name varchar",
+    "}",
+    "",
+  ].join("\r\n");
+
+  const runOn = (operation: ColumnOperation): string => {
+    const result = planColumnEdit(
+      windows,
+      buildSourceIndex(windows),
+      operation,
+    );
+    if (!result.ok) throw new Error(`rejected: ${result.reason.code}`);
+
+    return apply(windows, result.edits);
+  };
+
+  it("takes both halves of the line break away with a deleted column", () => {
+    expect(runOn({ kind: "deleteField", table: "users", field: "email" })).toBe(
+      ["Table users {", "  id integer [pk]", "  name varchar", "}", ""].join(
+        "\r\n",
+      ),
+    );
+  });
+
+  it("writes an inserted column with the ending the file already uses", () => {
+    expect(
+      runOn({
+        kind: "insertFieldAfter",
+        table: "users",
+        field: "id",
+        text: "created_at timestamp",
+      }),
+    ).toBe(
+      [
+        "Table users {",
+        "  id integer [pk]",
+        "  created_at timestamp",
+        "  email varchar",
+        "  name varchar",
+        "}",
+        "",
+      ].join("\r\n"),
+    );
+  });
+});

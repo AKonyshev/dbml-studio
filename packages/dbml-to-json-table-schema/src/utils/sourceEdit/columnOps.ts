@@ -16,6 +16,17 @@ const reject = (reason: EditRejection): ColumnEditResult => ({
 });
 
 /**
+ * The line break this document is written with.
+ *
+ * A file saved on Windows ends its lines `\r\n` and both halves move
+ * together: taking only the `\n` away leaves the `\r` standing as the blank
+ * line the delete was meant to avoid, and writing a bare `\n` into such a file
+ * mixes two endings into it.
+ */
+const lineBreakOf = (text: string): string =>
+  text.includes("\r\n") ? "\r\n" : "\n";
+
+/**
  * A column operation as the characters it changes and nothing more.
  *
  * Every range here comes from the index, which measured it from the text rather
@@ -62,7 +73,7 @@ export const planColumnEdit = (
         {
           start: field.range.end,
           end: field.range.end,
-          text: `\n${field.indent}${operation.text}`,
+          text: `${lineBreakOf(text)}${field.indent}${operation.text}`,
         },
       ],
     };
@@ -72,8 +83,12 @@ export const planColumnEdit = (
     // The indentation and the newline go with it, or a blank line is left
     // where the column was.
     const start = field.range.start - field.indent.length;
-    const end =
-      text[field.range.end] === "\n" ? field.range.end + 1 : field.range.end;
+    const after = text.startsWith("\r\n", field.range.end)
+      ? 2
+      : text[field.range.end] === "\n"
+        ? 1
+        : 0;
+    const end = field.range.end + after;
 
     return { ok: true, edits: [{ start, end, text: "" }] };
   }
