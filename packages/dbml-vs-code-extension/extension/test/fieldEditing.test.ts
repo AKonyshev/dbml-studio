@@ -186,4 +186,63 @@ suite("an edit from the diagram reaches the document", () => {
       await browser.close();
     }
   });
+
+  test("renames a table, its relations and its saved layout", async function (this: Mocha.Context) {
+    this.timeout(180000);
+
+    const extension = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(extension, `extension ${EXTENSION_ID} not found`);
+    await extension.activate();
+
+    const uri = writeFixture("dbml-rename-", SAMPLE_DBML);
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand("dbmlStudio.previewDiagramsInPlace");
+    await waitFor("the diagram tab", diagramTabIsOpen);
+
+    const browser = await chromium.connectOverCDP(
+      `http://127.0.0.1:${DEBUG_PORT}`,
+    );
+
+    try {
+      const diagram = await findDiagramFrame(browser);
+      await settledText(document);
+
+      await diagram.evaluate(
+        `window.vsCodeWebviewAPI.postMessage(${JSON.stringify({
+          command: "APPLY_DIAGRAM_EDIT",
+          documentUri: uri.toString(),
+          requestId: "integration-rename",
+          operation: {
+            kind: "renameTable",
+            table: "sch.entity_11",
+            newName: "sch.renamed_entity",
+          },
+        })})`,
+      );
+
+      await waitFor(
+        "the rename to land",
+        () => document.getText().includes(`Table "sch.renamed_entity"`),
+        30000,
+      );
+
+      const after = document.getText();
+      // The three places a name lives, all of which a rename has to carry.
+      assert.ok(
+        !after.includes(`"sch.entity_11"`),
+        "the old name survived somewhere",
+      );
+      assert.ok(
+        after.includes(`"sch.renamed_entity"."col_`),
+        "the relations did not follow the rename",
+      );
+      assert.ok(
+        after.includes(`{"name":"sch.renamed_entity"`),
+        "the saved layout did not follow the rename",
+      );
+    } finally {
+      await browser.close();
+    }
+  });
 });
