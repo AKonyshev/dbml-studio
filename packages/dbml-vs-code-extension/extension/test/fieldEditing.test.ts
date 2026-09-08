@@ -272,4 +272,97 @@ suite("an edit from the diagram reaches the document", () => {
       await browser.close();
     }
   });
+
+  /**
+   * A schema written as a schema, not as a dot inside one quoted name.
+   *
+   * The fixture beside this one declares `Table "sch.entity_11"`, which the
+   * parser reads as a table whose name happens to contain a dot. A real schema
+   * looks like the one below, and its relations name the table through the
+   * prefix — which the rename could not find, so it left them naming a table
+   * that no longer existed and the whole edit was refused as a parse error
+   * about a line the reader had not touched.
+   */
+  test("renames a table that is in a schema", async function (this: Mocha.Context) {
+    this.timeout(180000);
+
+    const extension = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(extension, `extension ${EXTENSION_ID} not found`);
+    await extension.activate();
+
+    const qualified = [
+      "Table sch.analysis {",
+      "  id uuid [pk]",
+      "  label varchar",
+      "}",
+      "",
+      "Table sch.analysis_water {",
+      "  id uuid [pk]",
+      "  analysis_id uuid [ref: > sch.analysis.id]",
+      "}",
+      "",
+      "Table sch.analysis_liquid {",
+      "  id uuid [pk]",
+      "  analysis_id uuid",
+      "}",
+      "",
+      "Ref: sch.analysis_liquid.analysis_id > sch.analysis.id",
+      "",
+    ].join("\n");
+
+    const uri = writeFixture("dbml-schema-rename-", qualified);
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand("dbmlStudio.previewDiagramsInPlace");
+    await waitFor("the diagram tab", diagramTabIsOpen);
+
+    const browser = await chromium.connectOverCDP(
+      `http://127.0.0.1:${DEBUG_PORT}`,
+    );
+
+    try {
+      const diagram = await findDiagramFrame(browser);
+      await settledText(document);
+
+      // The bare name the reader types, without the prefix the box showed
+      // them. The host is what puts `sch.` back.
+      await diagram.evaluate(
+        `window.vsCodeWebviewAPI.postMessage(${JSON.stringify({
+          command: "APPLY_DIAGRAM_EDIT",
+          documentUri: uri.toString(),
+          requestId: "integration-schema-rename",
+          operation: {
+            kind: "renameTable",
+            table: "sch.analysis",
+            newName: "analysis111",
+          },
+        })})`,
+      );
+
+      await waitFor(
+        "the rename to land",
+        () => document.getText().includes("Table sch.analysis111 {"),
+        30000,
+      );
+
+      const after = document.getText();
+      assert.ok(
+        after.includes("[ref: > sch.analysis111.id]"),
+        `the inline relation did not follow the rename:\n${after}`,
+      );
+      assert.ok(
+        after.includes(
+          "Ref: sch.analysis_liquid.analysis_id > sch.analysis111.id",
+        ),
+        `the standalone relation did not follow the rename:\n${after}`,
+      );
+      // Named out of the same characters, and not what was renamed.
+      assert.ok(
+        after.includes("Table sch.analysis_water {"),
+        `a table beside it was caught by the rename:\n${after}`,
+      );
+    } finally {
+      await browser.close();
+    }
+  });
 });

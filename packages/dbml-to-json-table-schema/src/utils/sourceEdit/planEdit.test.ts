@@ -35,6 +35,40 @@ describe("planEdit", () => {
     expect(plan.field).toBe("contact");
   });
 
+  // The symptom this was reported as: not a table left half-renamed, but the
+  // whole edit refused. A ref the rename failed to follow names a table that
+  // no longer exists, the candidate document does not parse, and the reader is
+  // shown a parse error about a line they never touched.
+  it("accepts a rename of a table that is in a schema", () => {
+    const qualified = [
+      "Table sch.analysis {",
+      "  id uuid [pk]",
+      "}",
+      "",
+      "Table sch.analysis_water {",
+      "  id uuid [pk]",
+      "  analysis_id uuid [ref: > sch.analysis.id]",
+      "}",
+      "",
+      "Ref: sch.analysis_water.id > sch.analysis.id",
+      "",
+    ].join("\n");
+
+    const plan = planEdit(qualified, {
+      kind: "renameTable",
+      table: "sch.analysis",
+      newName: "analysis111",
+    });
+    if (!plan.ok) throw new Error(JSON.stringify(plan.reason));
+
+    expect(plan.table).toBe("sch.analysis111");
+    expect(plan.nextText).toContain("Table sch.analysis111 {");
+    expect(plan.nextText).toContain("[ref: > sch.analysis111.id]");
+    expect(plan.nextText).toContain(
+      "Ref: sch.analysis_water.id > sch.analysis111.id",
+    );
+  });
+
   it("reports the new identity after a table is renamed", () => {
     const plan = planEdit(src, {
       kind: "renameTable",
