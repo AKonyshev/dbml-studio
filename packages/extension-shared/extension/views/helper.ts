@@ -154,7 +154,19 @@ export class WebviewHelper {
     request: ApplyDiagramEditMessage,
     options: WebviewHooksOptions,
   ): Promise<void> {
-    if (!options.supportsDbmlFileSync) return;
+    // Every path below answers. A request that goes unanswered leaves the
+    // popup's promise pending for the life of the page, and the reader holding
+    // a box that never responds to Enter again.
+    if (!options.supportsDbmlFileSync) {
+      options.postToWebview?.(
+        diagramEditResultMessage(request.requestId, {
+          ok: false,
+          reason: { code: "notEditable" },
+        }),
+      );
+
+      return;
+    }
 
     const outcome = await WebviewHelper.writeQueue.run(
       request.documentUri,

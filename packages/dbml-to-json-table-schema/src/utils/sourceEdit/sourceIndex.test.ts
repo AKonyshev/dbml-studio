@@ -87,3 +87,26 @@ describe("buildSourceIndex", () => {
     expect(withMeta.slice(range?.start ?? 0, range?.end ?? 0)).toBe("users");
   });
 });
+
+describe("when a name is also another table's alias", () => {
+  const ambiguous = [
+    "Table users {",
+    "  id integer [pk]",
+    "}",
+    "",
+    "Table accounts as users {",
+    "  id integer [pk]",
+    "}",
+    "",
+    "Table posts {",
+    "  owner integer [ref: > users.id]",
+    "}",
+    "",
+  ].join("\n");
+
+  it("touches no ref at all rather than the wrong one", () => {
+    const table = findTable(buildSourceIndex(ambiguous), "users");
+
+    expect(table?.refNameRanges).toEqual([]);
+  });
+});

@@ -49,6 +49,14 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.
 
+None of these keys fires while you are typing, in the diagram's own search box or anywhere else in the editor.
+
+`?` is where a US layout puts it. On a layout that puts it elsewhere, use the keyboard button in the toolbar or rebind the command.
+
+Every command is also in the palette, with one exception: hiding the hovered table's relations acts on whatever the pointer is over, and opening the palette takes the pointer away, so it would always find nothing. Use the key for that one, or rebind it.
+
+The same list is available in the app: press `?` or use the keyboard button in the toolbar. It shows the defaults, not a key you have rebound.
+
 ## Editing from the diagram
 
 Click a column to point at it, then press `F2` or double-click it. A box opens on the column holding the line exactly as it stands in the `.dbml` file, so anything DBML lets you write on a column you can write here.
@@ -65,15 +73,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 
 With one table selected and no column pointed at, `F2` renames the table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
 
-Only the ranges you changed are written, so one undo takes back one edit and the rest of your file is untouched. Text that would not parse is refused before it reaches the file, with the parser's own message. Editing is offered only on a saved file that can be written to.
-
-None of these keys fires while you are typing, in the diagram's own search box or anywhere else in the editor.
-
-`?` is where a US layout puts it. On a layout that puts it elsewhere, use the keyboard button in the toolbar or rebind the command.
-
-Every command is also in the palette, with one exception: hiding the hovered table's relations acts on whatever the pointer is over, and opening the palette takes the pointer away, so it would always find nothing. Use the key for that one, or rebind it.
-
-The same list is available in the app: press `?` or use the keyboard button in the toolbar. It shows the defaults, not a key you have rebound.
+Only the ranges you changed are written, so one undo takes back one edit and the rest of your file is untouched. Text that would not parse is refused before it reaches the file, with the parser's own message. A schema that has never been saved offers no editing at all; a file that cannot be written to says so when you apply.
 
 ## Languages
 

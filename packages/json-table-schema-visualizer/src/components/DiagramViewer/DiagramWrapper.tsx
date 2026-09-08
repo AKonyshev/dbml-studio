@@ -450,17 +450,6 @@ const DiagramWrapper = ({
    * reader left behind. The viewer is keyed by document, so a document switch
    * mounts a fresh one and lands here too.
    */
-  /**
-   * Undo restores the text of a rename but not the keys these stores hold, so
-   * every new schema is checked against the renames this session made. See
-   * `reconcileAfterSchemaChange`.
-   */
-  useEffect(() => {
-    reconcileAfterSchemaChange(tablesMeta.map((table) => table.name));
-  }, [tablesMeta]);
-
-  useEffect(() => forgetRenames, []);
-
   const arrangedAtDetailLevel = useRef(detailLevel);
   useEffect(() => {
     if (arrangedAtDetailLevel.current === detailLevel) {
@@ -471,6 +460,17 @@ const DiagramWrapper = ({
     tableCoordsStore.switchToDetailLevel(tablesMeta, refs);
     fitToView();
   }, [detailLevel, tablesMeta, refs]);
+
+  /**
+   * Undo restores the text of a rename but not the keys these stores hold, so
+   * every new schema is checked against the renames this session made. See
+   * `reconcileAfterSchemaChange`.
+   */
+  useEffect(() => {
+    reconcileAfterSchemaChange(tablesMeta.map((table) => table.name));
+  }, [tablesMeta]);
+
+  useEffect(() => forgetRenames, []);
 
   const [, setColorRelations] = useLocalStorage<boolean>(
     STORAGE_KEYS.COLOR_RELATIONS,

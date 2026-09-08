@@ -19,6 +19,7 @@ export const focusColumn = (
   columnFocusStore.set({ table, field, offsetY });
 };
 
+/** Point at nothing, without touching the table selection. */
 export const clearColumnFocus = (): void => {
   columnFocusStore.set(null);
 };

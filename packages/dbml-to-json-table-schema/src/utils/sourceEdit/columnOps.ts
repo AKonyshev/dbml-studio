@@ -3,6 +3,9 @@ import { findTable } from "./sourceIndex";
 import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
 import type { SourceIndex, TextEdit } from "./types";
 
+/** Every operation except the rename, which is not local to one column. */
+export type ColumnOperation = Exclude<EditOperation, { kind: "renameTable" }>;
+
 export type ColumnEditResult =
   | { ok: true; edits: TextEdit[] }
   | { ok: false; reason: EditRejection };
@@ -24,12 +27,8 @@ const reject = (reason: EditRejection): ColumnEditResult => ({
 export const planColumnEdit = (
   text: string,
   index: SourceIndex,
-  operation: EditOperation,
+  operation: ColumnOperation,
 ): ColumnEditResult => {
-  if (operation.kind === "renameTable") {
-    return reject({ code: "tableNotFound" });
-  }
-
   const table = findTable(index, operation.table);
   if (table === null) return reject({ code: "tableNotFound" });
 

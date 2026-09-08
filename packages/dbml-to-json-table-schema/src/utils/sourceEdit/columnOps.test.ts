@@ -1,7 +1,6 @@
-import { planColumnEdit } from "./columnOps";
+import { planColumnEdit, type ColumnOperation } from "./columnOps";
 import { buildSourceIndex } from "./sourceIndex";
 
-import type { EditOperation } from "shared/types/diagramEdit";
 import type { TextEdit } from "./types";
 
 const src = [
@@ -22,7 +21,7 @@ const apply = (text: string, edits: TextEdit[]): string => {
   return out;
 };
 
-const run = (operation: EditOperation): string => {
+const run = (operation: ColumnOperation): string => {
   const result = planColumnEdit(src, buildSourceIndex(src), operation);
   if (!result.ok) throw new Error(`rejected: ${result.reason.code}`);
 

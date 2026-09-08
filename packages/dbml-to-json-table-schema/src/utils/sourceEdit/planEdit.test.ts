@@ -118,3 +118,27 @@ describe("planEdit", () => {
     expect(readFieldText(src, "ghosts", "id")).toBeNull();
   });
 });
+
+describe("renaming a schema-qualified table", () => {
+  const schemaSrc = [
+    "Table analytics.users {",
+    "  id integer [pk]",
+    "}",
+    "",
+  ].join("\n");
+
+  // The diagram shows `analytics.users` and the file declares `users`; sending
+  // the qualified string as the new name wrote the schema in twice and the
+  // file stopped parsing. The caller has to send the declared name.
+  it("takes the declared name and keeps the schema where it is", () => {
+    const plan = planEdit(schemaSrc, {
+      kind: "renameTable",
+      table: "analytics.users",
+      newName: "accounts",
+    });
+    if (!plan.ok) throw new Error(plan.reason.code);
+
+    expect(plan.nextText).toContain("Table analytics.accounts {");
+    expect(plan.table).toBe("analytics.accounts");
+  });
+});

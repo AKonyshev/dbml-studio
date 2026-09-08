@@ -75,28 +75,29 @@ legend; case 6.3 checks the two agree.
 
 ## 4. Group selection — all hosts
 
-| #    | Case                                      | Steps                                                    | Expected                                                                 | Automated                                  |
-| ---- | ----------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------ |
-| 4.1  | Enter and leave the mode                  | Press `V`, then `V` again                                | The toolbar button reads Select, then Pan                                | Manual                                     |
-| 4.2  | The mode does not survive a reload        | Press `V`, reload                                        | Back in pan mode                                                         | `interactionModeStore.test.ts`             |
-| 4.3  | Marquee catches by overlap                | Drag a rectangle that clips a table's corner             | That table is selected                                                   | `selectionFromMarquee.test.ts`             |
-| 4.4  | Marquee dragged up and left               | Drag from bottom-right to top-left                       | Same tables caught as the other way round                                | `selectionFromMarquee.test.ts`             |
-| 4.5  | Shift adds                                | Shift-drag a second rectangle                            | The first selection is kept and added to                                 | `selectionFromMarquee.test.ts`             |
-| 4.6  | Click selects one                         | Click a table in select mode                             | Only it is selected                                                      | `site.spec.ts` — shift adds and takes away |
-| 4.7  | Shift-click toggles                       | Shift-click a selected table                             | It leaves the selection                                                  | `site.spec.ts`                             |
-| 4.8  | Click on empty canvas clears              | Click nothing                                            | Nothing is selected                                                      | `selectionFromMarquee.test.ts`             |
-| 4.9  | Group move                                | Select two tables, drag one                              | Both move by the same amount, relations follow                           | `site.spec.ts`                             |
-| 4.10 | The move is stored                        | After a group move, reload                               | The tables are where they were left                                      | `site.spec.ts`                             |
-| 4.11 | Dragging an unselected table              | With a group selected, drag a table outside it           | The selection becomes that one table, and only it moves                  | Manual                                     |
-| 4.12 | Escape clears                             | Press Escape with a selection                            | Nothing is selected                                                      | `site.spec.ts`                             |
-| 4.13 | Escape with nothing selected is not taken | Press Escape with no selection, inside an expanded frame | The frame collapses — the key was not spent                              | `embed.spec.ts` — Escape puts it back      |
-| 4.14 | Escape in the editor is not taken         | Type in the editor with a selection, press Escape        | The editor gets the key; the selection is left alone                     | Manual                                     |
-| 4.15 | Leaving the mode clears                   | Select tables, press `V`                                 | Nothing is selected                                                      | `site.spec.ts`                             |
-| 4.16 | Space pans without losing the selection   | Hold space, drag, release                                | The view moves, nothing is deselected, no marquee is drawn               | `site.spec.ts`                             |
-| 4.17 | Space is left to a focused button         | Focus a toolbar button in select mode, press space       | The button activates                                                     | `isTypingTarget.test.ts`                   |
-| 4.18 | Middle button pans                        | Middle-drag in select mode                               | The view moves                                                           | Manual                                     |
-| 4.19 | A pan released off the canvas             | Middle-drag, leave the canvas, release                   | Select mode still works — the next drag draws a marquee and does not pan | `site.spec.ts`                             |
-| 4.20 | Selection does not cross documents        | Select tables, open another schema                       | Nothing is selected                                                      | Manual                                     |
+| #    | Case                                      | Steps                                                    | Expected                                                                         | Automated                                  |
+| ---- | ----------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------ |
+| 4.1  | Enter and leave the mode                  | Press `V`, then `V` again                                | The toolbar button reads Select, then Pan                                        | Manual                                     |
+| 4.2  | The mode does not survive a reload        | Press `V`, reload                                        | Back in pan mode                                                                 | `interactionModeStore.test.ts`             |
+| 4.3  | Marquee catches by overlap                | Drag a rectangle that clips a table's corner             | That table is selected                                                           | `selectionFromMarquee.test.ts`             |
+| 4.4  | Marquee dragged up and left               | Drag from bottom-right to top-left                       | Same tables caught as the other way round                                        | `selectionFromMarquee.test.ts`             |
+| 4.5  | Shift adds                                | Shift-drag a second rectangle                            | The first selection is kept and added to                                         | `selectionFromMarquee.test.ts`             |
+| 4.6  | Click selects one                         | Click a table in select mode                             | Only it is selected                                                              | `site.spec.ts` — shift adds and takes away |
+| 4.7  | Shift-click toggles                       | Shift-click a selected table                             | It leaves the selection                                                          | `site.spec.ts`                             |
+| 4.8  | Click on empty canvas clears              | Click nothing                                            | Nothing is selected                                                              | `selectionFromMarquee.test.ts`             |
+| 4.9  | Group move                                | Select two tables, drag one                              | Both move by the same amount, relations follow                                   | `site.spec.ts`                             |
+| 4.10 | The move is stored                        | After a group move, reload                               | The tables are where they were left                                              | `site.spec.ts`                             |
+| 4.11 | Dragging an unselected table              | With a group selected, drag a table outside it           | The selection becomes that one table, and only it moves                          | Manual                                     |
+| 4.12 | Escape clears                             | Press Escape with a selection                            | Nothing is selected                                                              | `site.spec.ts`                             |
+| 4.13 | Escape with nothing selected is not taken | Press Escape with no selection, inside an expanded frame | The frame collapses — the key was not spent                                      | `embed.spec.ts` — Escape puts it back      |
+| 4.14 | Escape in the editor is not taken         | Type in the editor with a selection, press Escape        | The editor gets the key; the selection is left alone                             | Manual                                     |
+| 4.15 | Leaving the mode clears                   | Select tables, press `V`                                 | Nothing is selected                                                              | `site.spec.ts`                             |
+| 4.16 | Space pans without losing the selection   | Hold space, drag, release                                | The view moves, nothing is deselected, no marquee is drawn                       | `site.spec.ts`                             |
+| 4.17 | Space is left to a focused button         | Focus a toolbar button in select mode, press space       | The button activates                                                             | `isTypingTarget.test.ts`                   |
+| 4.18 | Middle button pans                        | Middle-drag in select mode                               | The view moves                                                                   | Manual                                     |
+| 4.19 | A pan released off the canvas             | Middle-drag, leave the canvas, release                   | Select mode still works — the next drag draws a marquee and does not pan         | `site.spec.ts`                             |
+| 4.20 | Selection does not cross documents        | Select tables, open another schema                       | Nothing is selected                                                              | Manual                                     |
+| 4.21 | A column takes the selection away         | Select tables, click a column                            | The tables are deselected and the column is outlined; clicking a table undoes it | `currentTarget.test.ts`                    |
 
 ## 5. Detail levels, relations and appearance — all hosts
 
@@ -214,6 +215,35 @@ deployed.
 | 10.15 | Delete a connection                     | Delete it                                | It goes from the view and from storage                        | `connectionStore.test.ts`                             |
 | 10.16 | Commands are namespaced                 | Open the palette, type "DBML"            | Every command is `dbmlStudio.*`                               | Manual                                                |
 | 10.17 | A command reaches the diagram           | Run any diagram command with one open    | The page acts on it — keys and the palette both go this way   | `hostRelay.test.ts` (`test:integration`)              |
+
+## 10a. Editing from the diagram — VS Code extension
+
+The only behaviour in this document that writes to the schema file. It exists in
+the extension alone: the diagram is shared, but editing is a capability the host
+lends it and neither the web app nor the embedded frame lends one.
+
+| #      | Case                             | Steps                                                                 | Expected                                                                          | Automated                 |
+| ------ | -------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------- |
+| 10a.1  | Point at a column                | Click a column                                                        | It is outlined; any selected tables are not                                       | `currentTarget.test.ts`   |
+| 10a.2  | Open the editor                  | Press `F2`, or double-click the column                                | A box opens on the column holding that line as it stands in the file              | Manual                    |
+| 10a.3  | The first column of a table      | Open the editor on a table's first column                             | The text has no leading indentation, the same as any other column                 | `fieldRange.test.ts`      |
+| 10a.4  | Apply                            | Change the text, press `Enter`                                        | Only that line changes; the file is dirty, not saved                              | `fieldEditing.test.ts`    |
+| 10a.5  | One undo takes back one edit     | Press `Ctrl/Cmd+Z` in the text editor                                 | The whole edit is gone and nothing else moved                                     | `fieldEditing.test.ts`    |
+| 10a.6  | Text that does not parse         | Type something DBML cannot parse, press `Enter`                       | The box stays open with the text and the parser's message; the file is untouched  | `planEdit.test.ts`        |
+| 10a.7  | Discard                          | Change the text, press `Escape`                                       | Nothing is written                                                                | `quickEditIntent.test.ts` |
+| 10a.8  | A multi-line note                | Press `Shift+Enter`                                                   | A line break goes into the text rather than applying                              | `quickEditIntent.test.ts` |
+| 10a.9  | Add, delete, reorder             | `Ctrl+Enter`, `Ctrl+Delete`, `Ctrl+Up` / `Ctrl+Down`                  | A column is added below, removed, moved                                           | `columnOps.test.ts`       |
+| 10a.10 | Comments and inline refs survive | Edit a column whose line carries a `//` comment and a `ref:`          | Both are still there, unchanged, in the part you did not touch                    | `columnOps.test.ts`       |
+| 10a.11 | The diagram's letters stay off   | With the box open, type `t` and `d`                                   | The letters go into the text; the diagram toggles nothing                         | Manual                    |
+| 10a.12 | A column a relation depends on   | Delete a column another table's `Ref` points at                       | Refused with the parser's message; the file is untouched                          | `planEdit.test.ts`        |
+| 10a.13 | Rename a table                   | Select one table, no column pointed at, press `F2`, rename            | The header and every `Ref` naming it follow; the layout entry in the file follows | `renameOp.test.ts`        |
+| 10a.14 | A table with an alias            | Rename a table declared `Table users as u` with refs written via `u`  | The alias is untouched and those relations still draw                             | `renameOp.test.ts`        |
+| 10a.15 | A rename keeps the table's state | Rename a table that was moved, collapsed and had its relations hidden | Position, detail level and hidden relations come with it; the colour changes      | `renameReconcile.test.ts` |
+| 10a.16 | Undoing a rename                 | Undo the rename                                                       | The name goes back and the position comes back with it                            | `renameReconcile.test.ts` |
+| 10a.17 | A name already taken             | Rename a table onto another table's name                              | Refused before anything is written                                                | `renameOp.test.ts`        |
+| 10a.18 | The document moved underneath    | Edit the same line in the text editor, then apply the box             | Refused, and the box says the document changed                                    | `planEdit.test.ts`        |
+| 10a.19 | A file that cannot be written    | Show the diagram for an unsaved (untitled) schema, click a column     | No editing box opens at all                                                       | `diagramView.test.ts`     |
+| 10a.20 | The other hosts do not edit      | Open the same schema in the web app and the embedded frame            | Columns take no focus outline and `F2` does nothing                               | Manual                    |
 
 ## 11. Libraries
 

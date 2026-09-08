@@ -6,6 +6,7 @@ import { useQuickEditPosition } from "./useQuickEditPosition";
 import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
+import { COLUMN_HEIGHT } from "@/constants/sizing";
 import { type MessageKey } from "@/i18n/messages";
 import { t } from "@/i18n/t";
 import { focusColumn } from "@/stores/currentTarget";
@@ -18,6 +19,17 @@ import {
 import { recordRename, renameTableState } from "@/stores/renameReconcile";
 
 const NEW_COLUMN_TEXT = "new_column varchar";
+
+/**
+ * The identifier a table is declared under, out of the name the diagram shows.
+ *
+ * The two differ whenever a schema is involved: the diagram says
+ * `analytics.users` and the file says `Table analytics.users`, where only the
+ * second half is the name. Renaming with the qualified string put the schema in
+ * twice and the file stopped parsing.
+ */
+const declaredNameOf = (fullName: string): string =>
+  fullName.slice(fullName.lastIndexOf(".") + 1);
 const MIN_POPUP_WIDTH = 200;
 
 /**
@@ -25,7 +37,7 @@ const MIN_POPUP_WIDTH = 200;
  * verbatim underneath. The parser speaks English only, and paraphrasing a
  * syntax error into another language would lose the part that says where.
  */
-const describe = (reason: EditRejection): string => {
+const messageForRejection = (reason: EditRejection): string => {
   if (reason.code === "parseError") {
     return `${t("quickEdit.rejected")} ${reason.message}`;
   }
@@ -62,7 +74,7 @@ const QuickEditPopup = (): JSX.Element | null => {
     const host = getDiagramEditingHost();
     const current =
       target.field === undefined
-        ? target.table
+        ? declaredNameOf(target.table)
         : host?.readFieldText(target.table, target.field) ?? "";
 
     setText(current);
@@ -86,7 +98,7 @@ const QuickEditPopup = (): JSX.Element | null => {
     );
 
     if (!outcome.ok) {
-      setError(describe(outcome.reason));
+      setError(messageForRejection(outcome.reason));
 
       return false;
     }
@@ -101,7 +113,13 @@ const QuickEditPopup = (): JSX.Element | null => {
     }
 
     if (outcome.field !== undefined) {
-      focusColumn(outcome.table, outcome.field, target.offsetY);
+      // A column added below sits one row further down; anything else is the
+      // row the popup is already on.
+      const offsetY =
+        operation.kind === "insertFieldAfter"
+          ? target.offsetY + COLUMN_HEIGHT
+          : target.offsetY;
+      focusColumn(outcome.table, outcome.field, offsetY);
     }
 
     return true;

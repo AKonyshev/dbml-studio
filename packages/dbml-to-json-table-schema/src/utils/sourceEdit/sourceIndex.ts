@@ -105,8 +105,19 @@ export const buildSourceIndex = (text: string): SourceIndex => {
         };
       });
 
+      // A ref names a table by whichever spelling it was written with, so an
+      // endpoint saying `users` may be another table's *alias* rather than this
+      // table's name. Rewriting those would break a file that still parses,
+      // which is the one kind of damage the parse gate cannot catch — so when
+      // the name is ambiguous, no ref is touched at all.
+      const nameIsSomeoneElsesAlias = schema.tables.some(
+        (other) =>
+          other !== table &&
+          (other as { alias?: string | null }).alias === parts.declaredName,
+      );
+
       const refNameRanges: SourceRange[] = [];
-      for (const ref of schema.refs) {
+      for (const ref of nameIsSomeoneElsesAlias ? [] : schema.refs) {
         const usesDeclaredName = ref.endpoints.some(
           (endpoint) => endpoint.tableName === parts.declaredName,
         );

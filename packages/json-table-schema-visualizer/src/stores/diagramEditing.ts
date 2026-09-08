@@ -1,5 +1,3 @@
-import { useCallback, useSyncExternalStore } from "react";
-
 import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 
 export interface DiagramEditingHost {
@@ -25,29 +23,11 @@ export interface DiagramEditingHost {
  * single diagram on a page.
  */
 let host: DiagramEditingHost | null = null;
-const listeners = new Set<() => void>();
 
 export const setDiagramEditingHost = (
   next: DiagramEditingHost | null,
 ): void => {
   host = next;
-  listeners.forEach((listener) => {
-    listener();
-  });
 };
 
 export const getDiagramEditingHost = (): DiagramEditingHost | null => host;
-
-const subscribe = (listener: () => void): (() => void) => {
-  listeners.add(listener);
-
-  return () => {
-    listeners.delete(listener);
-  };
-};
-
-export const useIsDiagramEditable = (): boolean => {
-  const read = useCallback(() => host !== null && host.isEditable(), []);
-
-  return useSyncExternalStore(subscribe, read, read);
-};
