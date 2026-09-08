@@ -42,6 +42,11 @@ const escapeForPattern = (value: string): string =>
  * only one of them is being renamed. So the schema is written into the pattern
  * and the range returned covers the name alone — what `planRename` puts back
  * there is the declared name, without the prefix it was found behind.
+ *
+ * That refusal is `isBehindASchema`, asked of the offset rather than written
+ * into the pattern, because a schema is spelt as freely as a table is: the
+ * lookbehind alone let `"sch"."users"` and `sch."users"` through, and
+ * renaming the bare `users` then moved another schema's ref with it.
  */
 const identifierRangesIn = (
   text: string,
@@ -75,6 +80,11 @@ const identifierRangesIn = (
     const written = schemaName === null ? match[0] : nameTailOf(match[0], name);
     const at = match.index + match[0].length - written.length;
 
+    if (schemaName === null && isBehindASchema(text, range.start + at)) {
+      match = pattern.exec(slice);
+      continue;
+    }
+
     found.push({
       start: range.start + at,
       end: range.start + at + written.length,
@@ -84,6 +94,19 @@ const identifierRangesIn = (
   }
 
   return found;
+};
+
+/**
+ * Whether a name written at this offset is the tail of a qualified one.
+ *
+ * `"sch"."users"` and `sch . users` are the same table as `sch.users`, and
+ * none of them is the bare `users` a rename may be looking for.
+ */
+const isBehindASchema = (text: string, at: number): boolean => {
+  let back = at - 1;
+  while (back >= 0 && /\s/.test(text[back])) back -= 1;
+
+  return back >= 0 && text[back] === ".";
 };
 
 /** `sch."users"` -> `"users"`, `sch.users` -> `users`. */
@@ -161,10 +184,15 @@ export const buildSourceIndex = (text: string): SourceIndex => {
       (other) => other !== table && other.alias === parts.declaredName,
     );
 
+    // An endpoint carries the schema it was written through, and it has to be
+    // read: `users` and `sch.users` are two tables, and a ref that names the
+    // second one answers to the first one's name on its own.
     const refNameRanges: NameOccurrence[] = [];
     for (const ref of nameIsSomeoneElsesAlias ? [] : raw.refs) {
       const usesDeclaredName = ref.endpoints.some(
-        (endpoint) => endpoint.tableName === parts.declaredName,
+        (endpoint) =>
+          endpoint.tableName === parts.declaredName &&
+          (endpoint.schemaName ?? null) === parts.schemaName,
       );
       if (!usesDeclaredName) continue;
 

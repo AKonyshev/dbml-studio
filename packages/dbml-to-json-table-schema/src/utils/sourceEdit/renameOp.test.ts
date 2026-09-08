@@ -200,6 +200,91 @@ describe("planRename", () => {
     expect(next).toContain("Table analysis {");
   });
 
+  it("leaves a quoted ref that goes through another schema alone", () => {
+    const quotedRefs = [
+      "Table users {",
+      "  id integer [pk]",
+      "}",
+      "",
+      "Table sch.users {",
+      "  user_id integer [pk]",
+      "}",
+      "",
+      'Ref: "sch"."users"."user_id" > "users"."id"',
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(quotedRefs), {
+      kind: "renameTable",
+      table: "users",
+      newName: "people",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(quotedRefs, result.edits);
+    expect(next).toContain("Table people {");
+    expect(next).toContain('Ref: "sch"."users"."user_id" > "people"."id"');
+  });
+
+  it("leaves a half-quoted ref that goes through another schema alone", () => {
+    const halfQuoted = [
+      "Table users {",
+      "  id integer [pk]",
+      "}",
+      "",
+      "Table sch.users {",
+      "  user_id integer [pk]",
+      "}",
+      "",
+      'Ref: sch."users"."user_id" > users.id',
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(halfQuoted), {
+      kind: "renameTable",
+      table: "users",
+      newName: "people",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(halfQuoted, result.edits);
+    expect(next).toContain("Table people {");
+    expect(next).toContain('Ref: sch."users"."user_id" > people.id');
+  });
+
+  it("does not move another schema's ref onto the name being taken", () => {
+    const collide = [
+      "Table users {",
+      "  id integer [pk]",
+      "}",
+      "",
+      "Table people {",
+      "  id integer [pk]",
+      "}",
+      "",
+      "Table sch.users {",
+      "  user_id integer [pk]",
+      "}",
+      "",
+      "Table sch.people {",
+      "  user_id integer [pk]",
+      "}",
+      "",
+      'Ref: "sch"."users"."user_id" > "users"."id"',
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(collide), {
+      kind: "renameTable",
+      table: "users",
+      newName: "people2",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(collide, result.edits);
+    expect(next).toContain('Ref: "sch"."users"."user_id" > "people2"."id"');
+  });
+
   it("keeps a quoted name inside a qualified ref quoted", () => {
     const quotedName = [
       'Table sch."analysis one" {',
@@ -225,6 +310,32 @@ describe("planRename", () => {
     const next = apply(quotedName, result.edits);
     expect(next).toContain('Table sch."analysis two" {');
     expect(next).toContain('Ref: readings.analysis_id > sch."analysis two".id');
+  });
+
+  it("follows a quoted ref through the schema of the table being renamed", () => {
+    const quotedRefs = [
+      "Table users {",
+      "  id integer [pk]",
+      "}",
+      "",
+      "Table sch.users {",
+      "  user_id integer [pk]",
+      "}",
+      "",
+      'Ref: "sch"."users"."user_id" > "users"."id"',
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(quotedRefs), {
+      kind: "renameTable",
+      table: "sch.users",
+      newName: "people",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(quotedRefs, result.edits);
+    expect(next).toContain("Table sch.people {");
+    expect(next).toContain('Ref: "sch"."people"."user_id" > "users"."id"');
   });
 
   it("refuses a name another table already uses", () => {
