@@ -55,6 +55,20 @@ const parseFailureOf = (candidate: string): EditRejection | null => {
   }
 };
 
+const fieldTextIn = (
+  text: string,
+  index: SourceIndex,
+  tableName: string,
+  fieldName: string,
+): string | null => {
+  const table = findTable(index, tableName);
+  if (table === null) return null;
+  const field = findField(table, fieldName);
+  if (field === null) return null;
+
+  return text.slice(field.range.start, field.range.end);
+};
+
 /** The current source text of one column, for the popup to open against. */
 export const readFieldText = (
   text: string,
@@ -68,12 +82,7 @@ export const readFieldText = (
     return null;
   }
 
-  const table = findTable(index, tableName);
-  if (table === null) return null;
-  const field = findField(table, fieldName);
-  if (field === null) return null;
-
-  return text.slice(field.range.start, field.range.end);
+  return fieldTextIn(text, index, tableName, fieldName);
 };
 
 /**
@@ -134,7 +143,9 @@ export const planEdit = (
   }
 
   if (expectedText !== undefined && operation.kind !== "renameTable") {
-    const current = readFieldText(text, operation.table, operation.field);
+    // Asked of the index already in hand: `readFieldText` would build a
+    // second one, and indexing is the expensive half of planning an edit.
+    const current = fieldTextIn(text, index, operation.table, operation.field);
     if (current !== expectedText) {
       return { ok: false, reason: { code: "staleText" } };
     }
