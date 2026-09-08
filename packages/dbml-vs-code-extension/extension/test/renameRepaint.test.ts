@@ -84,36 +84,71 @@ suite("the frame a renamed table is first drawn in", () => {
         await sleep(300);
       }
 
+      // At full detail, which is where the reader works and where the table
+      // carries its columns. The file's own layout opens at header level, so
+      // this is two steps away.
+      await vscode.commands.executeCommand("dbmlStudio.detailLevel");
+      await sleep(700);
+      await vscode.commands.executeCommand("dbmlStudio.detailLevel");
+      await sleep(900);
       await vscode.commands.executeCommand("dbmlStudio.fitToView");
       await sleep(800);
 
-      // Find a table header the same way the reader reaches one.
-      const box = await frame.locator("canvas").first().boundingBox();
-      assert.ok(box);
-      let name: string | null = null;
-      outer: for (let ry = 1; ry <= 6; ry += 1) {
-        for (let rx = 1; rx <= 8; rx += 1) {
-          await frame
-            .page()
-            .mouse.move(
-              box.x + (box.width * rx) / 9,
-              box.y + (box.height * ry) / 7,
-            );
-          await sleep(60);
-          await vscode.commands.executeCommand("dbmlStudio.quickEdit");
-          await sleep(120);
-          if ((await frame.locator("textarea").count()) > 0) {
-            const held = await frame.locator("textarea").first().inputValue();
-            if (!/\s/.test(held.trim())) {
-              name = held.trim();
-              break outer;
-            }
-            await frame.locator("textarea").first().press("Escape");
-            await sleep(80);
+      // Point at a table's header exactly, rather than sweeping the canvas
+      // and hoping. At full detail a table is mostly columns, and a sweep
+      // coarse enough to finish never lands on the thin header — which is how
+      // this measurement quietly failed to run at the level the reader uses.
+      //
+      // Konva knows where the table is on screen; the only thing missing is
+      // where the frame sits inside the page, which is the difference between
+      // the canvas rectangle as Playwright sees it and as the page does.
+      const canvasBox = await frame.locator("canvas").first().boundingBox();
+      assert.ok(canvasBox, "no canvas");
+
+      const picked = (await frame.evaluate(`(() => {
+        const stage = window.Konva.stages[0];
+        const nodes = stage.find((n) => typeof n.name === "function" && String(n.name()).indexOf("table-") === 0);
+        for (const node of nodes) {
+          const p = node.getAbsolutePosition();
+          const w = node.width() * stage.scaleX();
+          // Well inside the header row, and comfortably on screen.
+          const x = p.x + Math.min(60, w / 2);
+          const y = p.y + 12 * stage.scaleY();
+          if (x > 20 && y > 20 && x < stage.width() - 20 && y < stage.height() - 20) {
+            return JSON.stringify({ name: String(node.name()).slice(6), x, y });
           }
         }
-      }
-      assert.ok(name, "no table header found");
+        return "";
+      })()`)) as string;
+      assert.ok(picked !== "", "no table header is on screen");
+      const header = JSON.parse(picked) as {
+        name: string;
+        x: number;
+        y: number;
+      };
+      const name = header.name;
+
+      // Konva measures the pointer from the canvas, so the canvas's own place
+      // on the page is the whole conversion. Subtracting the canvas offset
+      // *within the frame* as well put every aim twenty pixels to the left,
+      // which is how this quietly pointed at nothing.
+      await frame
+        .page()
+        .mouse.move(header.x + canvasBox.x, header.y + canvasBox.y);
+      await sleep(150);
+
+      await vscode.commands.executeCommand("dbmlStudio.quickEdit");
+      await waitFor(
+        "the edit box to open on the table",
+        async () => (await frame.locator("textarea").count()) > 0,
+        10000,
+      );
+      const held = await frame.locator("textarea").first().inputValue();
+      assert.strictEqual(
+        held.trim(),
+        name,
+        `the box opened on something else: ${held}`,
+      );
 
       const renamed = `${name}1`;
       const selector = `.table-${renamed.replace(/\s+/g, "_")}`;
@@ -152,19 +187,26 @@ suite("the frame a renamed table is first drawn in", () => {
       const atOrigin = samples.filter((state) => state.endsWith("node 0,0"));
       const settled = samples[samples.length - 1];
 
-      assert.ok(
-        samples.some((state) => !state.endsWith("node -")),
-        `the renamed table never appeared: ${JSON.stringify(distinct)}`,
+      // Every frame the table is on screen must show it in the same place.
+      // Not merely "never at the origin": a jump of a hundred pixels and back
+      // is the same defect and reads the same to the eye.
+      const drawn = samples.filter((state) => !state.endsWith("node -"));
+      const places = [
+        ...new Set(drawn.map((state) => state.split("node ")[1])),
+      ];
+
+      assert.ok(drawn.length > 0, `the renamed table never appeared`);
+      assert.deepStrictEqual(
+        places,
+        [settledAt],
+        `the table was drawn in more than one place: ${JSON.stringify(distinct)}`,
       );
       assert.strictEqual(
         atOrigin.length,
         0,
         `the table was drawn at the origin: ${JSON.stringify(distinct)}`,
       );
-      assert.ok(
-        settled.endsWith(`node ${settledAt}`),
-        `the table did not settle where it stood: ${settled}, was ${settledAt}`,
-      );
+      assert.ok(settled.endsWith(`node ${settledAt}`), settled);
     } finally {
       await browser.close();
     }

@@ -119,6 +119,16 @@ suite("an edit from the diagram reaches the document", () => {
     await vscode.commands.executeCommand("dbmlStudio.previewDiagramsInPlace");
     await waitFor("the diagram tab", diagramTabIsOpen);
 
+    // The source beside the diagram, from before the edit and left open — the
+    // way a reader keeps it. Opening it only to undo does not work: closing a
+    // document's last text editor takes its undo history with it, so the
+    // reopened one has nothing to undo and the assertion below reads as a
+    // broken feature rather than a rearranged test.
+    await vscode.window.showTextDocument(document, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preview: false,
+    });
+
     const browser = await chromium.connectOverCDP(
       `http://127.0.0.1:${DEBUG_PORT}`,
     );
@@ -172,22 +182,16 @@ suite("an edit from the diagram reaches the document", () => {
         "more than the edited range was written",
       );
 
-      // The diagram goes first, so that `undo` cannot land in it. A custom
-      // editor takes the command when it has focus, and the tests either side
-      // of this one leave focus in the page: they drive the canvas with a real
-      // mouse. Closing it leaves the text editor as the only thing that can
-      // answer, which is what this test is asking about.
-      const diagramTab = vscode.window.tabGroups.all
-        .flatMap((group) => group.tabs)
-        .find(
-          (tab) =>
-            (tab.input as { viewType?: string } | undefined)?.viewType ===
-            "dbml-studio-diagram",
-        );
-      if (diagramTab !== undefined) {
-        await vscode.window.tabGroups.close(diagramTab);
-      }
-      await vscode.window.showTextDocument(document);
+      // Focus the source editor: a custom editor takes `undo` when it has
+      // focus, and the page has it after an edit.
+      await vscode.window.showTextDocument(document, { preview: false });
+      await waitFor(
+        "the text editor to be the active one",
+        () =>
+          vscode.window.activeTextEditor?.document.uri.toString() ===
+          uri.toString(),
+        10000,
+      );
       await vscode.commands.executeCommand("undo");
       await waitFor(
         "the undo to take the edit back",
