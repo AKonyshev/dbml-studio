@@ -35,32 +35,60 @@ const escapeForPattern = (value: string): string =>
  * schemas quote (`"sch.users"."id"`) and hand-written ones do not
  * (`users.id`) — matching only the bare form left every ref in a quoted file
  * untouched, and a rename then broke the file.
+ *
+ * A table that is in a schema is named through it, `sch.users.id`, and the
+ * bare pattern cannot find that: it refuses a name with a dot in front of it,
+ * and it has to, because `sch.users` and `users` are two different tables and
+ * only one of them is being renamed. So the schema is written into the pattern
+ * and the range returned covers the name alone — what `planRename` puts back
+ * there is the declared name, without the prefix it was found behind.
  */
 const identifierRangesIn = (
   text: string,
   range: SourceRange,
   name: string,
+  schemaName: string | null,
 ): NameOccurrence[] => {
   const found: NameOccurrence[] = [];
   const slice = text.slice(range.start, range.end);
   const escaped = escapeForPattern(name);
-  const pattern = new RegExp(
-    `(?:"${escaped}"|(?<![A-Za-z0-9_."])${escaped})(?=\\s*\\.)`,
-    "g",
-  );
+  const spelt = `(?:"${escaped}"|${escaped})`;
+  const pattern =
+    schemaName === null
+      ? new RegExp(
+          `(?:"${escaped}"|(?<![A-Za-z0-9_."])${escaped})(?=\\s*\\.)`,
+          "g",
+        )
+      : new RegExp(
+          `(?<![A-Za-z0-9_."])(?:"${escapeForPattern(schemaName)}"|${escapeForPattern(
+            schemaName,
+          )})\\s*\\.\\s*${spelt}(?=\\s*\\.)`,
+          "g",
+        );
 
   let match = pattern.exec(slice);
   while (match !== null) {
+    // The name sits at the end of the match either way: the lookahead that
+    // proves a dot follows takes up none of it. Measured back from the end
+    // rather than read out of a capture group, which needs a flag this
+    // project's target does not carry.
+    const written = schemaName === null ? match[0] : nameTailOf(match[0], name);
+    const at = match.index + match[0].length - written.length;
+
     found.push({
-      start: range.start + match.index,
-      end: range.start + match.index + match[0].length,
-      quoted: match[0].startsWith('"'),
+      start: range.start + at,
+      end: range.start + at + written.length,
+      quoted: written.startsWith('"'),
     });
     match = pattern.exec(slice);
   }
 
   return found;
 };
+
+/** `sch."users"` -> `"users"`, `sch.users` -> `users`. */
+const nameTailOf = (matched: string, name: string): string =>
+  matched.endsWith(`"${name}"`) ? `"${name}"` : name;
 
 const metaInfoNameRanges = (
   text: string,
@@ -145,6 +173,7 @@ export const buildSourceIndex = (text: string): SourceIndex => {
           text,
           { start: ref.token.start.offset, end: ref.token.end.offset },
           parts.declaredName,
+          parts.schemaName,
         ),
       );
     }

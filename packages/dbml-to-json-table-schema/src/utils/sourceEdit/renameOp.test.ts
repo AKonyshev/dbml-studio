@@ -104,6 +104,129 @@ describe("planRename", () => {
     );
   });
 
+  // A schema declared as a schema, not as a dot inside one quoted name. The
+  // refs then write the table qualified, `sch.analysis.id`, and only the part
+  // after the prefix is the name being renamed. Left unfound, the ref went on
+  // naming a table that no longer existed and the whole rename was refused as
+  // a parse error against a file the reader had not touched.
+  const qualified = [
+    "Table sch.analysis {",
+    "  id uuid [pk]",
+    "}",
+    "",
+    "Table sch.analysis_water {",
+    "  id uuid [pk]",
+    "  analysis_id uuid",
+    "}",
+    "",
+    "Ref: sch.analysis_water.analysis_id > sch.analysis.id",
+    "",
+  ].join("\n");
+
+  it("follows a standalone ref written with the schema prefix", () => {
+    const result = planRename(buildSourceIndex(qualified), {
+      kind: "renameTable",
+      table: "sch.analysis",
+      newName: "analysis111",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(qualified, result.edits);
+    expect(next).toContain("Table sch.analysis111 {");
+    expect(next).toContain(
+      "Ref: sch.analysis_water.analysis_id > sch.analysis111.id",
+    );
+    // The table beside it is named out of the same characters and must not be
+    // caught by a pattern that stops at the prefix.
+    expect(next).toContain("Table sch.analysis_water {");
+  });
+
+  it("follows an inline ref written with the schema prefix", () => {
+    const inline = [
+      "Table sch.analysis {",
+      "  id uuid [pk]",
+      "}",
+      "",
+      "Table sch.analysis_water {",
+      "  id uuid [pk]",
+      "  analysis_id uuid [ref: > sch.analysis.id]",
+      "}",
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(inline), {
+      kind: "renameTable",
+      table: "sch.analysis",
+      newName: "analysis111",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(inline, result.edits);
+    expect(next).toContain("Table sch.analysis111 {");
+    expect(next).toContain("analysis_id uuid [ref: > sch.analysis111.id]");
+  });
+
+  it("leaves the same name in another schema alone", () => {
+    const twoSchemas = [
+      "Table sch.analysis {",
+      "  id uuid [pk]",
+      "}",
+      "",
+      "Table analysis {",
+      "  id uuid [pk]",
+      "}",
+      "",
+      "Table readings {",
+      "  id uuid [pk]",
+      "  qualified_id uuid",
+      "  plain_id uuid",
+      "}",
+      "",
+      "Ref: readings.qualified_id > sch.analysis.id",
+      "Ref: readings.plain_id > analysis.id",
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(twoSchemas), {
+      kind: "renameTable",
+      table: "sch.analysis",
+      newName: "analysis111",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(twoSchemas, result.edits);
+    expect(next).toContain("Ref: readings.qualified_id > sch.analysis111.id");
+    expect(next).toContain("Ref: readings.plain_id > analysis.id");
+    expect(next).toContain("Table analysis {");
+  });
+
+  it("keeps a quoted name inside a qualified ref quoted", () => {
+    const quotedName = [
+      'Table sch."analysis one" {',
+      "  id uuid [pk]",
+      "}",
+      "",
+      "Table readings {",
+      "  id uuid [pk]",
+      "  analysis_id uuid",
+      "}",
+      "",
+      'Ref: readings.analysis_id > sch."analysis one".id',
+      "",
+    ].join("\n");
+
+    const result = planRename(buildSourceIndex(quotedName), {
+      kind: "renameTable",
+      table: "sch.analysis one",
+      newName: "analysis two",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    const next = apply(quotedName, result.edits);
+    expect(next).toContain('Table sch."analysis two" {');
+    expect(next).toContain('Ref: readings.analysis_id > sch."analysis two".id');
+  });
+
   it("refuses a name another table already uses", () => {
     expect(
       planRename(buildSourceIndex(src), {
