@@ -8,7 +8,6 @@ export interface EditableDocument {
   getText: () => string;
   isUntitled: boolean;
   isClosed: boolean;
-  languageId: string;
 }
 
 export interface ApplyDeps {
