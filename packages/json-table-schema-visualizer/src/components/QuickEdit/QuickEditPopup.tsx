@@ -93,20 +93,33 @@ const QuickEditPopup = (): JSX.Element | null => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const commitRef = useRef<() => Promise<EditOutcome | null>>(async () => null);
   const sending = useRef(false);
+  const loadedFor = useRef<string | null>(null);
 
   /**
    * Load the text when the box opens, and again when a schema arrives — but
-   * only while the reader has not typed. A box opened on a column that was
-   * just added has nothing to show until the document after that edit has
-   * come back; a box the reader is already typing into is theirs.
+   * only while the reader has not typed, and only for as long as the box is
+   * on the same thing. A box opened on a column that was just added has
+   * nothing to show until the document after that edit has come back; a box
+   * the reader is already typing into is theirs.
+   *
+   * The box outlives what it was open on: it is one component, kept mounted,
+   * and closing it leaves the typed text in place. So the reader who renamed
+   * a table and then opened one of its columns met the name they had just
+   * typed sitting in the column's box, with `Enter` refusing it — the typed
+   * text was not `original` any more, and the guard read that as typing to
+   * protect. Whose text it is is decided by what the box is open on.
    */
   useEffect(() => {
     if (target === null) {
       return;
     }
 
+    const opensOn = `${target.table}\u0000${target.field ?? ""}`;
+    const stillTheSame = loadedFor.current === opensOn;
+    loadedFor.current = opensOn;
+
     const current = currentTextOf(target);
-    setText((typed) => (typed === original ? current : typed));
+    setText((typed) => (stillTheSame && typed !== original ? typed : current));
     setOriginal(current);
     setError(null);
     // `original` is the previous load and is compared against on purpose; it

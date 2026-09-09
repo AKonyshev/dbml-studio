@@ -293,6 +293,27 @@ describe("QuickEditPopup", () => {
     expect(box().getAttribute("aria-label")).toBe("name");
   });
 
+  it("opens the next thing on the file, not on what was last typed", async () => {
+    host(submitting({ ok: true, table: "accounts" }));
+    render(<QuickEditPopup />);
+    act(() => {
+      openQuickEdit({ table: "users", offsetY: 0 });
+    });
+
+    // Rename the table, typing a name that is not what the box opened with.
+    fireEvent.change(box(), { target: { value: "accounts" } });
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter" });
+    });
+
+    // Then double-click a column of it.
+    act(() => {
+      openQuickEdit({ table: "accounts", field: "email", offsetY: 30 });
+    });
+
+    expect(box().value).toBe("email varchar");
+  });
+
   it("sends nothing further while the host has not answered", async () => {
     const held: { answer?: (outcome: EditOutcome) => void } = {};
     const submit = jest.fn(
