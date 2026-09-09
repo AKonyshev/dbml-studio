@@ -1,4 +1,4 @@
-import { newColumnLine, openAddedColumn } from "../addColumn";
+import { addColumnAt, newColumnLine, openAddedColumn } from "../addColumn";
 
 import type { JSONTableField, JSONTableTable } from "shared/types/tableSchema";
 
@@ -73,6 +73,34 @@ afterEach(() => {
 describe("naming the line a new column starts as", () => {
   test("steps past a name the table already holds", () => {
     expect(newColumnLine("users")).toBe("new_column_2 varchar");
+  });
+});
+
+describe("where a new column goes", () => {
+  test("below the column the reader is pointing at", () => {
+    expect(addColumnAt({ table: "users", at: 0, offsetY: 0 })).toEqual({
+      at: 0,
+      offsetY: 0,
+    });
+  });
+
+  // Pointing at a table and asking for a column is not ambiguous, and a table
+  // is what the reader has after one click.
+  test("at the end of a table with no column pointed at", () => {
+    expect(addColumnAt({ table: "users", offsetY: 0 })).toEqual({
+      at: 2,
+      offsetY: 2 * COLUMN_HEIGHT,
+    });
+  });
+
+  test("nowhere, for a table that declares no columns", () => {
+    setSchemaTables([{ ...users, fields: [] }]);
+
+    expect(addColumnAt({ table: "users", offsetY: 0 })).toBeNull();
+  });
+
+  test("nowhere, for a table the diagram does not have", () => {
+    expect(addColumnAt({ table: "ghosts", offsetY: 0 })).toBeNull();
   });
 });
 

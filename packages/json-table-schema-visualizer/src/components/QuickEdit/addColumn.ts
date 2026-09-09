@@ -3,7 +3,12 @@ import { t } from "@/i18n/t";
 import { focusColumn } from "@/stores/currentTarget";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { closeQuickEdit, openQuickEdit } from "@/stores/quickEditStore";
-import { freeColumnName, isDrawnAtFullDetail } from "@/stores/schemaIndexStore";
+import {
+  columnCountOf,
+  drawnOffsetOf,
+  freeColumnName,
+  isDrawnAtFullDetail,
+} from "@/stores/schemaIndexStore";
 
 const NEW_COLUMN_STEM = "new_column";
 const NEW_COLUMN_TYPE = "varchar";
@@ -17,6 +22,33 @@ const NEW_COLUMN_TYPE = "varchar";
  */
 export const newColumnLine = (table: string): string =>
   `${freeColumnName(table, NEW_COLUMN_STEM)} ${NEW_COLUMN_TYPE}`;
+
+/**
+ * Where a new column goes for whatever the reader is pointing at.
+ *
+ * A column: below that one. A table, with none of its columns pointed at:
+ * at the end of it, which is where a column being added to a table belongs
+ * and what makes the key work on a table the reader has just clicked.
+ *
+ * Null for a table that declares no columns at all. Adding the first one is
+ * not an insert *after* anything, and the diagram has nothing to aim at.
+ */
+export const addColumnAt = (aim: {
+  table: string;
+  at?: number;
+  offsetY: number;
+}): { at: number; offsetY: number } | null => {
+  if (aim.at !== undefined) {
+    return { at: aim.at, offsetY: aim.offsetY };
+  }
+
+  const last = columnCountOf(aim.table) - 1;
+  if (last < 0) {
+    return null;
+  }
+
+  return { at: last, offsetY: drawnOffsetOf(aim.table, last) ?? 0 };
+};
 
 /**
  * Put the reader on the column that has just been added.

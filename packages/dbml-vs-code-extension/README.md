@@ -76,7 +76,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.
 
-`Ctrl/Cmd+Enter` adds a column below the one you are pointing at, without opening anything first, and puts the box on the new column so you can name it. Inside the box the same chord applies what you typed and then adds one. The new column is called `new_column`, or `new_column_2` and so on where the table already holds that name.
+`Ctrl/Cmd+Enter` adds a column below the one you are pointing at, or at the end of the table if you are pointing at a table rather than one of its columns, without opening anything first, and puts the box on the new column so you can name it. Inside the box the same chord applies what you typed and then adds one. The new column is called `new_column`, or `new_column_2` and so on where the table already holds that name.
 
 `F2` aims at whatever the pointer is on: a column edits that column, anywhere else on a table renames the table — a column you clicked earlier and left outlined does not get in the way. Click empty canvas or press `Escape` to drop that outline. This is the same habit `H` and `T` already have. With the pointer off the diagram it falls back to the last column you clicked, or to a single selected table. The new name follows through to every relation that names it and to the layout the file carries, and the table keeps its position, its colour is recomputed from the new name.
 

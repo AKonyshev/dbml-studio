@@ -105,8 +105,8 @@ export const MESSAGES_EN = {
   "quickEdit.fieldNotFound": "That column is no longer in the document.",
   "quickEdit.addedOutOfSight":
     "The column was added to the file. This table is not showing every column, so it is not drawn — raise its detail level to see it.",
-  "quickEdit.ambiguousField":
-    "The table has more than one column of that name. Rename one in the text editor first.",
+  "quickEdit.noColumnToAddBelow":
+    "This table declares no columns, so there is nothing to add one below. Write the first one in the text editor.",
   "action.quickEdit": "Edit the column, or rename the table",
   "action.addColumn": "Add a column below the one you are pointing at",
 } as const;

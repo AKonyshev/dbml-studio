@@ -52,9 +52,11 @@ import { clearCurrentTarget } from "@/stores/currentTarget";
 import { useIsSelectMode } from "@/hooks/selection";
 import { openQuickEdit } from "@/stores/quickEditStore";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
+import { t } from "@/i18n/t";
 import { setSchemaTables } from "@/stores/schemaIndexStore";
 import { quickEditTargetFor } from "@/components/QuickEdit/quickEditTarget";
 import {
+  addColumnAt,
   newColumnLine,
   openAddedColumn,
 } from "@/components/QuickEdit/addColumn";
@@ -566,21 +568,30 @@ const DiagramWrapper = ({
        *
        * `Ctrl+Enter` has always added a column below, but only from inside the
        * box — so building a table meant opening a column you did not want to
-       * change in order to get at the key. It is aimed the way `F2` is: the
-       * column under the pointer, then the one last clicked. A table with no
-       * column pointed at is not enough to aim by, and this does nothing.
+       * change in order to get at the key. It is aimed exactly the way `F2` is,
+       * and it answers to a table as well as to a column: pointing at a table
+       * and asking for a column is not ambiguous, the column goes at the end of
+       * it, and a table is what the reader has after one click.
        */
       addColumn: () => {
         const aim = quickEditTargetFor({
           hoveredColumn: getHoveredColumn(),
-          hoveredTable: null,
+          hoveredTable: getHoveredTableName(),
           focusedColumn: columnFocusStore.get(),
-          selectedTables: [],
+          selectedTables: [...selectionStore.getSelected()],
         });
         const host = getDiagramEditingHost();
-        if (aim?.at === undefined || host === null) return;
+        if (aim === null || host === null) return;
 
-        const { table, at, offsetY } = aim;
+        const table = aim.table;
+        const place = addColumnAt(aim);
+        if (place === null) {
+          host.notify?.(t("quickEdit.noColumnToAddBelow"));
+
+          return;
+        }
+
+        const { at, offsetY } = place;
         void host
           .submit({
             kind: "insertFieldAfter",

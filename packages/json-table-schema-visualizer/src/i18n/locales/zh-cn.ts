@@ -102,8 +102,8 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "quickEdit.fieldNotFound": "文档中已没有该列。",
   "quickEdit.addedOutOfSight":
     "该列已添加到文件中。此表未显示全部列，因此新列未绘制。请提高其详细程度以查看。",
-  "quickEdit.ambiguousField":
-    "该表中有多个同名列。请先在文本编辑器中重命名其中一个。",
+  "quickEdit.noColumnToAddBelow":
+    "此表未声明任何列，因此无处添加新列。请在文本编辑器中写入第一列。",
   "action.quickEdit": "编辑列或重命名表",
   "action.addColumn": "在指向的列下方添加一列",
 };
