@@ -109,6 +109,28 @@ unzip -p dbml-studio-<version>.vsix extension/package.json | grep '"version"'
 The file is git-ignored; delete it when you are done or leave it, either way it
 will not be committed.
 
+### Trying a build before any of this
+
+A build to install and use yourself is not a release and is not made the same
+way:
+
+```bash
+yarn package:dbml:local
+code --install-extension dist/dbml-studio-local.vsix --force
+```
+
+It stamps a version of its own — the release's patch plus one, with the moment
+of the build in a prerelease tag, `1.2.2-local.20260909114245` — and puts it
+back afterwards, so nothing about the version in git changes. The stamp is not
+decoration: VS Code compares versions and quietly declines to reinstall one it
+already has, `--force` or not, so a rebuilt package under the released number
+looks exactly like a build that did not take. Above the release, below the next
+one, and above the last local build, so every install is an upgrade.
+
+The file is always `dist/dbml-studio-local.vsix`. One name rather than one per
+build: what tells two builds apart is the version inside, which VS Code shows
+in the extensions list.
+
 ### 7. The Marketplace
 
 ```bash

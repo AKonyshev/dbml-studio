@@ -4,7 +4,12 @@
 # Usage:
 #   ./scripts/publish-extension.sh dbml              # test, build, publish DBML extension
 #   ./scripts/publish-extension.sh dbml --package    # build .vsix only (no upload)
+#   ./scripts/publish-extension.sh dbml --local      # build one to install and try
 #   ./scripts/publish-extension.sh dbml --skip-tests # publish without running tests
+#
+# --local stamps a version of its own so that VS Code sees every build as newer
+# than the last and than the release: installing the same version twice is what
+# it quietly declines to do, --force or not.
 #
 # Auth (pick one):
 #   npx @vscode/vsce login konyshevav   # stores PAT in macOS Keychain
@@ -20,10 +25,11 @@ VSCE=(npx --yes @vscode/vsce)
 
 PACKAGE_ONLY=false
 SKIP_TESTS=false
+LOCAL_BUILD=false
 TARGETS=()
 
 usage() {
-  sed -n '2,11p' "$0"
+  sed -n '2,16p' "$0"
   exit "${1:-0}"
 }
 
@@ -31,6 +37,7 @@ for arg in "$@"; do
   case "$arg" in
     -h | --help) usage 0 ;;
     --package | --package-only) PACKAGE_ONLY=true ;;
+    --local) PACKAGE_ONLY=true; LOCAL_BUILD=true ;;
     --skip-tests) SKIP_TESTS=true ;;
     dbml) TARGETS+=("$arg") ;;
     *)
@@ -82,7 +89,52 @@ publish_one() {
   echo "    building..."
   yarn package
 
-  if [[ "$PACKAGE_ONLY" == true ]]; then
+  if [[ "$LOCAL_BUILD" == true ]]; then
+    # A version of its own, above the release and above the last local build.
+    # VS Code compares versions and declines to reinstall one it already has,
+    # which is what makes a rebuilt .vsix look like it did not take. The patch
+    # is bumped so the build is newer than the release, and the timestamp goes
+    # in a prerelease tag so it can never be mistaken for one.
+    local stamped
+    stamped="$(node -p "
+      const [major, minor, patch] = require('./package.json').version.split('.');
+      const now = new Date();
+      const at = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0'),
+        String(now.getHours()).padStart(2, '0'),
+        String(now.getMinutes()).padStart(2, '0'),
+        String(now.getSeconds()).padStart(2, '0'),
+      ].join('');
+      \`\${major}.\${minor}.\${Number(patch) + 1}-local.\${at}\`
+    ")"
+
+    # Kept outside the package: anything left beside package.json is a file
+    # `vsce` finds and ships. Restored whatever happens, because a package.json
+    # carrying a local version is one the next person to stage everything
+    # commits without noticing.
+    local kept
+    kept="$(mktemp)"
+    cp package.json "$kept"
+    trap 'mv -f "$kept" "$abs_dir/package.json"' RETURN
+    node -e "
+      const fs = require('fs');
+      const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+      pkg.version = process.argv[1];
+      fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+    " "$stamped"
+
+    local artifact
+    artifact="$ROOT/dist/$(node -p "require('./package.json').name")-local.vsix"
+
+    echo "    packaging $stamped ..."
+    # One name, always overwritten: the version inside is what tells builds
+    # apart, and a directory filling with them is nobody's idea of an archive.
+    "${VSCE[@]}" package --out "$artifact"
+    echo "    wrote $artifact ($stamped)"
+    echo "    install: code --install-extension ${artifact#"$ROOT/"} --force"
+  elif [[ "$PACKAGE_ONLY" == true ]]; then
     echo "    packaging .vsix..."
     "${VSCE[@]}" package --out "$ROOT/dist"
     echo "    wrote $ROOT/dist/${name}-*.vsix (see dist/)"

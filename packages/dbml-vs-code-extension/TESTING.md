@@ -1,5 +1,18 @@
 # Manual test plan (DBML extension)
 
+## Getting a build in front of yourself
+
+```bash
+yarn package:dbml:local
+code --install-extension dist/dbml-studio-local.vsix --force
+```
+
+Then reload the window. The local build carries a version of its own —
+`1.2.2-local.<timestamp>` — because VS Code declines to reinstall a version it
+already has, `--force` or not, and a rebuilt package under the released number
+looks exactly like a build that did not take. Check the version in the
+extensions list against what the build printed before you trust what you see.
+
 ## Switching between text and diagram
 
 The tab bookkeeping is covered automatically — `yarn workspace dbml-studio test:integration` proves in a real VS Code that switching replaces the tab in both directions, that opening beside keeps the text, and that a plain open still gives text. Run that first; what is left below is what only eyes can check.

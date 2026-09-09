@@ -34,6 +34,7 @@
     "test": "node scripts/test.js",
     "publish:dbml": "bash scripts/publish-extension.sh dbml",
     "package:dbml": "bash scripts/publish-extension.sh dbml --package",
+    "package:dbml:local": "bash scripts/publish-extension.sh dbml --local",
     "build:web": "yarn workspace web build",
     "test:e2e": "yarn workspace web test:e2e"
   }
