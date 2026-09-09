@@ -182,26 +182,24 @@ suite("an edit from the diagram reaches the document", () => {
         "more than the edited range was written",
       );
 
-      // The diagram goes first: a custom editor takes `undo` while the
-      // workbench focus is in it, and the page has that focus after an edit.
-      // Asking for the text editor to be shown is not enough — it becomes the
-      // active *text* editor while the focus is still in the page, and the
-      // undo then goes somewhere that has nothing to undo. The document's own
-      // history survives, because its text editor is the one left open.
-      for (const group of vscode.window.tabGroups.all) {
-        for (const tab of group.tabs) {
-          if (tab.input instanceof vscode.TabInputCustom) {
-            await vscode.window.tabGroups.close(tab);
-          }
-        }
-      }
-      await vscode.window.showTextDocument(document, { preview: false });
+      // A custom editor takes `undo` while the workbench focus is in it, and
+      // the page has that focus after an edit. Showing the source is not
+      // enough: it becomes the active *text* editor while the keyboard stays
+      // in the page. The group it is in has to be focused as well.
+      const editor = await vscode.window.showTextDocument(document, {
+        preview: false,
+      });
       await waitFor(
         "the text editor to be the active one",
         () =>
           vscode.window.activeTextEditor?.document.uri.toString() ===
           uri.toString(),
         10000,
+      );
+      await vscode.commands.executeCommand(
+        editor.viewColumn === vscode.ViewColumn.One
+          ? "workbench.action.focusFirstEditorGroup"
+          : "workbench.action.focusSecondEditorGroup",
       );
       await vscode.commands.executeCommand("undo");
       await waitFor(
