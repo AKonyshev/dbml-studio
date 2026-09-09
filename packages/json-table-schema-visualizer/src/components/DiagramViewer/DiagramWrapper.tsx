@@ -48,6 +48,8 @@ import {
   reconcileAfterSchemaChange,
 } from "@/stores/renameReconcile";
 import { selectionStore } from "@/stores/selectionStore";
+import { clearCurrentTarget } from "@/stores/currentTarget";
+import { useIsSelectMode } from "@/hooks/selection";
 import { openQuickEdit } from "@/stores/quickEditStore";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { setSchemaTables } from "@/stores/schemaIndexStore";
@@ -158,6 +160,7 @@ const DiagramWrapper = ({
   const levelFor = (tableName: string): TableDetailLevel =>
     tableDetailLevelStore.levelFor(tableName) ?? detailLevelRef.current;
 
+  const isSelectMode = useIsSelectMode();
   const {
     marquee,
     stageIsDraggable,
@@ -389,6 +392,16 @@ const DiagramWrapper = ({
   const handleStagePointerDown = (
     e: KonvaEventObject<MouseEvent | TouchEvent>,
   ) => {
+    if (nodeBelongsToTable(e.target)) return;
+
+    // Clicking the canvas is clicking away from whatever was pointed at. Only
+    // in pan mode: in select mode the marquee owns this, and it has to, because
+    // a shift-drag from empty canvas is the reader *adding* to the group and
+    // dropping it here would undo the thing they are doing.
+    if (!isSelectMode) {
+      clearCurrentTarget();
+    }
+
     // Read at the moment of the click rather than subscribed to: this component
     // has no reason to re-render as the pointer crosses tables.
     const highlightedColumns = getHighlightedColumns();
@@ -397,7 +410,6 @@ const DiagramWrapper = ({
       (highlightedColumns == null || highlightedColumns.length === 0)
     )
       return;
-    if (nodeBelongsToTable(e.target)) return;
     setHoveredTableName(null);
     setHighlightedColumns([]);
   };

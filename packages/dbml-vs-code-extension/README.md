@@ -50,6 +50,8 @@ Every view action is a command, so the keys below are defaults rather than fixtu
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.
 
+Clicking a table points at it, in either mode: it is outlined, and any column you were pointing at lets go. Clicking empty canvas or pressing `Esc` drops the outline. Adding tables to a group with `Shift` is a select-mode thing, because a group of two or more is what makes one drag move them all, and a drag in pan mode is meant to move one table or the canvas.
+
 None of these keys fires while you are typing, in the diagram's own search box or anywhere else in the editor.
 
 `?` is where a US layout puts it. On a layout that puts it elsewhere, use the keyboard button in the toolbar or rebind the command.

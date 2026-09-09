@@ -4,6 +4,7 @@ import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKe
 
 import TableHeader from "./TableHeader";
 import Column from "./Column/Column";
+import { tableClickIntent } from "./tableClickIntent";
 
 import type { JSONTableTable } from "shared/types/tableSchema";
 import type { KonvaEventObject } from "konva/lib/Node";
@@ -30,6 +31,7 @@ import { filterByDetailLevel } from "@/utils/filterByDetailLevel";
 import { computeFieldMarks } from "@/utils/fieldMarks";
 import { useForeignKeys } from "@/hooks/foreignKeys";
 import { useIsSelectMode, useIsTableSelected } from "@/hooks/selection";
+import { InteractionMode } from "@/types/interactionMode";
 import { SELECTED_OUTLINE_NAME } from "@/constants/selection";
 import { selectionStore } from "@/stores/selectionStore";
 import { selectTables, toggleTableSelection } from "@/stores/currentTarget";
@@ -168,7 +170,7 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     // about what they are working on: the table they took hold of becomes the
     // selection, and the group they had is let go. Without this the outlines
     // would go on claiming a group that is not the one moving.
-    if (isSelectMode && !selectionStore.isSelected(name)) {
+    if (!selectionStore.isSelected(name)) {
       selectTables(new Set([name]));
     }
 
@@ -216,19 +218,22 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
     setHoveredTableName(null);
   };
 
+  // Konva raises `click` only when the pointer did not drag, so there is
+  // nothing to tell a click from a move by hand. What the click means lives in
+  // `tableClickIntent`, where it can be read and tested.
   const handleOnClick = (event: KonvaEventObject<MouseEvent>) => {
     if (tableRef.current != null) {
       tableRef.current.moveToTop();
     }
 
-    if (!isSelectMode) {
-      return;
-    }
+    const intent = tableClickIntent({
+      mode: isSelectMode ? InteractionMode.Select : InteractionMode.Pan,
+      shiftKey: event.evt.shiftKey,
+    });
 
-    // Konva raises `click` only when the pointer did not drag, so there is
-    // nothing to tell a click from a move by hand.
-    if (event.evt.shiftKey) {
+    if (intent.kind === "toggle") {
       toggleTableSelection(name);
+
       return;
     }
 

@@ -12,6 +12,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 
+- **Clicking a table points at it.** It used to do that in select mode only, and the diagram opens in pan mode — so a click on a table showed nothing, and there was no way to say "this one" with the mouse at all. A click now outlines the table in either mode, lets go of any column you were pointing at, and clicking empty canvas or pressing `Esc` drops it again. Building a group with `Shift` stays a select-mode thing: a group of two or more is what makes one drag move them all, and a drag in pan mode is meant to move one table or the canvas.
+
 - **Auto-arrange moves a dragged table back.** Drag a table, press `L`, and it stayed where you dropped it whenever the layout wanted it exactly where it had been before the drag — which is every time on a file whose layout auto-arrange itself produced. A table applied its position only when the numbers changed, and the drag had changed the canvas without changing its numbers. It now re-applies its position whenever the diagram is laid out again, equal numbers or not.
 
 ## [1.2.1] - 2026-09-08
