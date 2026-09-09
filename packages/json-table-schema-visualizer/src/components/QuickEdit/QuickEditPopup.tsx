@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { commitOperationFor, quickEditIntent } from "./quickEditIntent";
+import { newColumnLine, openAddedColumn } from "./addColumn";
 import { MIN_POPUP_WIDTH, useQuickEditPosition } from "./useQuickEditPosition";
 
 import type {
@@ -31,13 +32,11 @@ import {
   retireTableState,
 } from "@/stores/renameReconcile";
 import {
+  columnNameAt,
   getSchemaVersion,
-  isDrawnAtFullDetail,
   nextDrawnField,
   subscribeSchema,
 } from "@/stores/schemaIndexStore";
-
-const NEW_COLUMN_TEXT = "new_column varchar";
 
 /**
  * A rejection in the reader's own language, with the parser's own words kept
@@ -53,13 +52,11 @@ const messageForRejection = (reason: EditRejection): string => {
 };
 
 const currentTextOf = (target: QuickEditTarget): string => {
-  if (target.field === undefined) {
+  if (target.at === undefined) {
     return target.table;
   }
 
-  return (
-    getDiagramEditingHost()?.readFieldText(target.table, target.field) ?? ""
-  );
+  return getDiagramEditingHost()?.readFieldText(target.table, target.at) ?? "";
 };
 
 /**
@@ -114,7 +111,7 @@ const QuickEditPopup = (): JSX.Element | null => {
       return;
     }
 
-    const opensOn = `${target.table}\u0000${target.field ?? ""}`;
+    const opensOn = `${target.table}\u0000${target.at ?? ""}`;
     const stillTheSame = loadedFor.current === opensOn;
     loadedFor.current = opensOn;
 
@@ -280,12 +277,12 @@ const QuickEditPopup = (): JSX.Element | null => {
 
   const commit = async (): Promise<EditOutcome | null> => {
     if (text === original) {
-      return { ok: true, table: target.table, field: target.field };
+      return { ok: true, table: target.table, at: target.at };
     }
 
     return await send(
       commitOperationFor(target, text),
-      target.field === undefined ? undefined : original,
+      target.at === undefined ? undefined : original,
     );
   };
 
@@ -294,7 +291,7 @@ const QuickEditPopup = (): JSX.Element | null => {
   const onKeyDown = async (
     event: ReactKeyboardEvent<HTMLTextAreaElement>,
   ): Promise<void> => {
-    const intent = quickEditIntent(event, target.field !== undefined);
+    const intent = quickEditIntent(event, target.at !== undefined);
     if (intent === null || intent.kind === "passThrough") {
       return;
     }
@@ -307,32 +304,32 @@ const QuickEditPopup = (): JSX.Element | null => {
       return;
     }
 
-    if (intent.kind === "delete" && target.field !== undefined) {
+    if (intent.kind === "delete" && target.at !== undefined) {
       const outcome = await send({
         kind: "deleteField",
         table: target.table,
-        field: target.field,
+        at: target.at,
       });
       if (outcome?.ok === true) closeQuickEdit();
 
       return;
     }
 
-    if (intent.kind === "move" && target.field !== undefined) {
+    if (intent.kind === "move" && target.at !== undefined) {
       const outcome = await send({
         kind: "moveField",
         table: target.table,
-        field: target.field,
+        at: target.at,
         direction: intent.direction,
       });
-      if (outcome?.ok !== true) return;
+      if (outcome?.ok !== true || outcome.at === undefined) return;
 
       // The box follows the row it is editing.
       const offsetY =
         target.offsetY +
         (intent.direction === "up" ? -COLUMN_HEIGHT : COLUMN_HEIGHT);
-      focusColumn(target.table, target.field, offsetY);
-      openQuickEdit({ table: target.table, field: target.field, offsetY });
+      focusColumn(target.table, outcome.at, offsetY);
+      openQuickEdit({ table: target.table, at: outcome.at, offsetY });
 
       return;
     }
@@ -342,48 +339,36 @@ const QuickEditPopup = (): JSX.Element | null => {
       return;
     }
 
-    // The column may have been renamed in the same keystroke: everything after
-    // this aims at the name the host reports, not the one the box opened on.
-    const field = committed.field ?? target.field;
+    // The commit may have moved nothing, but it answers with where the column
+    // stands either way, and that is what everything below aims at.
+    const at = committed.at ?? target.at;
 
-    if (intent.kind === "commitAndAddBelow" && field !== undefined) {
+    if (intent.kind === "commitAndAddBelow" && at !== undefined) {
       const added = await send({
         kind: "insertFieldAfter",
         table: target.table,
-        field,
-        text: NEW_COLUMN_TEXT,
+        at,
+        text: newColumnLine(target.table),
       });
-      if (added?.ok !== true || added.field === undefined) return;
+      if (added?.ok !== true || added.at === undefined) return;
 
-      // Rows are drawn only at full detail, so that is the only level at
-      // which a box can sit on the new one.
-      if (!isDrawnAtFullDetail(target.table)) {
-        closeQuickEdit();
-
-        return;
-      }
-
-      const offsetY = target.offsetY + COLUMN_HEIGHT;
-      focusColumn(target.table, added.field, offsetY);
-      openQuickEdit({ table: target.table, field: added.field, offsetY });
+      openAddedColumn(target.table, added.at, target.offsetY);
 
       return;
     }
 
-    if (intent.kind === "commitAndNext" && target.field !== undefined) {
-      // Looked up by the name the box opened on: the order of rows has not
-      // changed, whatever this one is now called.
-      const next = nextDrawnField(target.table, target.field);
+    if (intent.kind === "commitAndNext" && at !== undefined) {
+      const next = nextDrawnField(target.table, at);
       if (next === null) {
         closeQuickEdit();
 
         return;
       }
 
-      focusColumn(target.table, next.field, next.offsetY);
+      focusColumn(target.table, next.at, next.offsetY);
       openQuickEdit({
         table: target.table,
-        field: next.field,
+        at: next.at,
         offsetY: next.offsetY,
       });
 
@@ -412,7 +397,11 @@ const QuickEditPopup = (): JSX.Element | null => {
       <textarea
         ref={inputRef}
         autoFocus
-        aria-label={target.field ?? target.table}
+        aria-label={
+          target.at === undefined
+            ? target.table
+            : columnNameAt(target.table, target.at) ?? target.table
+        }
         rows={1}
         className="block w-full resize-none overflow-hidden bg-transparent outline-none"
         style={{

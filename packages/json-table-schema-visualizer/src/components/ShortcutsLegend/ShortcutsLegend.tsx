@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import Notation from "./Notation";
 
 import { t } from "@/i18n/t";
-import { SHORTCUTS } from "@/constants/shortcuts";
+import { displayKeyOf, SHORTCUTS } from "@/constants/shortcuts";
 
 interface ShortcutsLegendProps {
   onClose: () => void;
@@ -75,7 +75,7 @@ const ShortcutsLegend = ({
               >
                 <span>{t(shortcut.labelKey)}</span>
                 <kbd className="rounded-md border border-subtle bg-surface-sunken px-2 py-1 font-mono text-content-muted">
-                  {shortcut.key}
+                  {displayKeyOf(shortcut)}
                 </kbd>
               </li>
             ))}

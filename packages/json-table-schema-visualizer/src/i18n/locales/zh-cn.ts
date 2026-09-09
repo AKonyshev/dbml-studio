@@ -103,4 +103,5 @@ export const MESSAGES_ZH_CN: Record<MessageKey, string> = {
   "quickEdit.ambiguousField":
     "该表中有多个同名列。请先在文本编辑器中重命名其中一个。",
   "action.quickEdit": "编辑列或重命名表",
+  "action.addColumn": "在指向的列下方添加一列",
 };

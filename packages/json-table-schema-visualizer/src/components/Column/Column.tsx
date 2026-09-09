@@ -21,6 +21,8 @@ import {
 
 interface ColumnProps {
   colName: string;
+  /** Its position among the table's columns, which is what an edit aims by. */
+  at: number;
   tableName: string;
   /** The type, the mandatory mark and the key badges; see `computeFieldMarks`. */
   marks: FieldMarks;
@@ -33,6 +35,7 @@ interface ColumnProps {
 
 const Column = ({
   colName,
+  at,
   tableName,
   marks,
   isPrimaryKey = false,
@@ -63,6 +66,7 @@ const Column = ({
       offsetY={offsetY}
       tableName={tableName}
       columnName={colName}
+      at={at}
     >
       {(highlighted) => (
         <>

@@ -64,7 +64,7 @@ const host = (
 
 const open = (): void => {
   act(() => {
-    openQuickEdit({ table: "users", field: "email", offsetY: 30 });
+    openQuickEdit({ table: "users", at: 1, offsetY: 30 });
   });
 };
 
@@ -118,7 +118,7 @@ afterEach(() => {
 
 describe("QuickEditPopup", () => {
   it("opens holding the column's line as it stands in the file", () => {
-    host(submitting({ ok: true, table: "users", field: "email" }));
+    host(submitting({ ok: true, table: "users", at: 1 }));
     render(<QuickEditPopup />);
     open();
 
@@ -126,7 +126,7 @@ describe("QuickEditPopup", () => {
   });
 
   it("applies on Enter with the text the box opened against", async () => {
-    const submit = submitting({ ok: true, table: "users", field: "email" });
+    const submit = submitting({ ok: true, table: "users", at: 1 });
     host(submit);
     render(<QuickEditPopup />);
     open();
@@ -140,7 +140,7 @@ describe("QuickEditPopup", () => {
       {
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "email varchar [unique]",
       },
       "email varchar",
@@ -168,7 +168,7 @@ describe("QuickEditPopup", () => {
   });
 
   it("applies when the reader clicks anywhere else", async () => {
-    const submit = submitting({ ok: true, table: "users", field: "email" });
+    const submit = submitting({ ok: true, table: "users", at: 1 });
     host(submit);
     render(<QuickEditPopup />);
     open();
@@ -183,7 +183,7 @@ describe("QuickEditPopup", () => {
   });
 
   it("throws typing away on Escape", async () => {
-    const submit = submitting({ ok: true, table: "users", field: "email" });
+    const submit = submitting({ ok: true, table: "users", at: 1 });
     host(submit);
     render(<QuickEditPopup />);
     open();
@@ -199,14 +199,13 @@ describe("QuickEditPopup", () => {
 
   // The chain the spec asks for, and the one that used to break: the second
   // request aimed at the column's *old* name and carried the *old* text.
-  it("adds a column below, aimed at the column's new name", async () => {
+  it("adds a column below the one just edited", async () => {
     const submit = submitting((operation) => {
-      const op = operation as { kind: string; field?: string };
-      if (op.kind === "replaceField") {
-        return { ok: true, table: "users", field: "contact" };
-      }
+      const op = operation as { kind: string };
 
-      return { ok: true, table: "users", field: "new_column" };
+      return op.kind === "replaceField"
+        ? { ok: true, table: "users", at: 1 }
+        : { ok: true, table: "users", at: 2 };
     });
     host(submit);
     render(<QuickEditPopup />);
@@ -218,7 +217,44 @@ describe("QuickEditPopup", () => {
     });
 
     expect(submit).toHaveBeenLastCalledWith(
-      expect.objectContaining({ kind: "insertFieldAfter", field: "contact" }),
+      expect.objectContaining({ kind: "insertFieldAfter", at: 1 }),
+      undefined,
+    );
+  });
+
+  // What the reader met: three columns all called `new_column`, which is not a
+  // schema any database would take.
+  it("names an added column something the table does not already hold", async () => {
+    const submit = submitting({ ok: true, table: "users", at: 3 });
+    host(submit, "id uuid");
+    render(<QuickEditPopup />);
+    act(() => {
+      openQuickEdit({ table: "users", at: 0, offsetY: 0 });
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
+    });
+    expect(submit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ text: "new_column varchar" }),
+      undefined,
+    );
+
+    // The schema comes back holding it, and the next one cannot take the name.
+    act(() => {
+      setSchemaTables([
+        {
+          ...users,
+          fields: [...users.fields, column("new_column", "varchar")],
+        },
+      ]);
+    });
+    await act(async () => {
+      fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
+    });
+
+    expect(submit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ text: "new_column_2 varchar" }),
       undefined,
     );
   });
@@ -282,7 +318,7 @@ describe("QuickEditPopup", () => {
   });
 
   it("moves to the row drawn below on Tab", async () => {
-    host(submitting({ ok: true, table: "users", field: "email" }));
+    host(submitting({ ok: true, table: "users", at: 1 }));
     render(<QuickEditPopup />);
     open();
 
@@ -308,7 +344,7 @@ describe("QuickEditPopup", () => {
 
     // Then double-click a column of it.
     act(() => {
-      openQuickEdit({ table: "accounts", field: "email", offsetY: 30 });
+      openQuickEdit({ table: "accounts", at: 1, offsetY: 30 });
     });
 
     expect(box().value).toBe("email varchar");
@@ -338,16 +374,16 @@ describe("QuickEditPopup", () => {
     expect(submit).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      held.answer?.({ ok: true, table: "users", field: "email" });
+      held.answer?.({ ok: true, table: "users", at: 1 });
     });
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it("closes on Tab from the last row", async () => {
-    host(submitting({ ok: true, table: "users", field: "name" }));
+    host(submitting({ ok: true, table: "users", at: 2 }));
     render(<QuickEditPopup />);
     act(() => {
-      openQuickEdit({ table: "users", field: "name", offsetY: 60 });
+      openQuickEdit({ table: "users", at: 2, offsetY: 60 });
     });
 
     await act(async () => {

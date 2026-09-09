@@ -180,6 +180,10 @@
       {
         "command": "dbmlStudio.quickEdit",
         "title": "%command.quickEdit%"
+      },
+      {
+        "command": "dbmlStudio.addColumn",
+        "title": "%command.addColumn%"
       }
     ],
     "keybindings": [
@@ -247,6 +251,12 @@
         "command": "dbmlStudio.quickEdit",
         "key": "f2",
         "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.addColumn",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       }
     ],
     "menus": {
@@ -313,6 +323,10 @@
         },
         {
           "command": "dbmlStudio.quickEdit",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        },
+        {
+          "command": "dbmlStudio.addColumn",
           "when": "activeCustomEditorId == 'dbml-studio-diagram'"
         }
       ],

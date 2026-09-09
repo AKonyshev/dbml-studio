@@ -75,11 +75,11 @@ export const commitOperationFor = (
   target: QuickEditTarget,
   text: string,
 ): EditOperation =>
-  target.field === undefined
+  target.at === undefined
     ? { kind: "renameTable", table: target.table, newName: text }
     : {
         kind: "replaceField",
         table: target.table,
-        field: target.field,
+        at: target.at,
         text,
       };

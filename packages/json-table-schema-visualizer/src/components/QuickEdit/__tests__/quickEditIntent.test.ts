@@ -75,13 +75,13 @@ describe("commitOperationFor", () => {
   it("replaces a column when one is being edited", () => {
     expect(
       commitOperationFor(
-        { table: "users", field: "email", offsetY: 30 },
+        { table: "users", at: 1, offsetY: 30 },
         "email varchar [unique]",
       ),
     ).toEqual({
       kind: "replaceField",
       table: "users",
-      field: "email",
+      at: 1,
       text: "email varchar [unique]",
     });
   });

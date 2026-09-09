@@ -32,6 +32,17 @@ describe("matchShortcut", () => {
     expect(matchShortcut(event("h"))).toBe("toggleRefs");
   });
 
+  test("matches adding a column only with Ctrl or Cmd held", () => {
+    expect(matchShortcut(event("Enter", { ctrlKey: true }))).toBe("addColumn");
+    expect(matchShortcut(event("Enter", { metaKey: true }))).toBe("addColumn");
+    expect(matchShortcut(event("Enter"))).toBeNull();
+  });
+
+  test("leaves a bare letter to the workbench while a modifier is held", () => {
+    expect(matchShortcut(event("c", { ctrlKey: true }))).toBeNull();
+    expect(matchShortcut(event("c", { metaKey: true }))).toBeNull();
+  });
+
   test("ignores keys while typing in an input", () => {
     expect(
       matchShortcut(event("c", { target: { tagName: "INPUT" } })),

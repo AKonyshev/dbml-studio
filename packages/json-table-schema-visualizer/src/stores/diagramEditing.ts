@@ -2,7 +2,7 @@ import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 
 export interface DiagramEditingHost {
   /** The current source text of one column, for the popup to open against. */
-  readFieldText: (table: string, field: string) => string | null;
+  readFieldText: (table: string, at: number) => string | null;
   /**
    * The name a rename would actually produce, asked before anything is written.
    *

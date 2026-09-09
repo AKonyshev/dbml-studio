@@ -49,10 +49,10 @@ export const useDiagramEditingHost = (
     window.addEventListener("message", onMessage);
 
     setDiagramEditingHost({
-      readFieldText: (table, field) => {
+      readFieldText: (table, at) => {
         const content = rawContentRef.current;
 
-        return content === null ? null : readFieldText(content, table, field);
+        return content === null ? null : readFieldText(content, table, at);
       },
       resolveRenamedTable: (table, newName) => {
         const content = rawContentRef.current;

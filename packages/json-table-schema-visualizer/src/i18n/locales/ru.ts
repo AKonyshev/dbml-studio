@@ -108,4 +108,5 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "quickEdit.ambiguousField":
     "В таблице несколько колонок с таким именем. Переименуйте одну в текстовом редакторе.",
   "action.quickEdit": "Править колонку или переименовать таблицу",
+  "action.addColumn": "Добавить колонку под той, на которую наведён указатель",
 };

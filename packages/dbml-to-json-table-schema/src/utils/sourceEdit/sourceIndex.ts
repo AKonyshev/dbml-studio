@@ -238,9 +238,3 @@ export const findTable = (
   fullName: string,
 ): TableLocation | null =>
   index.tables.find((table) => table.fullName === fullName) ?? null;
-
-export const findField = (
-  table: TableLocation,
-  fieldName: string,
-): FieldLocation | null =>
-  table.fields.find((field) => field.name === fieldName) ?? null;

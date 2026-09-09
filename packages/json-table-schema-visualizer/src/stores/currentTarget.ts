@@ -12,11 +12,11 @@ import { selectionStore } from "./selectionStore";
  */
 export const focusColumn = (
   table: string,
-  field: string,
+  at: number,
   offsetY: number,
 ): void => {
   selectionStore.setSelected(new Set());
-  columnFocusStore.set({ table, field, offsetY });
+  columnFocusStore.set({ table, at, offsetY });
 };
 
 /** Point at nothing, without touching the table selection. */

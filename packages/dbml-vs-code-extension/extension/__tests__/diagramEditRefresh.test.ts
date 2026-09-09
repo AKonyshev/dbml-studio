@@ -20,7 +20,7 @@ const request: ApplyDiagramEditMessage = {
   operation: {
     kind: "replaceField",
     table: "users",
-    field: "email",
+    at: 1,
     text: "email varchar [unique]",
   },
 };

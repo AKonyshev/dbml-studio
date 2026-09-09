@@ -2,7 +2,7 @@ import { parseDBMLToJSON } from "../../parseDbml";
 
 import { planColumnEdit } from "./columnOps";
 import { planRename } from "./renameOp";
-import { buildSourceIndex, findField, findTable } from "./sourceIndex";
+import { buildSourceIndex, findTable } from "./sourceIndex";
 
 import type { EditOperation, EditRejection } from "shared/types/diagramEdit";
 import type { SourceIndex, TextEdit } from "./types";
@@ -13,7 +13,7 @@ export type EditPlan =
       edits: TextEdit[];
       nextText: string;
       table: string;
-      field?: string;
+      at?: number;
     }
   | { ok: false; reason: EditRejection };
 
@@ -59,12 +59,12 @@ const fieldTextIn = (
   text: string,
   index: SourceIndex,
   tableName: string,
-  fieldName: string,
+  at: number,
 ): string | null => {
   const table = findTable(index, tableName);
   if (table === null) return null;
-  const field = findField(table, fieldName);
-  if (field === null) return null;
+  const field = table.fields[at];
+  if (field === undefined) return null;
 
   return text.slice(field.range.start, field.range.end);
 };
@@ -73,7 +73,7 @@ const fieldTextIn = (
 export const readFieldText = (
   text: string,
   tableName: string,
-  fieldName: string,
+  at: number,
 ): string | null => {
   let index: SourceIndex;
   try {
@@ -82,7 +82,7 @@ export const readFieldText = (
     return null;
   }
 
-  return fieldTextIn(text, index, tableName, fieldName);
+  return fieldTextIn(text, index, tableName, at);
 };
 
 /**
@@ -145,7 +145,7 @@ export const planEdit = (
   if (expectedText !== undefined && operation.kind !== "renameTable") {
     // Asked of the index already in hand: `readFieldText` would build a
     // second one, and indexing is the expensive half of planning an edit.
-    const current = fieldTextIn(text, index, operation.table, operation.field);
+    const current = fieldTextIn(text, index, operation.table, operation.at);
     if (current !== expectedText) {
       return { ok: false, reason: { code: "staleText" } };
     }
@@ -178,19 +178,21 @@ export const planEdit = (
     return { ok: true, edits: planned.edits, nextText, table: operation.table };
   }
 
-  // The reader may have renamed the column in the same keystroke, so the
-  // identity to focus afterwards is read out of the document we just proved
-  // rather than carried over from the operation.
-  const before = findTable(index, operation.table)?.fields ?? [];
-  const previousNames = new Set(before.map((field) => field.name));
-  const after = findTable(buildSourceIndex(nextText), operation.table)?.fields;
-  const appeared = after?.find((field) => !previousNames.has(field.name));
+  // Where the column stands once the edit is in. Worked out rather than looked
+  // up, because a name is no longer what identifies it — and these are the only
+  // three ways an edit moves one.
+  const at =
+    operation.kind === "insertFieldAfter"
+      ? operation.at + 1
+      : operation.kind === "moveField"
+        ? operation.at + (operation.direction === "up" ? -1 : 1)
+        : operation.at;
 
   return {
     ok: true,
     edits: planned.edits,
     nextText,
     table: operation.table,
-    field: appeared?.name ?? operation.field,
+    at,
   };
 };

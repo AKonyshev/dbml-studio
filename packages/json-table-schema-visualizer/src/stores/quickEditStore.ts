@@ -4,8 +4,11 @@ type Listener = () => void;
 
 export interface QuickEditTarget {
   table: string;
-  /** Absent when the table's own name is being edited. */
-  field?: string;
+  /**
+   * The column's position among the table's columns. Absent when the table's
+   * own name is being edited.
+   */
+  at?: number;
   /** Where the row sits inside the table's rows group, in world units. */
   offsetY: number;
 }

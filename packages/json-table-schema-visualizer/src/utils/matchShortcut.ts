@@ -12,17 +12,24 @@ export interface ShortcutEventLike {
 export const matchShortcut = (
   event: ShortcutEventLike,
 ): ExecutableShortcutId | null => {
-  // shift is deliberately not blocked: '?' is typed as Shift+/.
-  if (event.ctrlKey || event.metaKey || event.altKey) {
+  if (event.altKey) {
     return null;
   }
   if (isTypingTarget(event.target)) {
     return null;
   }
 
+  // shift is deliberately not blocked: '?' is typed as Shift+/. Ctrl and Cmd
+  // are what tells a chord entry from a bare letter, and each answers only to
+  // its own: a bare letter under Ctrl belongs to the workbench, and a chord
+  // without it is just the key being typed.
+  const chording = event.ctrlKey || event.metaKey;
   const key = event.key.toLowerCase();
   const entry = SHORTCUTS.find(
-    (shortcut) => shortcut.executable && shortcut.key.toLowerCase() === key,
+    (shortcut) =>
+      shortcut.executable &&
+      shortcut.key.toLowerCase() === key &&
+      ("chord" in shortcut && shortcut.chord) === chording,
   );
 
   if (entry == null) {

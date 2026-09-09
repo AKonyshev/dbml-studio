@@ -22,7 +22,6 @@ const deps = (
     getText: () => string;
     isUntitled: boolean;
     isClosed: boolean;
-    languageId: string;
   }>;
   applyEdit: (document: unknown, edits: TextEdit[]) => Promise<boolean>;
 } => {
@@ -65,13 +64,13 @@ describe("applyDiagramEdit", () => {
       request({
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "contact varchar",
       }),
       d,
     );
 
-    expect(outcome).toEqual({ ok: true, table: "users", field: "contact" });
+    expect(outcome).toEqual({ ok: true, table: "users", at: 1 });
     expect(d.applied).toHaveLength(1);
     expect(d.applied[0].text).toBe("contact varchar");
   });
@@ -82,7 +81,7 @@ describe("applyDiagramEdit", () => {
       request({
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "email varchar [[[",
       }),
       d,
@@ -95,7 +94,7 @@ describe("applyDiagramEdit", () => {
   test("refuses an untitled document before planning anything", async () => {
     const d = deps(source, { isUntitled: true });
     const outcome = await applyDiagramEdit(
-      request({ kind: "deleteField", table: "users", field: "email" }),
+      request({ kind: "deleteField", table: "users", at: 1 }),
       d,
     );
 
@@ -110,7 +109,7 @@ describe("applyDiagramEdit", () => {
         {
           kind: "replaceField",
           table: "users",
-          field: "email",
+          at: 1,
           text: "email text",
         },
         "email varchar [unique]",
@@ -125,7 +124,7 @@ describe("applyDiagramEdit", () => {
   test("reports a refused write as not editable", async () => {
     const d = deps(source, { writable: false });
     const outcome = await applyDiagramEdit(
-      request({ kind: "deleteField", table: "users", field: "email" }),
+      request({ kind: "deleteField", table: "users", at: 1 }),
       d,
     );
 

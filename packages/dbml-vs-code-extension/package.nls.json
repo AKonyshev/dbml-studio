@@ -24,5 +24,6 @@
   "command.resetTableDetailLevels": "DBML: Give every table the shared detail level back",
   "command.showShortcuts": "DBML: Show the diagram legend",
   "configuration.title": "DBML Studio",
-  "command.quickEdit": "DBML: Edit the column, or rename the table"
+  "command.quickEdit": "DBML: Edit the column, or rename the table",
+  "command.addColumn": "Add a column below the one you are pointing at"
 }

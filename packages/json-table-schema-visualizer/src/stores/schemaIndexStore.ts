@@ -50,44 +50,78 @@ export const isDrawnAtFullDetail = (tableName: string): boolean =>
     detailLevelStore.getCurrentDetailLevel()) === TableDetailLevel.FullDetails;
 
 /**
- * The column drawn after this one, at the level the table is currently shown
- * at, with its row offset — or null at the last row.
+ * Which of a table's columns are drawn, and on which row.
  *
  * At the table's *own* level, because that is what decides which rows are on
- * screen: at key-only, the row below `id` is the next key, not the next
- * column in the file.
+ * screen: at key-only, the row below `id` is the next key, not the next column
+ * in the file. A column is named by its position in the file, so both are
+ * carried — the row it is drawn on is not the position it holds.
  */
-export const nextDrawnField = (
+const drawnRows = (
   tableName: string,
-  fieldName: string,
-): { field: string; offsetY: number } | null => {
+): Array<{ at: number; row: number }> | null => {
   const table = tablesByName.get(tableName);
   if (table === undefined) return null;
 
   const level =
     tableDetailLevelStore.levelFor(tableName) ??
     detailLevelStore.getCurrentDetailLevel();
-  const drawn = filterByDetailLevel(table.fields, level);
-  const at = drawn.findIndex((field) => field.name === fieldName);
-  if (at === -1 || at + 1 >= drawn.length) return null;
+  const drawn = new Set(filterByDetailLevel(table.fields, level));
 
-  return { field: drawn[at + 1].name, offsetY: (at + 1) * COLUMN_HEIGHT };
+  let row = 0;
+  const rows: Array<{ at: number; row: number }> = [];
+  table.fields.forEach((field, at) => {
+    if (!drawn.has(field)) return;
+    rows.push({ at, row });
+    row += 1;
+  });
+
+  return rows;
+};
+
+export const nextDrawnField = (
+  tableName: string,
+  at: number,
+): { at: number; offsetY: number } | null => {
+  const rows = drawnRows(tableName);
+  if (rows === null) return null;
+
+  const row = rows.findIndex((drawn) => drawn.at === at);
+  if (row === -1 || row + 1 >= rows.length) return null;
+
+  return { at: rows[row + 1].at, offsetY: (row + 1) * COLUMN_HEIGHT };
 };
 
 /** The row offset a column is drawn at, for a popup that has to follow a move. */
-export const drawnOffsetOf = (
-  tableName: string,
-  fieldName: string,
-): number | null => {
-  const table = tablesByName.get(tableName);
-  if (table === undefined) return null;
+export const drawnOffsetOf = (tableName: string, at: number): number | null => {
+  const rows = drawnRows(tableName);
+  const row = rows?.findIndex((drawn) => drawn.at === at) ?? -1;
 
-  const level =
-    tableDetailLevelStore.levelFor(tableName) ??
-    detailLevelStore.getCurrentDetailLevel();
-  const at = filterByDetailLevel(table.fields, level).findIndex(
-    (field) => field.name === fieldName,
+  return row === -1 ? null : row * COLUMN_HEIGHT;
+};
+
+/** How many columns the table has, so an insert can be aimed past the last. */
+export const columnCountOf = (tableName: string): number =>
+  tablesByName.get(tableName)?.fields.length ?? 0;
+
+/** What the column at this position is called, for a label to read out. */
+export const columnNameAt = (tableName: string, at: number): string | null =>
+  tablesByName.get(tableName)?.fields[at]?.name ?? null;
+
+/**
+ * A name for a column about to be added that the table does not already hold.
+ *
+ * `new_column` three times over is not a schema any database would accept, and
+ * the diagram was happy to write it.
+ */
+export const freeColumnName = (tableName: string, stem: string): string => {
+  const taken = new Set(
+    tablesByName.get(tableName)?.fields.map((field) => field.name) ?? [],
   );
+  if (!taken.has(stem)) return stem;
 
-  return at === -1 ? null : at * COLUMN_HEIGHT;
+  let n = 2;
+  while (taken.has(`${stem}_${n}`)) n += 1;
+
+  return `${stem}_${n}`;
 };

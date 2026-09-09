@@ -49,8 +49,13 @@ import {
 } from "@/stores/renameReconcile";
 import { selectionStore } from "@/stores/selectionStore";
 import { openQuickEdit } from "@/stores/quickEditStore";
+import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { setSchemaTables } from "@/stores/schemaIndexStore";
 import { quickEditTargetFor } from "@/components/QuickEdit/quickEditTarget";
+import {
+  newColumnLine,
+  openAddedColumn,
+} from "@/components/QuickEdit/addColumn";
 import {
   useDiagramActions,
   useKeyboardShortcuts,
@@ -543,6 +548,39 @@ const DiagramWrapper = ({
         if (target === null) return;
 
         openQuickEdit(target);
+      },
+      /**
+       * Add a column without opening the box on another one first.
+       *
+       * `Ctrl+Enter` has always added a column below, but only from inside the
+       * box — so building a table meant opening a column you did not want to
+       * change in order to get at the key. It is aimed the way `F2` is: the
+       * column under the pointer, then the one last clicked. A table with no
+       * column pointed at is not enough to aim by, and this does nothing.
+       */
+      addColumn: () => {
+        const aim = quickEditTargetFor({
+          hoveredColumn: getHoveredColumn(),
+          hoveredTable: null,
+          focusedColumn: columnFocusStore.get(),
+          selectedTables: [],
+        });
+        const host = getDiagramEditingHost();
+        if (aim?.at === undefined || host === null) return;
+
+        const { table, at, offsetY } = aim;
+        void host
+          .submit({
+            kind: "insertFieldAfter",
+            table,
+            at,
+            text: newColumnLine(table),
+          })
+          .then((outcome) => {
+            if (!outcome.ok || outcome.at === undefined) return;
+
+            openAddedColumn(table, outcome.at, offsetY);
+          });
       },
     },
     !isLegendOpen,

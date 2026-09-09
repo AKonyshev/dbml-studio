@@ -24,5 +24,6 @@
   "command.resetTableDetailLevels": "DBML: Вернуть всем таблицам общий уровень детализации",
   "command.showShortcuts": "DBML: Показать легенду диаграммы",
   "configuration.title": "DBML Studio",
-  "command.quickEdit": "DBML: Править колонку или переименовать таблицу"
+  "command.quickEdit": "DBML: Править колонку или переименовать таблицу",
+  "command.addColumn": "Добавить колонку под той, на которую наведён указатель"
 }

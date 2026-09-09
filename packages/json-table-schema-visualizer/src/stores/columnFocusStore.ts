@@ -2,7 +2,13 @@ type Listener = () => void;
 
 export interface FocusedColumn {
   table: string;
-  field: string;
+  /**
+   * Its position among the table's columns.
+   *
+   * Not its name: a table may declare two columns of one name, and the outline
+   * then lit up both of them.
+   */
+  at: number;
   /**
    * Where the row is drawn inside the table's rows group, in world units.
    *
@@ -40,7 +46,7 @@ class ColumnFocusStore {
   public readonly set = (next: FocusedColumn | null): void => {
     const same =
       next?.table === this.focused?.table &&
-      next?.field === this.focused?.field &&
+      next?.at === this.focused?.at &&
       next?.offsetY === this.focused?.offsetY;
     if (same) {
       return;

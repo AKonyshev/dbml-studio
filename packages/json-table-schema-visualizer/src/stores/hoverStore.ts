@@ -16,7 +16,8 @@ type Listener = () => void;
 /** The column the pointer is over, and where its row is drawn. */
 export interface HoveredColumn {
   table: string;
-  field: string;
+  /** Its position among the table's columns, which is what names it. */
+  at: number;
   offsetY: number;
 }
 
@@ -60,14 +61,8 @@ class HoverStore {
    * just taken the pointer — and every schema has an `id` in more than one
    * table, which is where that went wrong.
    */
-  public readonly releaseHoveredColumn = (
-    table: string,
-    field: string,
-  ): void => {
-    if (
-      this.hoveredColumn?.table === table &&
-      this.hoveredColumn.field === field
-    ) {
+  public readonly releaseHoveredColumn = (table: string, at: number): void => {
+    if (this.hoveredColumn?.table === table && this.hoveredColumn.at === at) {
       this.hoveredColumn = null;
     }
   };

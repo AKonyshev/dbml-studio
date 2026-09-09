@@ -106,6 +106,7 @@ export const MESSAGES_EN = {
   "quickEdit.ambiguousField":
     "The table has more than one column of that name. Rename one in the text editor first.",
   "action.quickEdit": "Edit the column, or rename the table",
+  "action.addColumn": "Add a column below the one you are pointing at",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

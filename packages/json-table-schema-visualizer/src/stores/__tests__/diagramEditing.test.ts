@@ -23,9 +23,9 @@ describe("diagram editing host", () => {
 
     const host = getDiagramEditingHost();
 
-    expect(host?.readFieldText("users", "id")).toBe("id integer");
+    expect(host?.readFieldText("users", 0)).toBe("id integer");
 
-    await host?.submit({ kind: "deleteField", table: "users", field: "id" });
+    await host?.submit({ kind: "deleteField", table: "users", at: 0 });
 
     expect(submit).toHaveBeenCalled();
   });

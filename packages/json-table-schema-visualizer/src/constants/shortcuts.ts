@@ -7,6 +7,13 @@ export interface ShortcutEntry {
   labelKey: MessageKey;
   /** false — a legend-only row; its logic lives elsewhere. */
   executable: boolean;
+  /**
+   * true — the key only fires with Ctrl or Cmd held, and the legend says so.
+   *
+   * Every other entry is a bare letter, and a bare letter is refused while a
+   * modifier is down so that the workbench's own chords still work.
+   */
+  chord?: boolean;
 }
 
 // The single source of truth: both the key handler and the legend are derived
@@ -85,6 +92,13 @@ export const SHORTCUTS = [
     executable: true,
   },
   {
+    id: "addColumn",
+    key: "Enter",
+    labelKey: "action.addColumn",
+    executable: true,
+    chord: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",
@@ -114,5 +128,10 @@ export type ExecutableShortcutId = Extract<
 // cannot claim a binding that does not fire.
 export const shortcutKeyFor = (id: ExecutableShortcutId): string => {
   const entry = SHORTCUTS.find((shortcut) => shortcut.id === id);
-  return entry?.key ?? "";
+
+  return entry === undefined ? "" : displayKeyOf(entry);
 };
+
+/** How a binding is written down for a reader, chord and all. */
+export const displayKeyOf = (entry: ShortcutEntry): string =>
+  entry.chord === true ? `Ctrl/Cmd+${entry.key}` : entry.key;

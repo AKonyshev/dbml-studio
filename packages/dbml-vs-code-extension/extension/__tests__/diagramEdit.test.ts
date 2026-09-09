@@ -8,12 +8,12 @@ describe("readDiagramEditResult", () => {
     const message = diagramEditResultMessage("req-1", {
       ok: true,
       table: "users",
-      field: "email",
+      at: 1,
     });
 
     expect(readDiagramEditResult({ data: message })).toEqual({
       requestId: "req-1",
-      outcome: { ok: true, table: "users", field: "email" },
+      outcome: { ok: true, table: "users", at: 1 },
     });
   });
 

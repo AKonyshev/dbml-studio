@@ -19,6 +19,8 @@ interface ColumnWrapperProps {
   relationalTables?: string[] | null;
   highlightColor: string;
   columnName: string;
+  /** Its position among the table's columns, which is what an edit aims by. */
+  at: number;
 }
 
 const ColumnWrapper = ({
@@ -28,10 +30,11 @@ const ColumnWrapper = ({
   relationalTables,
   highlightColor,
   columnName,
+  at,
 }: ColumnWrapperProps) => {
   const [hovered, setHovered] = useState(false);
   const tablePreferredWidth = useTableWidth();
-  const isFocused = useIsColumnFocused(tableName, columnName);
+  const isFocused = useIsColumnFocused(tableName, at);
   const themeColors = useThemeColors();
 
   const handleClick = (
@@ -40,7 +43,7 @@ const ColumnWrapper = ({
     // Without this the same click also reaches the table's drag and its
     // selection, and the column would lose the focus it just took.
     event.cancelBubble = true;
-    focusColumn(tableName, columnName, offsetY ?? 0);
+    focusColumn(tableName, at, offsetY ?? 0);
   };
 
   // The mouse's way to what `F2` does. A table header's double-click is already
@@ -49,28 +52,20 @@ const ColumnWrapper = ({
     event: KonvaEventObject<MouseEvent | TouchEvent>,
   ): void => {
     event.cancelBubble = true;
-    focusColumn(tableName, columnName, offsetY ?? 0);
-    openQuickEdit({
-      table: tableName,
-      field: columnName,
-      offsetY: offsetY ?? 0,
-    });
+    focusColumn(tableName, at, offsetY ?? 0);
+    openQuickEdit({ table: tableName, at, offsetY: offsetY ?? 0 });
   };
 
   const handleOnHover = (): void => {
     setHovered(true);
-    setHoveredColumn({
-      table: tableName,
-      field: columnName,
-      offsetY: offsetY ?? 0,
-    });
+    setHoveredColumn({ table: tableName, at, offsetY: offsetY ?? 0 });
   };
 
   const handleOnLeave = (): void => {
     setHovered(false);
     // Only if nothing else has claimed the pointer in the meantime: leaving one
     // column for the next raises the new one's enter before this leave.
-    releaseHoveredColumn(tableName, columnName);
+    releaseHoveredColumn(tableName, at);
   };
 
   // Its own pointer wins outright — the same short-circuit shouldHighLightCol

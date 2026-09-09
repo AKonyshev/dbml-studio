@@ -43,21 +43,9 @@ export const planColumnEdit = (
   const table = findTable(index, operation.table);
   if (table === null) return reject({ code: "tableNotFound" });
 
-  const position = table.fields.findIndex(
-    (field) => field.name === operation.field,
-  );
-  if (position === -1) return reject({ code: "fieldNotFound" });
-
-  // Nothing here can tell two columns of the same name apart, and neither can
-  // the diagram that asked: it names a column by its name. The parser this
-  // index is built from allows the file, so refuse the edit rather than aim it
-  // at the first of them and change a line the reader was not looking at.
-  const twice = table.fields.some(
-    (field, at) => at !== position && field.name === operation.field,
-  );
-  if (twice) return reject({ code: "ambiguousField" });
-
+  const position = operation.at;
   const field = table.fields[position];
+  if (field === undefined) return reject({ code: "fieldNotFound" });
 
   if (operation.kind === "replaceField") {
     if (operation.text.trim() === "") return reject({ code: "emptyText" });

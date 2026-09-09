@@ -236,7 +236,7 @@ export class WebviewHelper {
 
     options.log?.(
       outcome.ok
-        ? `edit applied: ${outcome.table}${outcome.field === undefined ? "" : `.${outcome.field}`}`
+        ? `edit applied: ${outcome.table}${outcome.at === undefined ? "" : ` column ${outcome.at}`}`
         : `edit refused: ${JSON.stringify(outcome.reason)}`,
     );
 

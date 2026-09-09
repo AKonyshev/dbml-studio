@@ -150,7 +150,9 @@ suite("an edit from the diagram reaches the document", () => {
         operation: {
           kind: "replaceField",
           table: "sch.entity_01",
-          field: "col_005",
+          // `col_005` is the fixture's fifth column, and a column is named by
+          // where it stands.
+          at: 4,
           text: `"col_005" numeric [not null, note: 'Description 5']`,
         },
         expectedText: `"col_005" numeric [note: 'Description 5']`,

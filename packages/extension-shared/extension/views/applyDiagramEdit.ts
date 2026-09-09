@@ -45,5 +45,5 @@ export const applyDiagramEdit = async (
   const written = await deps.applyEdit(document, plan.edits);
   if (!written) return { ok: false, reason: { code: "notEditable" } };
 
-  return { ok: true, table: plan.table, field: plan.field };
+  return { ok: true, table: plan.table, at: plan.at };
 };

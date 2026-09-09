@@ -34,7 +34,7 @@ describe("planColumnEdit", () => {
       run({
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "email varchar [unique]",
       }),
     ).toBe(
@@ -54,7 +54,7 @@ describe("planColumnEdit", () => {
       run({
         kind: "insertFieldAfter",
         table: "users",
-        field: "id",
+        at: 0,
         text: "created_at timestamp",
       }),
     ).toBe(
@@ -71,7 +71,7 @@ describe("planColumnEdit", () => {
   });
 
   it("deletes a column with its line", () => {
-    expect(run({ kind: "deleteField", table: "users", field: "email" })).toBe(
+    expect(run({ kind: "deleteField", table: "users", at: 1 })).toBe(
       ["Table users {", "  id integer [pk]", "  name varchar", "}", ""].join(
         "\n",
       ),
@@ -83,7 +83,7 @@ describe("planColumnEdit", () => {
       run({
         kind: "moveField",
         table: "users",
-        field: "email",
+        at: 1,
         direction: "up",
       }),
     ).toBe(
@@ -112,7 +112,7 @@ describe("planColumnEdit", () => {
     const result = planColumnEdit(withRef, buildSourceIndex(withRef), {
       kind: "replaceField",
       table: "posts",
-      field: "author",
+      at: 0,
       text: "author integer [not null, ref: > users.id]",
     });
     if (!result.ok) throw new Error(result.reason.code);
@@ -127,7 +127,7 @@ describe("planColumnEdit", () => {
       planColumnEdit(src, buildSourceIndex(src), {
         kind: "moveField",
         table: "users",
-        field: "id",
+        at: 0,
         direction: "up",
       }),
     ).toEqual({ ok: false, reason: { code: "atBoundary" } });
@@ -138,7 +138,7 @@ describe("planColumnEdit", () => {
       planColumnEdit(src, buildSourceIndex(src), {
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "   ",
       }),
     ).toEqual({ ok: false, reason: { code: "emptyText" } });
@@ -149,23 +149,23 @@ describe("planColumnEdit", () => {
       planColumnEdit(src, buildSourceIndex(src), {
         kind: "deleteField",
         table: "ghosts",
-        field: "id",
+        at: 0,
       }),
     ).toEqual({ ok: false, reason: { code: "tableNotFound" } });
   });
 
-  it("refuses an unknown column", () => {
+  it("refuses a position the table has no column at", () => {
     expect(
       planColumnEdit(src, buildSourceIndex(src), {
         kind: "deleteField",
         table: "users",
-        field: "nope",
+        at: 9,
       }),
     ).toEqual({ ok: false, reason: { code: "fieldNotFound" } });
   });
 });
 
-describe("planColumnEdit when a name is not enough to aim by", () => {
+describe("planColumnEdit where a name cannot tell two columns apart", () => {
   const twice = [
     "Table users {",
     "  id integer [pk]",
@@ -175,25 +175,38 @@ describe("planColumnEdit when a name is not enough to aim by", () => {
     "",
   ].join("\n");
 
-  it("refuses rather than editing the first of two columns of one name", () => {
-    expect(
-      planColumnEdit(twice, buildSourceIndex(twice), {
-        kind: "replaceField",
-        table: "users",
-        field: "note",
-        text: "note varchar [note: 'x']",
-      }),
-    ).toEqual({ ok: false, reason: { code: "ambiguousField" } });
+  it("edits the second of two columns of one name, not the first", () => {
+    const result = planColumnEdit(twice, buildSourceIndex(twice), {
+      kind: "replaceField",
+      table: "users",
+      at: 2,
+      text: "note text [note: 'the second one']",
+    });
+    if (!result.ok) throw new Error(result.reason.code);
+
+    expect(apply(twice, result.edits)).toBe(
+      [
+        "Table users {",
+        "  id integer [pk]",
+        "  note varchar",
+        "  note text [note: 'the second one']",
+        "}",
+        "",
+      ].join("\n"),
+    );
   });
 
-  it("still edits a column whose name the table holds once", () => {
+  it("deletes the first of them, and leaves the second where it is", () => {
     const result = planColumnEdit(twice, buildSourceIndex(twice), {
       kind: "deleteField",
       table: "users",
-      field: "id",
+      at: 1,
     });
+    if (!result.ok) throw new Error(result.reason.code);
 
-    expect(result.ok).toBe(true);
+    expect(apply(twice, result.edits)).toBe(
+      ["Table users {", "  id integer [pk]", "  note text", "}", ""].join("\n"),
+    );
   });
 });
 
@@ -219,7 +232,7 @@ describe("planColumnEdit on a file written with CRLF", () => {
   };
 
   it("takes both halves of the line break away with a deleted column", () => {
-    expect(runOn({ kind: "deleteField", table: "users", field: "email" })).toBe(
+    expect(runOn({ kind: "deleteField", table: "users", at: 1 })).toBe(
       ["Table users {", "  id integer [pk]", "  name varchar", "}", ""].join(
         "\r\n",
       ),
@@ -231,7 +244,7 @@ describe("planColumnEdit on a file written with CRLF", () => {
       runOn({
         kind: "insertFieldAfter",
         table: "users",
-        field: "id",
+        at: 0,
         text: "created_at timestamp",
       }),
     ).toBe(

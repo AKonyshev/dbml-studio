@@ -69,8 +69,16 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
   const position = useTableDefaultPosition(name);
   const { x: tableX, y: tableY } = position;
   const tablePreferredWidth = useTableWidth();
+  // Each drawn row carries the position its column holds in the file, because
+  // that is what names it: two columns of one name are told apart by nothing
+  // else, and the row a column is drawn on is not its position whenever the
+  // detail level leaves rows out.
   const visibleFields = useMemo(() => {
-    return filterByDetailLevel(fields, detailLevel);
+    const drawn = new Set(filterByDetailLevel(fields, detailLevel));
+
+    return fields
+      .map((field, at) => ({ field, at }))
+      .filter((row) => drawn.has(row.field));
   }, [detailLevel, fields]);
   // The footprint below is computed from `visibleFields` either way: a table
   // that changed height with zoom would move every connection anchor and shift
@@ -303,10 +311,11 @@ const Table = ({ fields, name, schemaColumns }: TableProps) => {
       <TableHeader title={name} />
       {detailLevel !== TableDetailLevel.HeaderOnly && rowsAreWorthDrawing ? (
         <Group y={TABLE_HEADER_HEIGHT}>
-          {visibleFields.map((field, index) => (
+          {visibleFields.map(({ field, at }, index) => (
             <Column
-              key={field.name}
+              key={at}
               colName={field.name}
+              at={at}
               tableName={name}
               isEnum={field.type.is_enum}
               marks={computeFieldMarks(

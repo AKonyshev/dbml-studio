@@ -13,26 +13,26 @@ describe("planEdit", () => {
     const plan = planEdit(src, {
       kind: "replaceField",
       table: "users",
-      field: "email",
+      at: 1,
       text: "email varchar [unique]",
     });
     if (!plan.ok) throw new Error(plan.reason.code);
 
     expect(plan.nextText).toContain("email varchar [unique]");
     expect(plan.table).toBe("users");
-    expect(plan.field).toBe("email");
+    expect(plan.at).toBe(1);
   });
 
-  it("reports the new identity after a column is renamed", () => {
+  it("reports where the column stands after it is renamed", () => {
     const plan = planEdit(src, {
       kind: "replaceField",
       table: "users",
-      field: "email",
+      at: 1,
       text: "contact varchar",
     });
     if (!plan.ok) throw new Error(plan.reason.code);
 
-    expect(plan.field).toBe("contact");
+    expect(plan.at).toBe(1);
   });
 
   // The symptom this was reported as: not a table left half-renamed, but the
@@ -85,7 +85,7 @@ describe("planEdit", () => {
     const plan = planEdit(src, {
       kind: "replaceField",
       table: "users",
-      field: "email",
+      at: 1,
       text: "email varchar [[[",
     });
 
@@ -108,7 +108,7 @@ describe("planEdit", () => {
     const plan = planEdit(withRef, {
       kind: "deleteField",
       table: "users",
-      field: "id",
+      at: 0,
     });
 
     expect(plan.ok).toBe(false);
@@ -123,7 +123,7 @@ describe("planEdit", () => {
         {
           kind: "replaceField",
           table: "users",
-          field: "email",
+          at: 1,
           text: "email text",
         },
         "email varchar [unique]",
@@ -137,7 +137,7 @@ describe("planEdit", () => {
       {
         kind: "replaceField",
         table: "users",
-        field: "email",
+        at: 1,
         text: "email text",
       },
       "email varchar",
@@ -147,9 +147,9 @@ describe("planEdit", () => {
   });
 
   it("reads a column's current text", () => {
-    expect(readFieldText(src, "users", "email")).toBe("email varchar");
-    expect(readFieldText(src, "users", "nope")).toBeNull();
-    expect(readFieldText(src, "ghosts", "id")).toBeNull();
+    expect(readFieldText(src, "users", 1)).toBe("email varchar");
+    expect(readFieldText(src, "users", 7)).toBeNull();
+    expect(readFieldText(src, "ghosts", 0)).toBeNull();
   });
 });
 
@@ -200,21 +200,19 @@ describe("a schema the diagram renders but the model rejects", () => {
   ].join("\n");
 
   it("still reads a column's text", () => {
-    expect(readFieldText(withBadIndex, "analysis_water", "ph")).toBe(
-      "ph numeric",
-    );
+    expect(readFieldText(withBadIndex, "analysis_water", 1)).toBe("ph numeric");
   });
 
   it("still applies an edit to a column in another table", () => {
     const plan = planEdit(withBadIndex, {
       kind: "replaceField",
       table: "analysis_water",
-      field: "ph",
+      at: 1,
       text: "ph1 numeric",
     });
     if (!plan.ok) throw new Error(`${plan.reason.code}`);
 
     expect(plan.nextText).toContain("  ph1 numeric");
-    expect(plan.field).toBe("ph1");
+    expect(plan.at).toBe(1);
   });
 });

@@ -41,6 +41,23 @@ const apply = (operation: EditOperation, expected?: string): string => {
   return plan.nextText;
 };
 
+/**
+ * Where a column stands in its table.
+ *
+ * An edit names a column by position, and a test that says `at(TABLE,
+ * "col_005")` still reads as the column it is about — a bare 4 would not, and
+ * would go stale the moment the fixture gains a line.
+ */
+const at = (table: string, name: string): number => {
+  const found = findTable(buildSourceIndex(SCHEMA), table);
+  const position = found?.fields.findIndex((field) => field.name === name);
+  if (position === undefined || position === -1) {
+    throw new Error(`the fixture has no ${table}.${name}`);
+  }
+
+  return position;
+};
+
 describe("a real schema", () => {
   it("is indexed whole, despite an index naming a column that is not declared", () => {
     const index = buildSourceIndex(SCHEMA);
@@ -63,13 +80,17 @@ describe("a real schema", () => {
 
 describe("reading a column", () => {
   it("gives back the line as it stands in the file", () => {
-    expect(readFieldText(SCHEMA, TABLE, "col_002")).toBe(
+    expect(readFieldText(SCHEMA, TABLE, at(TABLE, "col_002"))).toBe(
       `"col_002" uuid [not null, note: 'Description 2']`,
     );
   });
 
   it("gives back every line of a column whose note wraps", () => {
-    const text = readFieldText(SCHEMA, "sch.entity_12", "col_165");
+    const text = readFieldText(
+      SCHEMA,
+      "sch.entity_12",
+      at("sch.entity_12", "col_165"),
+    );
 
     expect(text).toBe(
       `"col_165" numeric [note: 'Description 300, first line\nand its second line']`,
@@ -83,7 +104,7 @@ describe("editing a column", () => {
       {
         kind: "replaceField",
         table: TABLE,
-        field: "col_005",
+        at: at(TABLE, "col_005"),
         text: `"col_005" numeric [not null, note: 'Description 5']`,
       },
       `"col_005" numeric [note: 'Description 5']`,
@@ -102,23 +123,23 @@ describe("editing a column", () => {
     ).toBe(SCHEMA);
   });
 
-  it("renames a column and reports its new name", () => {
+  it("renames a column and reports where it now stands", () => {
     const plan = planEdit(SCHEMA, {
       kind: "replaceField",
       table: TABLE,
-      field: "col_005",
+      at: at(TABLE, "col_005"),
       text: `"col_005_renamed" numeric`,
     });
     if (!plan.ok) throw new Error(plan.reason.code);
 
-    expect(plan.field).toBe("col_005_renamed");
+    expect(plan.at).toBe(at(TABLE, "col_005"));
   });
 
   it("rewrites a column whose note runs across two lines", () => {
     const next = apply({
       kind: "replaceField",
       table: "sch.entity_12",
-      field: "col_165",
+      at: at("sch.entity_12", "col_165"),
       text: `"col_165" numeric [note: 'One line now']`,
     });
 
@@ -131,7 +152,7 @@ describe("editing a column", () => {
     const plan = planEdit(SCHEMA, {
       kind: "replaceField",
       table: TABLE,
-      field: "col_005",
+      at: at(TABLE, "col_005"),
       text: `"col_005" numeric [[[`,
     });
 
@@ -147,7 +168,7 @@ describe("editing a column", () => {
         {
           kind: "replaceField",
           table: TABLE,
-          field: "col_005",
+          at: at(TABLE, "col_005"),
           text: `"col_005" text`,
         },
         `"col_005" numeric [note: 'something else']`,
@@ -161,7 +182,7 @@ describe("adding and removing columns", () => {
     const next = apply({
       kind: "insertFieldAfter",
       table: TABLE,
-      field: "col_005",
+      at: at(TABLE, "col_005"),
       text: `"col_new" numeric [note: 'Added']`,
     });
 
@@ -175,7 +196,7 @@ describe("adding and removing columns", () => {
     const next = apply({
       kind: "deleteField",
       table: TABLE,
-      field: "col_005",
+      at: at(TABLE, "col_005"),
     });
 
     expect(next).not.toContain(`"col_005"`);
@@ -189,7 +210,7 @@ describe("adding and removing columns", () => {
     const plan = planEdit(SCHEMA, {
       kind: "deleteField",
       table: TABLE,
-      field: "col_001",
+      at: at(TABLE, "col_001"),
     });
 
     expect(plan.ok).toBe(false);
@@ -201,7 +222,7 @@ describe("adding and removing columns", () => {
     const up = apply({
       kind: "moveField",
       table: TABLE,
-      field: "col_006",
+      at: at(TABLE, "col_006"),
       direction: "up",
     });
 
@@ -212,7 +233,7 @@ describe("adding and removing columns", () => {
     const down = apply({
       kind: "moveField",
       table: TABLE,
-      field: "col_005",
+      at: at(TABLE, "col_005"),
       direction: "down",
     });
 

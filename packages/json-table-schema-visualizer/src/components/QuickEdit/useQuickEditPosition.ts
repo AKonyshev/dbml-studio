@@ -49,7 +49,7 @@ export const useQuickEditPosition = (
 
   const coords = tableCoordsStore.getFullCoords(target.table);
   const localY =
-    target.field === undefined
+    target.at === undefined
       ? TABLE_COLOR_HEIGHT
       : TABLE_HEADER_HEIGHT + target.offsetY;
   const width = coords.w > 0 ? coords.w : MIN_POPUP_WIDTH;
