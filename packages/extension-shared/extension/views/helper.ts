@@ -164,6 +164,11 @@ export class WebviewHelper {
           options.onTypingFocusChanged?.(message.typing);
         }
         break;
+      case WebviewCommand.SHOW_MESSAGE:
+        if (typeof message.message === "string" && message.message !== "") {
+          void window.showInformationMessage(message.message);
+        }
+        break;
       case WebviewCommand.APPLY_DIAGRAM_EDIT:
         await WebviewHelper.handleDiagramEdit(
           message as unknown as ApplyDiagramEditMessage,

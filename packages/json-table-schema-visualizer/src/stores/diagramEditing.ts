@@ -22,6 +22,17 @@ export interface DiagramEditingHost {
     operation: EditOperation,
     expectedText?: string,
   ) => Promise<EditOutcome>;
+  /**
+   * Put one line in front of the reader, in their language.
+   *
+   * The diagram has nowhere of its own to say anything: it is a canvas, and
+   * the one place it does write — the editing box — is shut in exactly the
+   * case worth telling them about. The host has the workbench's notifications.
+   *
+   * Optional, like `resolveRenamedTable`: a host that cannot show a message
+   * leaves the diagram doing what it did before, quietly.
+   */
+  notify?: (message: string) => void;
 }
 
 /**

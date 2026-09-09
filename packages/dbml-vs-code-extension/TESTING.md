@@ -59,6 +59,7 @@ The one thing here that **does** write to the file. Automated where it can be: t
 6. Press **Escape** with the text changed: nothing is written.
 7. Click anywhere else — another column, an empty part of the canvas, the toolbar. The box closes and what you typed is applied, the same as **Enter**. If the text does not parse, the box stays open with the reason instead.
    7a. Point at a column with no box open and press **Ctrl+Enter**: a column is added below it and the box opens on the new one, ready to name. Press it twice more: three columns, called `new_column`, `new_column_2` and `new_column_3`, and the outline is on the last of them alone.
+   7b. Press **T** on the table until it shows key columns only, then press **Ctrl+Enter** on one of the rows left drawn. The column reaches the file and VS Code says so, naming what to do to see it — without that, the key looks like it did nothing.
 8. **Shift+Enter** adds a line break rather than applying. **Ctrl+Enter** applies and opens a new column below, ready to type into — also after you renamed the column in the same breath. **Tab** applies and opens the row drawn below; from the last row it closes. **Ctrl+Delete** removes the column. **Ctrl+Up** and **Ctrl+Down** move it, and the box moves with it.
 9. While the box is open, press **T** or **D**: the letters go into the text and the diagram does not toggle anything.
 10. Delete a column another table's `Ref` points at: refused, with the parser's message, and the file is untouched.

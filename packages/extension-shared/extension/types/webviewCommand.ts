@@ -10,6 +10,13 @@ export enum WebviewCommand {
   WEBVIEW_READY = "WEBVIEW_READY",
   SET_TYPING_FOCUS = "SET_TYPING_FOCUS",
   APPLY_DIAGRAM_EDIT = "APPLY_DIAGRAM_EDIT",
+  /**
+   * A line the diagram wants put in front of the reader, already in their
+   * language: the wording lives with the diagram, which is the only side that
+   * knows what happened, and the workbench is the only side with anywhere to
+   * show it.
+   */
+  SHOW_MESSAGE = "SHOW_MESSAGE",
 }
 
 export interface WebviewPostMessage {

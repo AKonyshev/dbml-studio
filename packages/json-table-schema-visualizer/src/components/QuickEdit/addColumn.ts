@@ -1,5 +1,7 @@
 import { COLUMN_HEIGHT } from "@/constants/sizing";
+import { t } from "@/i18n/t";
 import { focusColumn } from "@/stores/currentTarget";
+import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { closeQuickEdit, openQuickEdit } from "@/stores/quickEditStore";
 import { freeColumnName, isDrawnAtFullDetail } from "@/stores/schemaIndexStore";
 
@@ -25,7 +27,9 @@ export const newColumnLine = (table: string): string =>
  * `new_column` is not one anybody meant to keep.
  *
  * Rows are drawn only at full detail, so that is the only level at which a box
- * can sit on the new one; anywhere else the column is added and the box goes.
+ * can sit on the new one. Anywhere else the column is in the file and not on
+ * the canvas, which looks exactly like the key having done nothing — so the
+ * reader is told, through the host, that it is there and where to look.
  */
 export const openAddedColumn = (
   table: string,
@@ -33,6 +37,7 @@ export const openAddedColumn = (
   offsetY: number,
 ): void => {
   if (!isDrawnAtFullDetail(table)) {
+    getDiagramEditingHost()?.notify?.(t("quickEdit.addedOutOfSight"));
     closeQuickEdit();
 
     return;

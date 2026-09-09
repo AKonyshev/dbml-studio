@@ -6,6 +6,7 @@ import {
   readDiagramEditResult,
   WebviewCommand,
   type ApplyDiagramEditMessage,
+  type WebviewPostMessage,
 } from "../../extension/types/webviewCommand";
 import { postToExtension } from "../vscodeApi";
 
@@ -60,6 +61,15 @@ export const useDiagramEditingHost = (
         return content === null
           ? null
           : resolveRenamedTable(content, table, newName);
+      },
+      // Already in the reader's language: the diagram knows what happened and
+      // holds the wording, the workbench holds the place to show it.
+      notify: (text: string) => {
+        const line: WebviewPostMessage = {
+          command: WebviewCommand.SHOW_MESSAGE,
+          message: text,
+        };
+        postToExtension(line as never);
       },
       submit: async (operation: EditOperation, expectedText?: string) => {
         requestCounter += 1;
