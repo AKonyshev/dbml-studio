@@ -77,7 +77,7 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.
 
-`Ctrl/Cmd+Delete` takes out the column you are pointing at. On a MacBook the key under your finger sends backspace rather than delete, so `Cmd+Backspace` does it too. A column a relation still points at, or the last column of a table, is refused before anything is written and the reason is shown.
+`Ctrl/Cmd+Delete` takes out a column. It aims at the outlined one if there is one, and only then at whatever the pointer is over — the opposite of `F2`, deliberately: opening the wrong box costs an `Escape` and deleting the wrong column costs the column, so your own answer to "which one" wins over where the mouse happens to be. On a MacBook the key under your finger sends backspace rather than delete, so `Cmd+Backspace` does it too. A column a relation still points at, or the last column of a table, is refused before anything is written and the reason is shown.
 
 `Ctrl/Cmd+Enter` adds a column below the one you are pointing at, or at the end of the table if you are pointing at a table rather than one of its columns, without opening anything first, and puts the box on the new column so you can name it. Inside the box the same chord applies what you typed and then adds one. The new column is called `new_column`, or `new_column_2` and so on where the table already holds that name.
 

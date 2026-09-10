@@ -54,7 +54,10 @@ import { closeQuickEdit, openQuickEdit } from "@/stores/quickEditStore";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { t } from "@/i18n/t";
 import { setSchemaTables } from "@/stores/schemaIndexStore";
-import { quickEditTargetFor } from "@/components/QuickEdit/quickEditTarget";
+import {
+  deleteTargetFor,
+  quickEditTargetFor,
+} from "@/components/QuickEdit/quickEditTarget";
 import {
   addColumnAt,
   newColumnLine,
@@ -618,9 +621,12 @@ const DiagramWrapper = ({
        * change, which is the same nothing the key already looked like. The two
        * that matter are a relation still pointing at the column and a table
        * left with none, and both come back from the parse gate.
+       *
+       * Aimed by `deleteTargetFor` and not by the resolver `F2` uses: the
+       * outline wins over the pointer here, and why is written down there.
        */
       deleteColumn: () => {
-        const aim = quickEditTargetFor({
+        const aim = deleteTargetFor({
           hoveredColumn: getHoveredColumn(),
           hoveredTable: getHoveredTableName(),
           focusedColumn: columnFocusStore.get(),

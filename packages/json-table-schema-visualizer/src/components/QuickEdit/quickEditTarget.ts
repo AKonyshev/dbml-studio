@@ -45,3 +45,27 @@ export const quickEditTargetFor = (
 
   return null;
 };
+
+/**
+ * What the delete key takes out, which is not what the edit key opens.
+ *
+ * `F2` follows the pointer, and it has to: a click's outline survives until
+ * something else takes it, so the pointer is the only thing that says "this
+ * one, now". Opening the wrong box costs an `Escape`.
+ *
+ * Deleting the wrong column costs the column. So the outline wins here — it is
+ * the reader's own answer to "which one", it is on the screen where they can
+ * see it, and the pointer merely happens to be somewhere. Reported by a reader
+ * who clicked one column, moved the mouse over another and lost the second.
+ *
+ * With nothing outlined the pointer is all there is, and it decides. A table
+ * under either of them is answered with, so that the key can say what it wants
+ * rather than doing nothing.
+ */
+export const deleteTargetFor = (aim: QuickEditAim): QuickEditTarget | null => {
+  if (aim.focusedColumn !== null) {
+    return aim.focusedColumn;
+  }
+
+  return quickEditTargetFor(aim);
+};

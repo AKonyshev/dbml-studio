@@ -1,4 +1,8 @@
-import { quickEditTargetFor, type QuickEditAim } from "../quickEditTarget";
+import {
+  deleteTargetFor,
+  quickEditTargetFor,
+  type QuickEditAim,
+} from "../quickEditTarget";
 
 const nothing: QuickEditAim = {
   hoveredColumn: null,
@@ -7,7 +11,7 @@ const nothing: QuickEditAim = {
   selectedTables: [],
 };
 
-const column = { table: "users", field: "email", offsetY: 30 };
+const column = { table: "users", at: 1, offsetY: 30 };
 
 describe("quickEditTargetFor", () => {
   it("takes the column under the pointer", () => {
@@ -77,5 +81,44 @@ describe("quickEditTargetFor", () => {
 
   it("treats an empty hovered name as nothing", () => {
     expect(quickEditTargetFor({ ...nothing, hoveredTable: "" })).toBeNull();
+  });
+});
+
+describe("deleteTargetFor", () => {
+  // Reported by a reader who clicked one column, moved the mouse over the next
+  // one and lost the one under the mouse.
+  it("takes the outlined column, not the one under the pointer", () => {
+    const other = { table: "users", at: 2, offsetY: 60 };
+
+    expect(
+      deleteTargetFor({
+        ...nothing,
+        hoveredColumn: other,
+        hoveredTable: "users",
+        focusedColumn: column,
+      }),
+    ).toEqual(column);
+  });
+
+  it("falls back to the pointer with nothing outlined", () => {
+    expect(
+      deleteTargetFor({
+        ...nothing,
+        hoveredColumn: column,
+        hoveredTable: "users",
+      }),
+    ).toEqual(column);
+  });
+
+  // Answered with rather than refused, so the key can say what it wants.
+  it("answers with a table when neither points at a column", () => {
+    expect(deleteTargetFor({ ...nothing, hoveredTable: "users" })).toEqual({
+      table: "users",
+      offsetY: 0,
+    });
+  });
+
+  it("answers with nothing when nothing is aimed at", () => {
+    expect(deleteTargetFor(nothing)).toBeNull();
   });
 });
