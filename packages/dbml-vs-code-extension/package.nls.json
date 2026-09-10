@@ -25,5 +25,6 @@
   "command.showShortcuts": "DBML: Show the diagram legend",
   "configuration.title": "DBML Studio",
   "command.quickEdit": "DBML: Edit the column, or rename the table",
-  "command.addColumn": "Add a column below the one you are pointing at"
+  "command.addColumn": "Add a column below the one you are pointing at",
+  "command.deleteColumn": "Delete the column you are pointing at"
 }

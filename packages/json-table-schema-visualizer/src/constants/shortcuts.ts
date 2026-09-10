@@ -99,6 +99,13 @@ export const SHORTCUTS = [
     chord: true,
   },
   {
+    id: "deleteColumn",
+    key: "Delete",
+    labelKey: "action.deleteColumn",
+    executable: true,
+    chord: true,
+  },
+  {
     id: "legend",
     key: "?",
     labelKey: "action.showLegend",

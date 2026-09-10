@@ -25,5 +25,6 @@
   "command.showShortcuts": "DBML：显示关系图图例",
   "configuration.title": "DBML Studio",
   "command.quickEdit": "DBML：编辑列或重命名表",
-  "command.addColumn": "在指向的列下方添加一列"
+  "command.addColumn": "在指向的列下方添加一列",
+  "command.deleteColumn": "删除指向的列"
 }

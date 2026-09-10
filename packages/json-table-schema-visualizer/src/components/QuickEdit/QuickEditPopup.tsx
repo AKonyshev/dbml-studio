@@ -2,20 +2,15 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { commitOperationFor, quickEditIntent } from "./quickEditIntent";
 import { newColumnLine, openAddedColumn } from "./addColumn";
+import { messageForRejection } from "./rejectionMessage";
 import { MIN_POPUP_WIDTH, useQuickEditPosition } from "./useQuickEditPosition";
 
-import type {
-  EditOperation,
-  EditOutcome,
-  EditRejection,
-} from "shared/types/diagramEdit";
+import type { EditOperation, EditOutcome } from "shared/types/diagramEdit";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import { FONT_FAMILY } from "@/constants/font";
 import { COLUMN_HEIGHT, FONT_SIZES, PADDINGS } from "@/constants/sizing";
 import { useThemeColors } from "@/hooks/theme";
-import { type MessageKey } from "@/i18n/messages";
-import { t } from "@/i18n/t";
 import { focusColumn } from "@/stores/currentTarget";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import {
@@ -37,19 +32,6 @@ import {
   nextDrawnField,
   subscribeSchema,
 } from "@/stores/schemaIndexStore";
-
-/**
- * A rejection in the reader's own language, with the parser's own words kept
- * verbatim underneath. The parser speaks English only, and paraphrasing a
- * syntax error into another language would lose the part that says where.
- */
-const messageForRejection = (reason: EditRejection): string => {
-  if (reason.code === "parseError") {
-    return `${t("quickEdit.rejected")} ${reason.message}`;
-  }
-
-  return t(`quickEdit.${reason.code}` as MessageKey);
-};
 
 const currentTextOf = (target: QuickEditTarget): string => {
   if (target.at === undefined) {

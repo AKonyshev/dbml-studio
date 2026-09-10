@@ -24,7 +24,11 @@ export const matchShortcut = (
   // its own: a bare letter under Ctrl belongs to the workbench, and a chord
   // without it is just the key being typed.
   const chording = event.ctrlKey || event.metaKey;
-  const key = event.key.toLowerCase();
+  // A MacBook has no forward-delete key: the one under the reader's finger
+  // sends `Backspace`, and `Delete` needs `fn` held as well. Outside a text
+  // field the two ask for the same thing, and nothing else here is bound to
+  // either.
+  const key = event.key === "Backspace" ? "delete" : event.key.toLowerCase();
   const entry = SHORTCUTS.find(
     (shortcut) =>
       shortcut.executable &&

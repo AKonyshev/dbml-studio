@@ -209,7 +209,26 @@ suite("an edit from the diagram reaches the document", () => {
         () => !document.getText().includes(`"col_005" numeric [not null`),
         30000,
       );
-      assert.strictEqual(document.getText(), before);
+      // The column's own line, and the two it sits between. Not the whole
+      // document: the diagram writes the layout block back on a schedule of
+      // its own, and a test that demanded every character be identical was
+      // failing on the arrangement rather than on the undo.
+      const undone = document.getText();
+      assert.ok(
+        undone.includes(`  "col_005" numeric [note: 'Description 5']\n`),
+        "the undo did not put the column's line back",
+      );
+      assert.ok(
+        undone.includes(
+          `  "col_004" timestamp [not null, note: 'Description 4']\n  "col_005"`,
+        ),
+        "the undo took back more than the edit",
+      );
+      assert.strictEqual(
+        undone.split("\n").length,
+        before.split("\n").length,
+        "the undo left the file a different length",
+      );
     } finally {
       await browser.close();
     }

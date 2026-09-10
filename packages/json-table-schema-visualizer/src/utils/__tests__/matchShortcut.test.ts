@@ -38,6 +38,18 @@ describe("matchShortcut", () => {
     expect(matchShortcut(event("Enter"))).toBeNull();
   });
 
+  test("matches deleting a column on either delete key", () => {
+    expect(matchShortcut(event("Delete", { ctrlKey: true }))).toBe(
+      "deleteColumn",
+    );
+    // What a MacBook's own delete key sends. `Delete` there needs `fn` held.
+    expect(matchShortcut(event("Backspace", { metaKey: true }))).toBe(
+      "deleteColumn",
+    );
+    expect(matchShortcut(event("Backspace"))).toBeNull();
+    expect(matchShortcut(event("Delete"))).toBeNull();
+  });
+
   test("leaves a bare letter to the workbench while a modifier is held", () => {
     expect(matchShortcut(event("c", { ctrlKey: true }))).toBeNull();
     expect(matchShortcut(event("c", { metaKey: true }))).toBeNull();

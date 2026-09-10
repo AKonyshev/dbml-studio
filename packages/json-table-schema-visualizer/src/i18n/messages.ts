@@ -107,8 +107,11 @@ export const MESSAGES_EN = {
     "The column was added to the file. This table is not showing every column, so it is not drawn — raise its detail level to see it.",
   "quickEdit.noColumnToAddBelow":
     "This table declares no columns, so there is nothing to add one below. Write the first one in the text editor.",
+  "quickEdit.pointAtAColumn":
+    "Deleting works on a column: point at one. A table is taken out in the text editor.",
   "action.quickEdit": "Edit the column, or rename the table",
   "action.addColumn": "Add a column below the one you are pointing at",
+  "action.deleteColumn": "Delete the column you are pointing at",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

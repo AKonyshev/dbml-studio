@@ -48,9 +48,9 @@ import {
   reconcileAfterSchemaChange,
 } from "@/stores/renameReconcile";
 import { selectionStore } from "@/stores/selectionStore";
-import { clearCurrentTarget } from "@/stores/currentTarget";
+import { clearColumnFocus, clearCurrentTarget } from "@/stores/currentTarget";
 import { useIsSelectMode } from "@/hooks/selection";
-import { openQuickEdit } from "@/stores/quickEditStore";
+import { closeQuickEdit, openQuickEdit } from "@/stores/quickEditStore";
 import { getDiagramEditingHost } from "@/stores/diagramEditing";
 import { t } from "@/i18n/t";
 import { setSchemaTables } from "@/stores/schemaIndexStore";
@@ -60,6 +60,7 @@ import {
   newColumnLine,
   openAddedColumn,
 } from "@/components/QuickEdit/addColumn";
+import { messageForRejection } from "@/components/QuickEdit/rejectionMessage";
 import {
   useDiagramActions,
   useKeyboardShortcuts,
@@ -604,6 +605,48 @@ const DiagramWrapper = ({
 
             openAddedColumn(table, outcome.at, offsetY);
           });
+      },
+      /**
+       * Take out the column being pointed at.
+       *
+       * The other half of `addColumn`, and it was missing: deleting lived
+       * inside the editing box only, so a reader who had just clicked a column
+       * pressed the key and watched nothing happen.
+       *
+       * A refusal has to be said out loud here. Under the box there is
+       * somewhere to put it; with no box open the diagram would simply not
+       * change, which is the same nothing the key already looked like. The two
+       * that matter are a relation still pointing at the column and a table
+       * left with none, and both come back from the parse gate.
+       */
+      deleteColumn: () => {
+        const aim = quickEditTargetFor({
+          hoveredColumn: getHoveredColumn(),
+          hoveredTable: getHoveredTableName(),
+          focusedColumn: columnFocusStore.get(),
+          selectedTables: [...selectionStore.getSelected()],
+        });
+        const host = getDiagramEditingHost();
+        if (aim === null || host === null) return;
+
+        if (aim.at === undefined) {
+          host.notify?.(t("quickEdit.pointAtAColumn"));
+
+          return;
+        }
+
+        const { table, at } = aim;
+        void host.submit({ kind: "deleteField", table, at }).then((outcome) => {
+          if (!outcome.ok) {
+            host.notify?.(messageForRejection(outcome.reason));
+
+            return;
+          }
+
+          // Nothing stands there now, and the box may have been open on it.
+          clearColumnFocus();
+          closeQuickEdit();
+        });
       },
     },
     !isLegendOpen,

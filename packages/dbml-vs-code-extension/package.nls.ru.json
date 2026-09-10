@@ -25,5 +25,6 @@
   "command.showShortcuts": "DBML: Показать легенду диаграммы",
   "configuration.title": "DBML Studio",
   "command.quickEdit": "DBML: Править колонку или переименовать таблицу",
-  "command.addColumn": "Добавить колонку под той, на которую наведён указатель"
+  "command.addColumn": "Добавить колонку под той, на которую наведён указатель",
+  "command.deleteColumn": "Удалить колонку, на которую наведён указатель"
 }

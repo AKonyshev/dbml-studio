@@ -184,6 +184,10 @@
       {
         "command": "dbmlStudio.addColumn",
         "title": "%command.addColumn%"
+      },
+      {
+        "command": "dbmlStudio.deleteColumn",
+        "title": "%command.deleteColumn%"
       }
     ],
     "keybindings": [
@@ -257,6 +261,18 @@
         "key": "ctrl+enter",
         "mac": "cmd+enter",
         "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.deleteColumn",
+        "key": "ctrl+delete",
+        "mac": "cmd+delete",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
+      },
+      {
+        "command": "dbmlStudio.deleteColumn",
+        "key": "ctrl+backspace",
+        "mac": "cmd+backspace",
+        "when": "activeCustomEditorId == 'dbml-studio-diagram' && !inputFocus && !dbmlStudio.diagramInputFocus"
       }
     ],
     "menus": {
@@ -327,6 +343,10 @@
         },
         {
           "command": "dbmlStudio.addColumn",
+          "when": "activeCustomEditorId == 'dbml-studio-diagram'"
+        },
+        {
+          "command": "dbmlStudio.deleteColumn",
           "when": "activeCustomEditorId == 'dbml-studio-diagram'"
         }
       ],

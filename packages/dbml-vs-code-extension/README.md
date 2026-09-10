@@ -31,22 +31,23 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 Every view action is a command, so the keys below are defaults rather than fixtures: rebind any of them in **Preferences: Open Keyboard Shortcuts** by searching for `DBML`, and run any of them from the command palette. They apply while the diagram has focus and nowhere else.
 
-| Key              | Command                                        |
-| ---------------- | ---------------------------------------------- |
-| `C`              | Colored relations                              |
-| `A`              | Relation animation                             |
-| `S`              | Short table names                              |
-| `D`              | Cycle detail level                             |
-| `V`              | Switch between pan and select                  |
-| `L`              | Auto-arrange                                   |
-| `F`              | Fit to view                                    |
-| `H`              | Hide/show the hovered table's relations        |
-| `R`              | Show all hidden relations                      |
-| `T`              | Cycle the hovered table's detail level         |
-| `U`              | Give every table the shared level back         |
-| `F2`             | Edit the column, or rename the table           |
-| `Ctrl/Cmd+Enter` | Add a column below the one you are pointing at |
-| `?`              | Show the shortcuts legend                      |
+| Key               | Command                                        |
+| ----------------- | ---------------------------------------------- |
+| `C`               | Colored relations                              |
+| `A`               | Relation animation                             |
+| `S`               | Short table names                              |
+| `D`               | Cycle detail level                             |
+| `V`               | Switch between pan and select                  |
+| `L`               | Auto-arrange                                   |
+| `F`               | Fit to view                                    |
+| `H`               | Hide/show the hovered table's relations        |
+| `R`               | Show all hidden relations                      |
+| `T`               | Cycle the hovered table's detail level         |
+| `U`               | Give every table the shared level back         |
+| `F2`              | Edit the column, or rename the table           |
+| `Ctrl/Cmd+Enter`  | Add a column below the one you are pointing at |
+| `Ctrl/Cmd+Delete` | Delete the column you are pointing at          |
+| `?`               | Show the shortcuts legend                      |
 
 Two keys belong to the diagram itself and are not commands: `Esc` closes the legend, and `Ctrl/Cmd+F` opens the table search.
 
@@ -75,6 +76,8 @@ Click a column to point at it, then press `F2` or double-click it. A box opens o
 | `Escape`                | Throw the edit away                        |
 
 Clicking anywhere else applies the edit and closes the box, the way a spreadsheet cell does. `Escape` is how you throw typing away.
+
+`Ctrl/Cmd+Delete` takes out the column you are pointing at. On a MacBook the key under your finger sends backspace rather than delete, so `Cmd+Backspace` does it too. A column a relation still points at, or the last column of a table, is refused before anything is written and the reason is shown.
 
 `Ctrl/Cmd+Enter` adds a column below the one you are pointing at, or at the end of the table if you are pointing at a table rather than one of its columns, without opening anything first, and puts the box on the new column so you can name it. Inside the box the same chord applies what you typed and then adds one. The new column is called `new_column`, or `new_column_2` and so on where the table already holds that name.
 
