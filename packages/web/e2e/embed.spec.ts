@@ -1082,6 +1082,62 @@ test("the theme in the query reaches the canvas, not only the chrome", async ({
   expect(light.root).not.toContain("dark");
 });
 
+test("the host can turn the diagram's lights off without reloading it", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await serveHost(page);
+  await page.goto("/host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  const inFrame = async <T>(fn: () => T): Promise<T> => {
+    const found = page.frames().find((f) => f.url().includes("embed.html"));
+
+    return (await found?.evaluate(fn)) as T;
+  };
+
+  const background = async (): Promise<string> =>
+    await inFrame(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        container: () => HTMLElement;
+      };
+
+      return getComputedStyle(stage.container()).backgroundColor;
+    });
+
+  const light = await background();
+  // Something to lose: the view the reader is looking at, which a reload or a
+  // remount would take with it.
+  const before = await inFrame(() => window.Konva?.stages[0]?.scaleX() ?? 0);
+
+  await page.evaluate(() => {
+    const frameElement = document.querySelector<HTMLIFrameElement>(
+      ".dbml-diagram iframe",
+    );
+
+    frameElement?.contentWindow?.postMessage(
+      { source: "dbml-frame", type: "theme", theme: "dark" },
+      "*",
+    );
+  });
+
+  await expect.poll(async () => await background()).not.toBe(light);
+
+  // The class on the frame's own root, not only the canvas: Konva is given hex
+  // strings rather than classes, so the two are separately capable of being
+  // wrong, and checking one would pass on a dark canvas in a white page.
+  expect(await inFrame(() => document.documentElement.className)).toContain(
+    "dark",
+  );
+
+  // Same stage, same view: nothing was rebuilt.
+  expect(await inFrame(() => window.Konva?.stages[0]?.scaleX() ?? 0)).toBe(
+    before,
+  );
+});
+
 test.describe("in a browser that asks for Russian", () => {
   test.use({ locale: "ru-RU" });
 

@@ -198,6 +198,7 @@ deployed.
 | 9.17 | Both sources at once                        | `?src=acl.dbml&model=acl.dbml`             | Refused — one or the other                                                        | `embedParams.test.ts` |
 | 9.18 | A host pushes the model in                  | `embed.html`, then a `document` message    | Drawn, and nothing was fetched                                                    | `embed.spec.ts`       |
 | 9.19 | Nobody answers a hosted frame               | `embed.html` opened by hand                | "No schema given" after two seconds                                               | `embed.spec.ts`       |
+| 9.20 | The host turns the lights off               | Host posts `theme`                         | The diagram follows; the view and the arrangement stay as they were               | `embed.spec.ts`       |
 
 ## 10. VS Code extension — DBML Studio
 
