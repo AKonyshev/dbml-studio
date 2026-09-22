@@ -3,8 +3,10 @@
  *
  * The frame is an `<iframe>` in a page it does not control and cannot resize:
  * a diagram that wants the whole viewport has to ask for it. This module is
- * the vocabulary of that request — no `window`, no listeners, nothing that
- * needs a browser to test.
+ * mostly the vocabulary of that request, and most of it needs no browser to
+ * test. The exceptions are `isFromHost` and `postToHost`, which read and
+ * write `window.parent` and are exercised by the Playwright suite
+ * (`embed.spec.ts`) rather than by this package's Node tests.
  *
  * The other half lives in the site of documentation, in
  * `antora/docs/lib/dbml-frame-host.js`, and is written out again there rather
@@ -118,7 +120,8 @@ const isThemeName = (value: unknown): value is "light" | "dark" =>
  *
  * `null` covers a lot of ordinary traffic: a page carries whatever its other
  * scripts post, and in development the dev server's own messages arrive here
- * too. Only the two shapes below are answered.
+ * too. Only the four shapes below — `ready`, `expanded`, `document`, `theme`
+ * — are answered.
  */
 export const parseHostMessage = (data: unknown): HostMessage | null => {
   if (!isRecord(data) || data.source !== FRAME_PROTOCOL) {

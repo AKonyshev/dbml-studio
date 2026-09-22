@@ -199,6 +199,8 @@ deployed.
 | 9.18 | A host pushes the model in                  | `embed.html`, then a `document` message                                 | Drawn, and nothing was fetched                                                    | `embed.spec.ts`       |
 | 9.19 | Nobody answers a hosted frame               | `embed.html` opened by hand                                             | "No schema given" after two seconds                                               | `embed.spec.ts`       |
 | 9.20 | The host turns the lights off               | Host posts `theme`                                                      | The diagram follows; the view and the arrangement stay as they were               | `embed.spec.ts`       |
+| 9.21 | A document from an impostor is ignored      | A same-origin window that is not `window.parent` posts `document`       | The host's model is drawn; the impostor's table never appears                     | `embed.spec.ts`       |
+| 9.22 | A changed push lays the new tables out      | `embed.html`, then a second, different `document`                       | The added table is laid out, not piled on top of the others                       | `embed.spec.ts`       |
 | 9.23 | A changed push keeps a saved arrangement    | A `document`, then a changed one that adds a table to an arranged model | The three arranged tables stay at the file's own coordinates                      | `embed.spec.ts`       |
 | 9.24 | A host that answers late is still heard     | `embed.html`, host replies after the two-second deadline                | The diagram is drawn, and storage is left as clean as one answered in time        | `embed.spec.ts`       |
 
