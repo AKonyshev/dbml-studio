@@ -818,6 +818,201 @@ test("a host that pushes a changed model lays the new tables out instead of stac
   expect(spoke).not.toEqual({ x: 0, y: 0 });
 });
 
+// `ARRANGED` with one more table added, its `MetaInfo` block left untouched —
+// the shape an author's edit really takes: they add a table and leave the
+// three they already placed where they were.
+const ARRANGED_PLUS = `
+Table "arr"."left" {
+  id integer [pk]
+}
+
+Table "arr"."middle" {
+  id integer [pk]
+  left_id integer
+}
+
+Table "arr"."right" {
+  id integer [pk]
+}
+
+Table "arr"."extra" {
+  id integer [pk]
+}
+
+Ref: "arr"."left"."id" < "arr"."middle"."left_id"
+
+/*MetaInfo
+[{"name":"arr.left","x":0,"y":0},
+{"name":"arr.middle","x":6000,"y":4000},
+{"name":"arr.right","x":12000,"y":9000}]
+MetaInfo*/
+`;
+
+const serveArrangedPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/arranged-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: pushingHostPage(ARRANGED),
+    });
+  });
+};
+
+test("a host that pushes a changed model keeps a table's saved arrangement instead of inventing a new one", async ({
+  page,
+}) => {
+  await serveArrangedPushingHost(page);
+  await page.goto("/arranged-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(
+      expect.arrayContaining([
+        "table-arr.left",
+        "table-arr.middle",
+        "table-arr.right",
+      ]),
+    );
+
+  // A changed document, under the same hosted key — the path that used to
+  // force a fresh layout and throw the file's own arrangement away.
+  await pushDocument(page, ARRANGED_PLUS);
+
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(
+      expect.arrayContaining([
+        "table-arr.left",
+        "table-arr.middle",
+        "table-arr.right",
+        "table-arr.extra",
+      ]),
+    );
+
+  // Thousands of units apart, exactly as the file's own `MetaInfo` block says
+  // — not the close-together spots a freshly computed layout would give three
+  // small, related tables.
+  expect(await positionOf(page, "table-arr.left")).toEqual({ x: 0, y: 0 });
+  expect(await positionOf(page, "table-arr.middle")).toEqual({
+    x: 6000,
+    y: 4000,
+  });
+  expect(await positionOf(page, "table-arr.right")).toEqual({
+    x: 12000,
+    y: 9000,
+  });
+
+  // The table the second push actually added has no saved position of its
+  // own, and is laid out rather than piled on top of nothing.
+  const extra = await positionOf(page, "table-arr.extra");
+  expect(extra).not.toBeNull();
+  expect(extra).not.toEqual({ x: 0, y: 0 });
+});
+
+// A host that has the model but is slow to answer — the shape a cold start on
+// a large vault takes in the Obsidian plugin this mode exists for. The delay
+// is comfortably past the frame's own two-second deadline (`main.tsx`'s
+// `HOST_DOCUMENT_TIMEOUT_MS`), so "No schema given" is already on screen
+// before this host's reply is anywhere close.
+const LATE_HOST_DELAY_MS = 2_500;
+
+const lateHostPage = (
+  model: string,
+  delayMs: number,
+): string => `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(model)};
+  var DELAY_MS = ${delayMs};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    setTimeout(function () {
+      frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+      frame.contentWindow.postMessage(
+        { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+        '*'
+      );
+    }, DELAY_MS);
+  });
+})();
+</script>
+</body></html>`;
+
+const serveLateHost = async (page: Page): Promise<void> => {
+  await page.route("**/late-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: lateHostPage(ACL, LATE_HOST_DELAY_MS),
+    });
+  });
+};
+
+test("a host that answers after the deadline still gets its diagram drawn", async ({
+  page,
+}) => {
+  await serveLateHost(page);
+  await page.goto("/late-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+
+  // The deadline fires first, same message as a host nobody is going to hear
+  // from at all.
+  await expect(frame.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
+
+  // But this host was only late, not absent — its reply, arriving after the
+  // deadline, still draws the diagram rather than being ignored for the life
+  // of the page.
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible({
+    timeout: LATE_HOST_DELAY_MS + 3_000,
+  });
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toContain("table-acl.analysis");
+});
+
+test("a host that answers after the deadline still leaves no trace in storage", async ({
+  page,
+}) => {
+  await serveLateHost(page);
+  await page.goto("/late-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible({
+    timeout: LATE_HOST_DELAY_MS + 3_000,
+  });
+
+  // The same promise test 9.12 checks for a host that answers in time: a
+  // frame rescued by a late reply is not a frame allowed to keep what it drew.
+  // `"hosted"` rather than `"embed:"` — the hosted mode's document key carries
+  // no such prefix.
+  const ours = await page.evaluate(() =>
+    Object.keys(window.localStorage).filter((key) => key.includes("hosted")),
+  );
+  expect(ours).toEqual([]);
+});
+
 test("the frame leaves no trace in storage", async ({ page }) => {
   await serveModel(page);
 

@@ -185,13 +185,18 @@ const draw = (
  * `tableCoordsStore.getCoords` falls back to `defaultTableCoord` for a name it
  * does not hold — every new table piled at `{x:0,y:0}` instead of laid out.
  *
- * `resetPositions(…, { force: true })` skips that recovery and computes a
- * fresh layout for the tables that are actually there — the same primitive
- * `TablesPositionsProvider`'s own "reset layout" already forces. The reader's
- * arrangement is not being sacrificed here; it is protected one level up, in
- * the caller that only reaches `redraw` once the text or the table filter has
- * actually changed. A re-send of the document already on screen never gets
- * this far.
+ * `clear` before `resetPositions`, the same order `App.tsx`'s own
+ * `arrangeLoadedText` uses. Storage under this key is already empty by the
+ * time a second push arrives — this function ends with `forgetThisDocument`,
+ * same as `draw` — so what the clear actually reaches is the map still held
+ * in memory from the push before this one: without it `resetPositions` would
+ * keep whatever position that push computed for every table this one still
+ * has, and never look at the tables' own coordinates at all. Reading those is
+ * the point. A model that carries a layout block of its own is drawn in the
+ * author's arrangement, not an invented one, on every push that changes it —
+ * the same round trip `App.tsx`'s comment above calls load-bearing for the
+ * DBML format. `resetPositions` only reads that block when it finds nothing
+ * stored, which is exactly what the `clear` guarantees.
  */
 const redraw = (
   text: string,
@@ -204,9 +209,8 @@ const redraw = (
     return { schema: null, errorMessage: result.errorMessage, documentKey };
   }
 
-  tableCoordsStore.resetPositions(result.schema.tables, result.schema.refs, {
-    force: true,
-  });
+  tableCoordsStore.clear(documentKey);
+  tableCoordsStore.resetPositions(result.schema.tables, result.schema.refs);
   forgetThisDocument(documentKey);
 
   return { schema: result.schema, errorMessage: null, documentKey };
@@ -278,13 +282,24 @@ const Frame = ({
         const previous = hostedSource.current;
         hostedSource.current = next;
 
+        // `previous === null` means no document has been drawn under this key
+        // yet — not the ordinary case, where `bootstrap` already drew the one
+        // this effect was seeded with, but the deadline having put an error on
+        // screen instead and left that seed `null`. That first document is
+        // handled exactly as `bootstrap` handles the one that arrives in time:
+        // through `draw`, which is also what actually switches the document
+        // and gives the tables a store to be arranged in — nothing has run
+        // `switchDocument` for this key yet.
+        //
         // A re-send of the document already on screen — a theme change, the
         // host's own "refresh diagrams" command, or simply `useHostExpand`'s
         // own "hello" bringing a second reply — lands on the layout already
         // there. Redrawing for one would either throw the reader's own
         // arrangement away (`draw`) or recompute it for nothing (`redraw`);
         // only the theme below is worth doing again.
-        if (previous === null || !sameHostedSource(previous, next)) {
+        if (previous === null) {
+          setDrawn(draw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
+        } else if (!sameHostedSource(previous, next)) {
           setDrawn(redraw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
         }
 
@@ -407,10 +422,26 @@ const bootstrap = async (): Promise<void> => {
     );
 
     if (first === null) {
-      // The same message the frame gave before there was a hosted mode at all,
-      // and for the same reason: `embed.html` opened by hand has to explain
-      // itself rather than sit blank.
-      failed(embedErrorText({ kind: "srcMissing" }), HOSTED_DOCUMENT_KEY);
+      // The same message the frame gave before there was a hosted mode at
+      // all, and for the same reason: `embed.html` opened by hand has to
+      // explain itself rather than sit blank. Not `failed`, though — this
+      // renders `hosted: true`, because the deadline is only for a frame
+      // nobody is ever going to answer, not a promise that a host answering
+      // late is refused for the life of the page. `hosted: true` mounts
+      // `Frame`'s own listener, which goes on waiting past this point, and
+      // `initialHostedSource: null` tells it that whatever document arrives
+      // there is the first one this frame has seen — to be drawn, exactly as
+      // one arriving before the deadline would be, not redrawn onto a layout
+      // that was never computed.
+      render(
+        {
+          schema: null,
+          errorMessage: embedErrorText({ kind: "srcMissing" }),
+          documentKey: HOSTED_DOCUMENT_KEY,
+        },
+        true,
+        null,
+      );
       return;
     }
 
