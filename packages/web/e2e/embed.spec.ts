@@ -1,6 +1,7 @@
 import {
   expect,
   test,
+  type Frame,
   type Locator,
   type Page,
   type Request,
@@ -538,7 +539,10 @@ test("a model on another site is refused rather than fetched", async ({
 // text itself — which is what a plugin does. Through a real host page rather than
 // by posting from the test after `goto`: the frame gives up after two seconds, and
 // on a loaded machine the test would lose that race and fail for no reason.
-const HOST_PUSHING_PAGE = `<!doctype html>
+//
+// Takes the model as an argument rather than closing over `ACL`: the relayout
+// test below needs a host that starts from a different, smaller schema.
+const pushingHostPage = (model: string): string => `<!doctype html>
 <html><head><style>
   body { margin: 0; padding: 40px; }
   .dbml-diagram { width: 600px; height: 300px; }
@@ -548,7 +552,7 @@ const HOST_PUSHING_PAGE = `<!doctype html>
 <div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
 <script>
 ;(function () {
-  var MODEL = ${JSON.stringify(ACL)};
+  var MODEL = ${JSON.stringify(model)};
 
   window.addEventListener('message', function (event) {
     var data = event.data;
@@ -567,6 +571,8 @@ const HOST_PUSHING_PAGE = `<!doctype html>
 })();
 </script>
 </body></html>`;
+
+const HOST_PUSHING_PAGE = pushingHostPage(ACL);
 
 const servePushingHost = async (page: Page): Promise<void> => {
   await page.route("**/pushing-host.html", async (route) => {
@@ -607,6 +613,209 @@ test("a frame nobody answers says so rather than sitting blank", async ({
   await expect(page.getByText("No schema given")).toBeVisible({
     timeout: 5_000,
   });
+});
+
+// A model an impostor pushes, distinct from `ACL` by name alone, so its
+// presence (or absence) on the canvas can be told apart from the real host's.
+const IMPOSTOR_MODEL = `
+Table "impostor"."malicious_table" {
+  id integer [pk]
+}
+`;
+
+// A page that embeds the diagram frame exactly as `pushingHostPage` does, and
+// besides it a second, unrelated iframe — same origin, same page, but not the
+// frame's own `window.parent` — that gets hold of the diagram frame's window
+// through the DOM (something any same-origin script on the page could do) and
+// posts it a `document` on its own, repeatedly, racing to arrive before the
+// real host's reply. Built with `iframe.srcdoc` set as a JS string rather than
+// written out as HTML, so the inner `<script>` needs no attribute-quoting
+// gymnastics.
+const IMPOSTOR_PUSHING_PAGE = `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(ACL)};
+  var IMPOSTOR = ${JSON.stringify(IMPOSTOR_MODEL)};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+    frame.contentWindow.postMessage(
+      { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+      '*'
+    );
+  });
+
+  var attacker = document.createElement('iframe');
+  attacker.style.display = 'none';
+  attacker.srcdoc =
+    '<script>' +
+    'var attempts = 0;' +
+    'var timer = setInterval(function () {' +
+    '  attempts += 1;' +
+    '  var target = window.parent.document.querySelector(".dbml-diagram iframe");' +
+    '  if (target && target.contentWindow) {' +
+    '    target.contentWindow.postMessage(' +
+    '      { source: "dbml-frame", type: "document", text: ' + JSON.stringify(IMPOSTOR) + ', tables: null, theme: "light" },' +
+    '      "*"' +
+    '    );' +
+    '  }' +
+    '  if (attempts > 20) clearInterval(timer);' +
+    '}, 50);' +
+    '<' + '/script>';
+  document.body.appendChild(attacker);
+})();
+</script>
+</body></html>`;
+
+const serveImpostorPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/impostor-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: IMPOSTOR_PUSHING_PAGE,
+    });
+  });
+};
+
+const embeddedFrame = (page: Page): Frame | undefined =>
+  page.frames().find((f) => f.url().includes("embed.html"));
+
+const embeddedTableNames = async (page: Page): Promise<string[]> =>
+  (await embeddedFrame(page)?.evaluate(() => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+    }>;
+
+    return groups
+      .map((g) => g.name())
+      .filter((name) => name.startsWith("table-"));
+  })) ?? [];
+
+test("a document posted by a window that is not the host is ignored", async ({
+  page,
+}) => {
+  await serveImpostorPushingHost(page);
+  await page.goto("/impostor-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // The real host's tables, and never the impostor's — whichever of the two
+  // arrived at the frame first. `isFromHost` is an identity check, not a
+  // first-come-first-served one.
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toContain("table-acl.analysis");
+  expect(await embeddedTableNames(page)).not.toContain(
+    "table-impostor.malicious_table",
+  );
+});
+
+// One table, so a second push that adds one more has somewhere new to place
+// it: the shape Important 2's bug needed to show itself.
+const SOLO_MODEL = `
+Table "solo"."hub" {
+  id integer [pk]
+}
+`;
+
+const HUB_AND_SPOKE_MODEL = `
+Table "solo"."hub" {
+  id integer [pk]
+}
+
+Table "solo"."spoke" {
+  id integer [pk]
+  hub_id integer
+}
+
+Ref: "solo"."hub"."id" < "solo"."spoke"."hub_id"
+`;
+
+const serveSoloPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/solo-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: pushingHostPage(SOLO_MODEL),
+    });
+  });
+};
+
+/** Posted from the test itself: a second `document`, after the frame has its first. */
+const pushDocument = async (page: Page, model: string): Promise<void> => {
+  await page.evaluate((text) => {
+    const iframe = document.querySelector<HTMLIFrameElement>(
+      ".dbml-diagram iframe",
+    );
+
+    iframe?.contentWindow?.postMessage(
+      {
+        source: "dbml-frame",
+        type: "document",
+        text,
+        tables: null,
+        theme: "light",
+      },
+      "*",
+    );
+  }, model);
+};
+
+const positionOf = async (
+  page: Page,
+  groupName: string,
+): Promise<{ x: number; y: number } | null> =>
+  (await embeddedFrame(page)?.evaluate((name) => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+      x: () => number;
+      y: () => number;
+    }>;
+    const match = groups.find((g) => g.name() === name);
+
+    return match !== undefined ? { x: match.x(), y: match.y() } : null;
+  }, groupName)) ?? null;
+
+test("a host that pushes a changed model lays the new tables out instead of stacking them at one point", async ({
+  page,
+}) => {
+  await serveSoloPushingHost(page);
+  await page.goto("/solo-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(["table-solo.hub"]);
+
+  // The same document key, a table the frame has never held a position for.
+  await pushDocument(page, HUB_AND_SPOKE_MODEL);
+
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(expect.arrayContaining(["table-solo.hub", "table-solo.spoke"]));
+
+  // Not `defaultTableCoord` — the bug this guards piles a table with no
+  // recovered entry exactly there, on top of nothing a reader could tell apart
+  // from an empty canvas.
+  const spoke = await positionOf(page, "table-solo.spoke");
+  expect(spoke).not.toBeNull();
+  expect(spoke).not.toEqual({ x: 0, y: 0 });
 });
 
 test("the frame leaves no trace in storage", async ({ page }) => {

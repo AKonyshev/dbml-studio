@@ -17,16 +17,25 @@ export interface MessageTarget {
 /**
  * Every model the host pushes, until the returned function is called.
  *
- * No identity check here, unlike the hooks that answer the host: a hosted frame
- * is handed its model by the window that created it, and that check lives in
- * `isFromHost`, called by the frame that wires this up. This module is the
- * waiting, and it is testable because it is only the waiting.
+ * `accept` is the identity check, and it is a parameter rather than something
+ * this module does itself: `isFromHost` needs `window.parent`, which is not
+ * part of `MessageTarget`, and `MessageTarget` is reduced to what listening
+ * needs precisely so this module stays testable without a `window`. Putting
+ * the check here instead — as a required argument every caller must supply —
+ * is what makes it impossible for a caller to wire this up and forget it, the
+ * way this module's first version did: `bootstrap` drew whatever arrived
+ * first, from any window that knew the frame's origin.
  */
 export const onHostDocument = (
   target: MessageTarget,
+  accept: (event: MessageEvent) => boolean,
   handler: (document: HostDocumentMessage) => void,
 ): (() => void) => {
   const listener = (event: MessageEvent): void => {
+    if (!accept(event)) {
+      return;
+    }
+
     const message = parseHostMessage(event.data);
 
     if (message !== null && message.type === "document") {
@@ -44,6 +53,7 @@ export const onHostDocument = (
 /** The first model the host pushes, or `null` if nobody answers in time. */
 export const waitForHostDocument = async (
   target: MessageTarget,
+  accept: (event: MessageEvent) => boolean,
   timeoutMs: number,
 ): Promise<HostDocumentMessage | null> =>
   await new Promise((resolve) => {
@@ -54,7 +64,7 @@ export const waitForHostDocument = async (
       resolve(null);
     }, timeoutMs);
 
-    stop = onHostDocument(target, (document) => {
+    stop = onHostDocument(target, accept, (document) => {
       clearTimeout(timer);
       stop();
       resolve(document);

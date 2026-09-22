@@ -80,10 +80,20 @@ export type HostMessage = HostReady | HostExpanded | HostDocument | HostTheme;
 /**
  * "There is a frame here that can be expanded."
  *
- * Sent once, on mount. A host that answers gets a button; one that stays quiet
- * — an older build of the site, or the frame opened straight from the address
- * bar — gets none, because a button that visibly does nothing is worse than an
- * absent one.
+ * Sent on mount, by `useHostExpand` — but not only there, and not only once. A
+ * hosted frame (see `main.tsx`) has nothing to draw until its host answers,
+ * and `useHostExpand`'s own hello does not go out until `Frame` mounts, which
+ * for that mode is *after* the host has already answered. So `bootstrap` sends
+ * one of these itself first, before `useHostExpand` exists to send its own —
+ * which still runs once `Frame` does mount, and answers twice rather than
+ * being skipped for that one mode. A host that answers each hello with
+ * `ready`, and for a hosted frame a `document` besides, costs one extra
+ * message and, for the document, nothing more: a re-send of one already drawn
+ * is recognised as such and only its theme is applied — see
+ * `sameHostedSource` in `main.tsx`. A host that stays quiet throughout — an
+ * older build of the site, or the frame opened straight from the address bar
+ * — gets no button, because a button that visibly does nothing is worse than
+ * an absent one.
  */
 export const helloMessage = (): FrameHello => ({
   source: FRAME_PROTOCOL,
