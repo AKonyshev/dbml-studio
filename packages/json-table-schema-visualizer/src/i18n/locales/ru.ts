@@ -76,8 +76,10 @@ export const MESSAGES_RU: Record<MessageKey, string> = {
   "notation.relationEnd": "Перейти к другому концу связи",
   "notation.marquee":
     "В режиме выделения протаскивание по пустому месту ловит таблицы; Shift добавляет к выделению",
+  "embed.modelOffOrigin": "Модель должна отдаваться этим же сайтом",
   "embed.noTablesLeft": "Ни одна из указанных таблиц не найдена в этой схеме",
   "embed.notFound": "Модель не найдена",
+  "embed.sourceConflict": "Указаны сразу две модели — оставьте одну",
   "embed.srcInvalid": "Недопустимый путь к модели",
   "embed.srcMissing": "Не указан путь к модели",
   "embed.tableAmbiguous":

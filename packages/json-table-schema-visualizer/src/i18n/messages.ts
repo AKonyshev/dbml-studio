@@ -74,8 +74,10 @@ export const MESSAGES_EN = {
   "notation.relationEnd": "Jump to the other end of the relation",
   "notation.marquee":
     "In select mode, drag on empty canvas to catch tables; Shift adds to the selection",
+  "embed.modelOffOrigin": "The model must be served from this site",
   "embed.noTablesLeft": "None of the named tables are in this schema",
   "embed.notFound": "Schema not found",
+  "embed.sourceConflict": "Two schemas named at once — name one",
   "embed.srcInvalid": "Invalid schema path",
   "embed.srcMissing": "No schema given",
   "embed.tableAmbiguous":

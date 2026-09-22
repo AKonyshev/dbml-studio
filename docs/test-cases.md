@@ -192,6 +192,12 @@ deployed.
 | 9.11 | No button without a host                    | Open `embed.html` directly                 | No expand button — nothing would answer it                                        | `embed.spec.ts`       |
 | 9.12 | The frame stores nothing                    | Use the frame, then read `localStorage`    | No key for this frame, and the full app's theme is untouched                      | `embed.spec.ts`       |
 | 9.13 | Several frames on one page                  | A page with two `dbml::` blocks            | Both draw; expanding one collapses the other                                      | Manual                |
+| 9.14 | A model addressed by URL                    | `embed.html?model=models/acl.dbml`         | The model is drawn, and `/schemas/` is not asked for at all                       | `embed.spec.ts`       |
+| 9.15 | A model URL is relative to the frame        | A frame document three directories deep    | Resolved against the frame document, not the site root                            | `modelUrl.test.ts`    |
+| 9.16 | A model on another site                     | `?model=https://example.com/acl.dbml`      | Refused by name, and never requested                                              | `embed.spec.ts`       |
+| 9.17 | Both sources at once                        | `?src=acl.dbml&model=acl.dbml`             | Refused — one or the other                                                        | `embedParams.test.ts` |
+| 9.18 | A host pushes the model in                  | `embed.html`, then a `document` message    | Drawn, and nothing was fetched                                                    | `embed.spec.ts`       |
+| 9.19 | Nobody answers a hosted frame               | `embed.html` opened by hand                | "No schema given" after two seconds                                               | `embed.spec.ts`       |
 
 ## 10. VS Code extension — DBML Studio
 

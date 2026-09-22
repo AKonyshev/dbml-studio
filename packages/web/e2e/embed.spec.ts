@@ -139,6 +139,15 @@ const serveModel = async (page: Page): Promise<void> => {
   });
 };
 
+// A model served at a path of the site's own rather than out of the catalogue,
+// which is what a documentation site does: it copies a `.dbml` file sitting
+// beside its pages into the built site, and the plugin points the frame at it.
+const servePlainModel = async (page: Page): Promise<void> => {
+  await page.route("**/models/acl.dbml", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/plain", body: ACL });
+  });
+};
+
 const isSameOrigin = (request: Request, origin: string): boolean => {
   const url = request.url();
 
@@ -474,6 +483,130 @@ test("a model that is not there is said out loud", async ({ page }) => {
   await page.goto("/embed.html?src=nothing.dbml");
 
   await expect(page.getByText("Schema not found: nothing.dbml")).toBeVisible();
+});
+
+test("the frame draws a model addressed by URL, without touching the catalogue", async ({
+  page,
+  baseURL,
+}) => {
+  const origin = new URL(baseURL ?? "").origin;
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await servePlainModel(page);
+  await page.goto("/embed.html?model=models/acl.dbml");
+
+  await expect(canvasOf(page)).toBeVisible();
+
+  expect(asked).toContain(`${origin}/models/acl.dbml`);
+  expect(asked.filter((url) => url.includes("/schemas/"))).toEqual([]);
+});
+
+// Depth is not testable here, and deliberately not faked: `embed.html` sits at
+// the root of this build, so a path resolved against the wrong base resolves to
+// the same file and a browser test would pass for the wrong reason. That the
+// base is the frame document is asserted where it can be — `modelUrl.test.ts`,
+// whose frame URL is three directories deep.
+test("a model on another site is refused rather than fetched", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await page.goto("/embed.html?model=https://example.com/acl.dbml");
+
+  await expect(
+    page.getByText(
+      "The model must be served from this site: https://example.com/acl.dbml",
+    ),
+  ).toBeVisible();
+  // By host, not by substring: the frame's own navigation carries the refused
+  // address in its query string, and a plain `includes` would catch that
+  // request too and pass for the wrong reason.
+  expect(
+    asked.filter((url) => new URL(url).hostname === "example.com"),
+  ).toEqual([]);
+});
+
+// A host that has the model and no server, answering the frame's hello with the
+// text itself — which is what a plugin does. Through a real host page rather than
+// by posting from the test after `goto`: the frame gives up after two seconds, and
+// on a loaded machine the test would lose that race and fail for no reason.
+const HOST_PUSHING_PAGE = `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(ACL)};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+    frame.contentWindow.postMessage(
+      { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+      '*'
+    );
+  });
+})();
+</script>
+</body></html>`;
+
+const servePushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: HOST_PUSHING_PAGE,
+    });
+  });
+};
+
+test("a frame with no source is handed its model by the host", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await servePushingHost(page);
+  await page.goto("/pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // Nothing fetched: this mode exists for a host that has the file and no
+  // server.
+  expect(asked.filter((url) => url.endsWith(".dbml"))).toEqual([]);
+});
+
+test("a frame nobody answers says so rather than sitting blank", async ({
+  page,
+}) => {
+  await page.goto("/embed.html");
+
+  // Two seconds, named in the plan and in both designs.
+  await expect(page.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
 });
 
 test("the frame leaves no trace in storage", async ({ page }) => {
