@@ -1090,7 +1090,8 @@ test("the host can turn the diagram's lights off without reloading it", async ({
   await page.goto("/host.html");
 
   const frame = page.frameLocator(".dbml-diagram iframe");
-  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  const canvas = frame.locator(".konvajs-content canvas").first();
+  await expect(canvas).toBeVisible();
 
   const inFrame = async <T>(fn: () => T): Promise<T> => {
     const found = page.frames().find((f) => f.url().includes("embed.html"));
@@ -1108,9 +1109,31 @@ test("the host can turn the diagram's lights off without reloading it", async ({
     });
 
   const light = await background();
-  // Something to lose: the view the reader is looking at, which a reload or a
-  // remount would take with it.
-  const before = await inFrame(() => window.Konva?.stages[0]?.scaleX() ?? 0);
+
+  // Perturb the view so it is not at the deterministic fit-to-view state.
+  // Zoom in by scaling the stage, and pan by moving it.
+  await inFrame(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scale: (v: { x: number; y: number }) => void;
+      position: (v: { x: number; y: number }) => void;
+    };
+    if (stage === undefined) return;
+    // Zoom in: reduce scale to make diagram appear larger.
+    stage.scale({ x: 0.7, y: 0.7 });
+    // Pan: move the stage position.
+    stage.position({ x: 100, y: 100 });
+  });
+
+  // Capture the perturbed view.
+  const beforeScale = await inFrame(
+    () => window.Konva?.stages[0]?.scaleX() ?? 0,
+  );
+  const beforePosition = await inFrame(() => {
+    const stage = window.Konva?.stages[0];
+    const pos = stage?.x() ?? 0;
+    const y = stage?.y() ?? 0;
+    return { x: pos, y };
+  });
 
   await page.evaluate(() => {
     const frameElement = document.querySelector<HTMLIFrameElement>(
@@ -1132,10 +1155,18 @@ test("the host can turn the diagram's lights off without reloading it", async ({
     "dark",
   );
 
-  // Same stage, same view: nothing was rebuilt.
+  // Same stage, same view: nothing was rebuilt. Check both scale and position.
   expect(await inFrame(() => window.Konva?.stages[0]?.scaleX() ?? 0)).toBe(
-    before,
+    beforeScale,
   );
+  expect(
+    await inFrame(() => {
+      const stage = window.Konva?.stages[0];
+      const x = stage?.x() ?? 0;
+      const y = stage?.y() ?? 0;
+      return { x, y };
+    }),
+  ).toEqual(beforePosition);
 });
 
 test.describe("in a browser that asks for Russian", () => {
