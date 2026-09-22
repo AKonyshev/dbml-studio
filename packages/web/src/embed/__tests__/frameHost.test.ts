@@ -75,6 +75,84 @@ describe("parseHostMessage", () => {
     ).toBeNull();
   });
 
+  it("reads a model the host pushed", () => {
+    expect(
+      parseHostMessage({
+        source: "dbml-frame",
+        type: "document",
+        text: "Table a { id integer }",
+        tables: ["a"],
+        theme: "dark",
+      }),
+    ).toEqual({
+      source: "dbml-frame",
+      type: "document",
+      text: "Table a { id integer }",
+      tables: ["a"],
+      theme: "dark",
+    });
+  });
+
+  it("reads a pushed model with no filter on it", () => {
+    expect(
+      parseHostMessage({
+        source: "dbml-frame",
+        type: "document",
+        text: "Table a { id integer }",
+        tables: null,
+        theme: "light",
+      }),
+    ).toEqual({
+      source: "dbml-frame",
+      type: "document",
+      text: "Table a { id integer }",
+      tables: null,
+      theme: "light",
+    });
+  });
+
+  // A host is a program, but the frame is the thing left holding a half-written
+  // message: a plugin under development sends these by hand long before it sends
+  // them right.
+  it("refuses a pushed model that is not one", () => {
+    const base = { source: "dbml-frame", type: "document", theme: "light" };
+
+    expect(parseHostMessage({ ...base, tables: null })).toBeNull();
+    expect(parseHostMessage({ ...base, text: 1, tables: null })).toBeNull();
+    expect(parseHostMessage({ ...base, text: "a", tables: "a" })).toBeNull();
+    expect(parseHostMessage({ ...base, text: "a", tables: [1] })).toBeNull();
+    expect(
+      parseHostMessage({
+        source: "dbml-frame",
+        type: "document",
+        text: "a",
+        tables: null,
+        theme: "sepia",
+      }),
+    ).toBeNull();
+  });
+
+  it("reads the theme the host settled on", () => {
+    expect(
+      parseHostMessage({ source: "dbml-frame", type: "theme", theme: "dark" }),
+    ).toEqual({ source: "dbml-frame", type: "theme", theme: "dark" });
+
+    expect(
+      parseHostMessage({ source: "dbml-frame", type: "theme", theme: "light" }),
+    ).toEqual({ source: "dbml-frame", type: "theme", theme: "light" });
+  });
+
+  // A theme the frame does not have is not a reason to repaint at random: the
+  // page carries whatever its author chose, and the frame keeps what it has.
+  it("refuses a theme it does not know", () => {
+    expect(
+      parseHostMessage({ source: "dbml-frame", type: "theme", theme: "sepia" }),
+    ).toBeNull();
+    expect(
+      parseHostMessage({ source: "dbml-frame", type: "theme" }),
+    ).toBeNull();
+  });
+
   it("refuses what is not an object at all", () => {
     for (const value of [null, undefined, "ready", 7, []]) {
       expect(parseHostMessage(value)).toBeNull();

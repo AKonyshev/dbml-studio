@@ -42,8 +42,40 @@ interface HostExpanded {
   expanded: boolean;
 }
 
+/**
+ * A model the host read for us, instead of the frame fetching one.
+ *
+ * The catalogue and a URL both assume a server: a site serves its models, and
+ * the frame asks for them. A plugin has no server — it has the file on disk and
+ * a frame it created — so it pushes the text in. The theme rides along because
+ * the host that owns the file also owns the surface the diagram sits on, and
+ * both change at once.
+ */
+interface HostDocument {
+  source: typeof FRAME_PROTOCOL;
+  type: "document";
+  text: string;
+  /** Names to keep, or `null` for the whole model. */
+  tables: string[] | null;
+  theme: "light" | "dark";
+}
+
+/**
+ * "The page is dark now" — or light.
+ *
+ * For a host that does not push documents: a documentation site serves its
+ * models itself and has nothing else to say, but its reader may still have a
+ * switch. Reloading the frame with a new query would answer that and throw away
+ * the view the reader had scrolled and zoomed to, so the theme travels alone.
+ */
+interface HostTheme {
+  source: typeof FRAME_PROTOCOL;
+  type: "theme";
+  theme: "light" | "dark";
+}
+
 /** Host to frame. */
-export type HostMessage = HostReady | HostExpanded;
+export type HostMessage = HostReady | HostExpanded | HostDocument | HostTheme;
 
 /**
  * "There is a frame here that can be expanded."
@@ -67,6 +99,9 @@ export const expandMessage = (expanded: boolean): FrameExpand => ({
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isThemeName = (value: unknown): value is "light" | "dark" =>
+  value === "light" || value === "dark";
 
 /**
  * One message from the host, or `null` for anything else on the wire.
@@ -92,5 +127,57 @@ export const parseHostMessage = (data: unknown): HostMessage | null => {
     };
   }
 
+  if (
+    data.type === "document" &&
+    typeof data.text === "string" &&
+    (data.tables === null ||
+      (Array.isArray(data.tables) &&
+        data.tables.every((name) => typeof name === "string"))) &&
+    isThemeName(data.theme)
+  ) {
+    return {
+      source: FRAME_PROTOCOL,
+      type: "document",
+      text: data.text,
+      tables: data.tables,
+      theme: data.theme,
+    };
+  }
+
+  if (data.type === "theme" && isThemeName(data.theme)) {
+    return { source: FRAME_PROTOCOL, type: "theme", theme: data.theme };
+  }
+
   return null;
+};
+
+/**
+ * Whether this message came from the host, in the one place that decides it.
+ *
+ * `event.source`, and deliberately not `event.origin`. A frame in a
+ * documentation site shares an origin with the page around it, and comparing
+ * origins there costs nothing; a frame in a plugin does not — the application
+ * window and the frame it created are different origins by construction, and the
+ * same comparison silently drops every message, including the `ready` without
+ * which the frame shows no controls. What the check is for is identity, and
+ * identity is what `source` is: the only window the frame answers is the one that
+ * embedded it.
+ *
+ * What a hostile embedder gains by this is worth naming: it can tell a frame it
+ * embedded to draw a diagram, expand, or turn dark. All of that is what the
+ * frame is for, in a page that embedder already controls. Nothing of ours
+ * crosses the boundary — the frame stores nothing and has nothing to read.
+ */
+export const isFromHost = (event: MessageEvent): boolean =>
+  window.parent !== window && event.source === window.parent;
+
+/**
+ * One message to the host.
+ *
+ * `"*"` rather than an origin, for the same reason: a plugin host has an origin
+ * the frame cannot name, and what goes out is "hello" and "expand me" — a
+ * request, never a payload.
+ */
+export const postToHost = (message: FrameMessage): void => {
+  window.parent.postMessage(message, "*");
 };

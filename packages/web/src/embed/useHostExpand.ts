@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   expandMessage,
   helloMessage,
+  isFromHost,
   parseHostMessage,
-  type FrameMessage,
+  postToHost,
 } from "./frameHost";
 
 export interface HostExpand {
@@ -13,18 +14,6 @@ export interface HostExpand {
   expanded: boolean;
   toggle: () => void;
 }
-
-/**
- * Posted to the page that embedded us, and only to a page on this origin.
- *
- * The site of documentation serves the frame from its own origin, so naming
- * that origin costs nothing there and means a frame embedded from somewhere
- * else never has its messages delivered — it simply never hears back, and so
- * never offers a button.
- */
-const post = (message: FrameMessage): void => {
-  window.parent.postMessage(message, window.location.origin);
-};
 
 /**
  * The frame's end of the expand-me conversation.
@@ -47,10 +36,7 @@ export const useHostExpand = (): HostExpand => {
     }
 
     const onMessage = (event: MessageEvent): void => {
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== window.parent
-      ) {
+      if (!isFromHost(event)) {
         return;
       }
 
@@ -65,7 +51,11 @@ export const useHostExpand = (): HostExpand => {
         return;
       }
 
-      setExpanded(message.expanded);
+      // Not an `else`: the host says more than this hook is about, and a message
+      // about the theme or the model must not be read as a state of the frame.
+      if (message.type === "expanded") {
+        setExpanded(message.expanded);
+      }
     };
 
     window.addEventListener("message", onMessage);
@@ -73,7 +63,7 @@ export const useHostExpand = (): HostExpand => {
     // No retry, because none is needed: the host installs its listener from a
     // script the page carries ahead of the first frame, and a frame's own
     // scripts cannot run before the element that loads them has been parsed.
-    post(helloMessage());
+    postToHost(helloMessage());
 
     return () => {
       window.removeEventListener("message", onMessage);
@@ -97,7 +87,7 @@ export const useHostExpand = (): HostExpand => {
       // Escape would both close the menu and put the page back.
       setTimeout(() => {
         if (!event.defaultPrevented) {
-          post(expandMessage(false));
+          postToHost(expandMessage(false));
         }
       }, 0);
     };
@@ -110,7 +100,7 @@ export const useHostExpand = (): HostExpand => {
   }, [expanded]);
 
   const toggle = useCallback(() => {
-    post(expandMessage(!expanded));
+    postToHost(expandMessage(!expanded));
   }, [expanded]);
 
   return { supported, expanded, toggle };
