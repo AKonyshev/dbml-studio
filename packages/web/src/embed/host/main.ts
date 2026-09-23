@@ -113,12 +113,29 @@ const greet = (frame: HTMLIFrameElement): void => {
 };
 
 /**
- * Everything this script does, once.
+ * Everything this script does, once — deferred until `document.body` exists.
  *
- * Idempotent: a page assembled some other way must not end up with two
- * listeners answering every hello.
+ * A `<script>` in `<head>` runs before the body does, and the greet loop
+ * below reads the DOM while `pageTheme` reads `document.body.dataset`: run
+ * either one then and it throws, silently taking every feature in this file
+ * down with it — the reader's theme switch included, since the observer at
+ * the bottom of this function is what listens for it. Waiting for
+ * `DOMContentLoaded` costs nothing: the frame that said hello before anyone
+ * was listening is still greeted the moment this does run, because the loop
+ * below greets every frame already on the page regardless of why it is only
+ * running now.
+ *
+ * The idempotence guard is set only once the body is confirmed to exist and
+ * installation is actually going ahead, not at the top of this function —
+ * so two copies of the script, both waiting on the same `DOMContentLoaded`,
+ * cannot both queue a listener and then both install when it fires.
  */
 const install = (): void => {
+  if (document.body === null) {
+    document.addEventListener("DOMContentLoaded", install);
+    return;
+  }
+
   if (window.__dbmlFrameHost === true) {
     return;
   }
@@ -162,12 +179,13 @@ const install = (): void => {
     }
   });
 
-  // Antora inlines this script ahead of the first frame, so a frame's hello
-  // could never arrive before the listener existed and the frame needs no
-  // retry. A file loaded by the page gives no such order: a frame may be up
-  // and waiting already. So every frame on the page is greeted now, and the
-  // ones that load later — lazily, most of them — say hello and are greeted
-  // then. Both orders end with a frame that knows it has a host.
+  // What we know: this file runs after the body exists, so a frame already
+  // on the page may have said hello before the listener above was there to
+  // answer it — nobody retries, so it is greeted here instead. What we do
+  // not know is where Antora places its own script, or whether this ever
+  // happens to it; that copy makes no claim about it. Frames that load
+  // later — lazily, most of them — say hello and are greeted then. Both
+  // orders end with a frame that knows it has a host.
   for (const frame of frames()) {
     greet(frame);
   }

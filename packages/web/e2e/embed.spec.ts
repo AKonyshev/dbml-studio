@@ -1223,6 +1223,9 @@ test("a host whose script loads after the frame still gets a button", async ({
 });
 
 test("a diagram whose block named a theme is left alone", async ({ page }) => {
+  const pageErrors: Error[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error));
+
   await serveModel(page);
   await serveHost(page, {
     frameQuery: "src=acl.dbml&theme=light",
@@ -1249,6 +1252,60 @@ test("a diagram whose block named a theme is left alone", async ({ page }) => {
         await found?.evaluate(() => document.documentElement.className),
     )
     .not.toContain("dark");
+
+  // Without this, a host script that crashed before it ever attached its
+  // listener would leave the assertion above passing for the wrong reason —
+  // nothing was ever there to hear the page's theme, fixed or not.
+  expect(pageErrors).toEqual([]);
+});
+
+test("a diagram whose block did not name a theme follows the page", async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error));
+
+  await serveModel(page);
+  // Default placement — the script tag in `<head>`, exactly as 9.7–9.10 and
+  // every case above it use. The test next to this one is the negative half
+  // of this pair and could not, on its own, tell a host that said nothing on
+  // purpose apart from one that crashed before it could say anything at all.
+  await serveHost(page);
+  await page.goto("/host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  const inFrame = async <T>(fn: () => T): Promise<T> => {
+    const found = page.frames().find((f) => f.url().includes("embed.html"));
+
+    return (await found?.evaluate(fn)) as T;
+  };
+
+  const background = async (): Promise<string> =>
+    await inFrame(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        container: () => HTMLElement;
+      };
+
+      return getComputedStyle(stage.container()).backgroundColor;
+    });
+
+  const light = await background();
+
+  await page.evaluate(() => {
+    document.body.dataset.mdColorScheme = "slate";
+  });
+
+  // Canvas colour and the frame's own root class both — Konva is given hex
+  // strings, not classes, so either one alone could be wrong without the
+  // other catching it.
+  await expect.poll(async () => await background()).not.toBe(light);
+  await expect
+    .poll(async () => await inFrame(() => document.documentElement.className))
+    .toContain("dark");
+
+  expect(pageErrors).toEqual([]);
 });
 
 test("a model of a hundred and fifty tables opens, framed and not as a strip", async ({
