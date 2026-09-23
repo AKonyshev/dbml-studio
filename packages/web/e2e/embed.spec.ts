@@ -1,6 +1,7 @@
 import {
   expect,
   test,
+  type Frame,
   type Locator,
   type Page,
   type Request,
@@ -136,6 +137,15 @@ const serveModel = async (page: Page): Promise<void> => {
     await (model === null
       ? route.fulfill({ status: 404, body: "not found" })
       : route.fulfill({ status: 200, contentType: "text/plain", body: model }));
+  });
+};
+
+// A model served at a path of the site's own rather than out of the catalogue,
+// which is what a documentation site does: it copies a `.dbml` file sitting
+// beside its pages into the built site, and the plugin points the frame at it.
+const servePlainModel = async (page: Page): Promise<void> => {
+  await page.route("**/models/acl.dbml", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/plain", body: ACL });
   });
 };
 
@@ -476,6 +486,545 @@ test("a model that is not there is said out loud", async ({ page }) => {
   await expect(page.getByText("Schema not found: nothing.dbml")).toBeVisible();
 });
 
+test("the frame draws a model addressed by URL, without touching the catalogue", async ({
+  page,
+  baseURL,
+}) => {
+  const origin = new URL(baseURL ?? "").origin;
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await servePlainModel(page);
+  await page.goto("/embed.html?model=models/acl.dbml");
+
+  await expect(canvasOf(page)).toBeVisible();
+
+  expect(asked).toContain(`${origin}/models/acl.dbml`);
+  expect(asked.filter((url) => url.includes("/schemas/"))).toEqual([]);
+});
+
+// Depth is not testable here, and deliberately not faked: `embed.html` sits at
+// the root of this build, so a path resolved against the wrong base resolves to
+// the same file and a browser test would pass for the wrong reason. That the
+// base is the frame document is asserted where it can be — `modelUrl.test.ts`,
+// whose frame URL is three directories deep.
+test("a model on another site is refused rather than fetched", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await page.goto("/embed.html?model=https://example.com/acl.dbml");
+
+  await expect(
+    page.getByText(
+      "The model must be served from this site: https://example.com/acl.dbml",
+    ),
+  ).toBeVisible();
+  // By host, not by substring: the frame's own navigation carries the refused
+  // address in its query string, and a plain `includes` would catch that
+  // request too and pass for the wrong reason.
+  expect(
+    asked.filter((url) => new URL(url).hostname === "example.com"),
+  ).toEqual([]);
+});
+
+// A host that has the model and no server, answering the frame's hello with the
+// text itself — which is what a plugin does. Through a real host page rather than
+// by posting from the test after `goto`: the frame gives up after two seconds, and
+// on a loaded machine the test would lose that race and fail for no reason.
+//
+// Takes the model as an argument rather than closing over `ACL`: the relayout
+// test below needs a host that starts from a different, smaller schema.
+const pushingHostPage = (model: string): string => `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(model)};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+    frame.contentWindow.postMessage(
+      { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+      '*'
+    );
+  });
+})();
+</script>
+</body></html>`;
+
+const HOST_PUSHING_PAGE = pushingHostPage(ACL);
+
+const servePushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: HOST_PUSHING_PAGE,
+    });
+  });
+};
+
+test("a frame with no source is handed its model by the host", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+
+  page.on("request", (request) => {
+    asked.push(request.url());
+  });
+
+  await servePushingHost(page);
+  await page.goto("/pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // Nothing fetched: this mode exists for a host that has the file and no
+  // server.
+  expect(asked.filter((url) => url.endsWith(".dbml"))).toEqual([]);
+});
+
+test("a frame nobody answers says so rather than sitting blank", async ({
+  page,
+}) => {
+  await page.goto("/embed.html");
+
+  // Two seconds, named in the plan and in both designs.
+  await expect(page.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
+});
+
+// A model an impostor pushes, distinct from `ACL` by name alone, so its
+// presence (or absence) on the canvas can be told apart from the real host's.
+const IMPOSTOR_MODEL = `
+Table "impostor"."malicious_table" {
+  id integer [pk]
+}
+`;
+
+// A page that embeds the diagram frame exactly as `pushingHostPage` does, and
+// besides it a second, unrelated iframe — same origin, same page, but not the
+// frame's own `window.parent` — that gets hold of the diagram frame's window
+// through the DOM (something any same-origin script on the page could do) and
+// posts it a `document` on its own, repeatedly, racing to arrive before the
+// real host's reply. Built with `iframe.srcdoc` set as a JS string rather than
+// written out as HTML, so the inner `<script>` needs no attribute-quoting
+// gymnastics.
+const IMPOSTOR_PUSHING_PAGE = `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(ACL)};
+  var IMPOSTOR = ${JSON.stringify(IMPOSTOR_MODEL)};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+    frame.contentWindow.postMessage(
+      { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+      '*'
+    );
+  });
+
+  var attacker = document.createElement('iframe');
+  attacker.style.display = 'none';
+  attacker.srcdoc =
+    '<script>' +
+    'var attempts = 0;' +
+    'var timer = setInterval(function () {' +
+    '  attempts += 1;' +
+    '  var target = window.parent.document.querySelector(".dbml-diagram iframe");' +
+    '  if (target && target.contentWindow) {' +
+    '    target.contentWindow.postMessage(' +
+    '      { source: "dbml-frame", type: "document", text: ' + JSON.stringify(IMPOSTOR) + ', tables: null, theme: "light" },' +
+    '      "*"' +
+    '    );' +
+    '  }' +
+    '  if (attempts > 20) clearInterval(timer);' +
+    '}, 50);' +
+    '<' + '/script>';
+  document.body.appendChild(attacker);
+})();
+</script>
+</body></html>`;
+
+const serveImpostorPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/impostor-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: IMPOSTOR_PUSHING_PAGE,
+    });
+  });
+};
+
+const embeddedFrame = (page: Page): Frame | undefined =>
+  page.frames().find((f) => f.url().includes("embed.html"));
+
+const embeddedTableNames = async (page: Page): Promise<string[]> =>
+  (await embeddedFrame(page)?.evaluate(() => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+    }>;
+
+    return groups
+      .map((g) => g.name())
+      .filter((name) => name.startsWith("table-"));
+  })) ?? [];
+
+test("a document posted by a window that is not the host is ignored", async ({
+  page,
+}) => {
+  await serveImpostorPushingHost(page);
+  await page.goto("/impostor-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // The real host's tables, and never the impostor's — whichever of the two
+  // arrived at the frame first. `isFromHost` is an identity check, not a
+  // first-come-first-served one.
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toContain("table-acl.analysis");
+  expect(await embeddedTableNames(page)).not.toContain(
+    "table-impostor.malicious_table",
+  );
+});
+
+// One table, so a second push that adds one more has somewhere new to place
+// it: the shape Important 2's bug needed to show itself.
+const SOLO_MODEL = `
+Table "solo"."hub" {
+  id integer [pk]
+}
+`;
+
+const HUB_AND_SPOKE_MODEL = `
+Table "solo"."hub" {
+  id integer [pk]
+}
+
+Table "solo"."spoke" {
+  id integer [pk]
+  hub_id integer
+}
+
+Ref: "solo"."hub"."id" < "solo"."spoke"."hub_id"
+`;
+
+const serveSoloPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/solo-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: pushingHostPage(SOLO_MODEL),
+    });
+  });
+};
+
+/** Posted from the test itself: a second `document`, after the frame has its first. */
+const pushDocument = async (page: Page, model: string): Promise<void> => {
+  await page.evaluate((text) => {
+    const iframe = document.querySelector<HTMLIFrameElement>(
+      ".dbml-diagram iframe",
+    );
+
+    iframe?.contentWindow?.postMessage(
+      {
+        source: "dbml-frame",
+        type: "document",
+        text,
+        tables: null,
+        theme: "light",
+      },
+      "*",
+    );
+  }, model);
+};
+
+const positionOf = async (
+  page: Page,
+  groupName: string,
+): Promise<{ x: number; y: number } | null> =>
+  (await embeddedFrame(page)?.evaluate((name) => {
+    const groups = (window.Konva?.stages[0]?.find("Group") ?? []) as Array<{
+      name: () => string;
+      x: () => number;
+      y: () => number;
+    }>;
+    const match = groups.find((g) => g.name() === name);
+
+    return match !== undefined ? { x: match.x(), y: match.y() } : null;
+  }, groupName)) ?? null;
+
+test("a host that pushes a changed model lays the new tables out instead of stacking them at one point", async ({
+  page,
+}) => {
+  await serveSoloPushingHost(page);
+  await page.goto("/solo-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(["table-solo.hub"]);
+
+  // The same document key, a table the frame has never held a position for.
+  await pushDocument(page, HUB_AND_SPOKE_MODEL);
+
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(expect.arrayContaining(["table-solo.hub", "table-solo.spoke"]));
+
+  // Somewhere of its own, rather than on top of the table that was already
+  // there: the bug this guards gives a table with no recovered entry
+  // `defaultTableCoord`, and `solo.hub` is laid out at the origin too, so the
+  // two would sit exactly on each other. Asserting "not at the origin" would
+  // say the same thing today and become a false failure the day a layout
+  // legitimately puts this table there.
+  const spoke = await positionOf(page, "table-solo.spoke");
+  const hub = await positionOf(page, "table-solo.hub");
+  expect(spoke).not.toBeNull();
+  expect(hub).not.toBeNull();
+  expect(spoke).not.toEqual(hub);
+});
+
+// `ARRANGED` with one more table added, its `MetaInfo` block left untouched —
+// the shape an author's edit really takes: they add a table and leave the
+// three they already placed where they were.
+const ARRANGED_PLUS = `
+Table "arr"."left" {
+  id integer [pk]
+}
+
+Table "arr"."middle" {
+  id integer [pk]
+  left_id integer
+}
+
+Table "arr"."right" {
+  id integer [pk]
+}
+
+Table "arr"."extra" {
+  id integer [pk]
+}
+
+Ref: "arr"."left"."id" < "arr"."middle"."left_id"
+
+/*MetaInfo
+[{"name":"arr.left","x":0,"y":0},
+{"name":"arr.middle","x":6000,"y":4000},
+{"name":"arr.right","x":12000,"y":9000}]
+MetaInfo*/
+`;
+
+const serveArrangedPushingHost = async (page: Page): Promise<void> => {
+  await page.route("**/arranged-pushing-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: pushingHostPage(ARRANGED),
+    });
+  });
+};
+
+test("a host that pushes a changed model keeps a table's saved arrangement instead of inventing a new one", async ({
+  page,
+}) => {
+  await serveArrangedPushingHost(page);
+  await page.goto("/arranged-pushing-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(
+      expect.arrayContaining([
+        "table-arr.left",
+        "table-arr.middle",
+        "table-arr.right",
+      ]),
+    );
+
+  // A changed document, under the same hosted key — the path that used to
+  // force a fresh layout and throw the file's own arrangement away.
+  await pushDocument(page, ARRANGED_PLUS);
+
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toEqual(
+      expect.arrayContaining([
+        "table-arr.left",
+        "table-arr.middle",
+        "table-arr.right",
+        "table-arr.extra",
+      ]),
+    );
+
+  // Thousands of units apart, exactly as the file's own `MetaInfo` block says
+  // — not the close-together spots a freshly computed layout would give three
+  // small, related tables.
+  expect(await positionOf(page, "table-arr.left")).toEqual({ x: 0, y: 0 });
+  expect(await positionOf(page, "table-arr.middle")).toEqual({
+    x: 6000,
+    y: 4000,
+  });
+  expect(await positionOf(page, "table-arr.right")).toEqual({
+    x: 12000,
+    y: 9000,
+  });
+
+  // The table the second push actually added has no saved position of its own,
+  // and is laid out rather than dropped on top of one that has. `arr.left`
+  // sits at the origin by the file's own say-so, which is exactly where a
+  // table with no position lands — so "somewhere other than there" is the
+  // assertion, and it does not turn into a false failure the day a layout
+  // puts a table at the origin for good reasons.
+  const extra = await positionOf(page, "table-arr.extra");
+  expect(extra).not.toBeNull();
+  expect(extra).not.toEqual(await positionOf(page, "table-arr.left"));
+});
+
+// A host that has the model but is slow to answer — the shape a cold start on
+// a large vault takes in the Obsidian plugin this mode exists for. The delay
+// is comfortably past the frame's own two-second deadline (`main.tsx`'s
+// `HOST_DOCUMENT_TIMEOUT_MS`), so "No schema given" is already on screen
+// before this host's reply is anywhere close.
+const LATE_HOST_DELAY_MS = 2_500;
+
+const lateHostPage = (
+  model: string,
+  delayMs: number,
+): string => `<!doctype html>
+<html><head><style>
+  body { margin: 0; padding: 40px; }
+  .dbml-diagram { width: 600px; height: 300px; }
+  .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
+</style></head>
+<body>
+<div class="dbml-diagram"><iframe src="/embed.html"></iframe></div>
+<script>
+;(function () {
+  var MODEL = ${JSON.stringify(model)};
+  var DELAY_MS = ${delayMs};
+
+  window.addEventListener('message', function (event) {
+    var data = event.data;
+    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
+    if (data.type !== 'hello') return;
+
+    var frame = document.querySelector('.dbml-diagram iframe');
+    if (frame.contentWindow !== event.source) return;
+
+    setTimeout(function () {
+      frame.contentWindow.postMessage({ source: 'dbml-frame', type: 'ready' }, '*');
+      frame.contentWindow.postMessage(
+        { source: 'dbml-frame', type: 'document', text: MODEL, tables: null, theme: 'light' },
+        '*'
+      );
+    }, DELAY_MS);
+  });
+})();
+</script>
+</body></html>`;
+
+const serveLateHost = async (page: Page): Promise<void> => {
+  await page.route("**/late-host.html", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: lateHostPage(ACL, LATE_HOST_DELAY_MS),
+    });
+  });
+};
+
+test("a host that answers after the deadline still gets its diagram drawn", async ({
+  page,
+}) => {
+  await serveLateHost(page);
+  await page.goto("/late-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+
+  // The deadline fires first, same message as a host nobody is going to hear
+  // from at all.
+  await expect(frame.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
+
+  // But this host was only late, not absent — its reply, arriving after the
+  // deadline, still draws the diagram rather than being ignored for the life
+  // of the page.
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible({
+    timeout: LATE_HOST_DELAY_MS + 3_000,
+  });
+  await expect
+    .poll(async () => await embeddedTableNames(page))
+    .toContain("table-acl.analysis");
+});
+
+test("a host that answers after the deadline still leaves no trace in storage", async ({
+  page,
+}) => {
+  await serveLateHost(page);
+  await page.goto("/late-host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.getByText("No schema given")).toBeVisible({
+    timeout: 5_000,
+  });
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible({
+    timeout: LATE_HOST_DELAY_MS + 3_000,
+  });
+
+  // The same promise test 9.12 checks for a host that answers in time: a frame
+  // rescued by a late reply is not a frame allowed to keep what it drew. Every
+  // layout key rather than the ones naming this document — `hosted` would miss
+  // the store's own starting key, which is where a leak would actually show up
+  // if the late document were handled by the wrong one of `draw`/`redraw`.
+  const ours = await page.evaluate(() =>
+    Object.keys(window.localStorage).filter((key) =>
+      key.startsWith("tableCoords:"),
+    ),
+  );
+  expect(ours).toEqual([]);
+});
+
 test("the frame leaves no trace in storage", async ({ page }) => {
   await serveModel(page);
 
@@ -491,8 +1040,14 @@ test("the frame leaves no trace in storage", async ({ page }) => {
     // Computing the layout is also what stores it, so the frame has to take it
     // back out. A key per frame per page would accumulate against a quota the
     // full application shares.
+    //
+    // Every layout key, not only the ones naming this document: switching to a
+    // document saves whatever the store held first, which puts an empty layout
+    // under the store's own starting key. That one names no document, so
+    // nothing else would ever clear it — and a filter looking only for
+    // `embed:` would call the frame clean while it sat there.
     ours: Object.keys(window.localStorage).filter((key) =>
-      key.includes("embed:"),
+      key.startsWith("tableCoords:"),
     ),
     // And the theme is the reader's, not the page's: `web:theme` is one key for
     // this whole origin.
@@ -738,6 +1293,93 @@ test("the theme in the query reaches the canvas, not only the chrome", async ({
   expect(dark.canvas).not.toBe(light.canvas);
   expect(dark.root).toContain("dark");
   expect(light.root).not.toContain("dark");
+});
+
+test("the host can turn the diagram's lights off without reloading it", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await serveHost(page);
+  await page.goto("/host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  const canvas = frame.locator(".konvajs-content canvas").first();
+  await expect(canvas).toBeVisible();
+
+  const inFrame = async <T>(fn: () => T): Promise<T> => {
+    const found = page.frames().find((f) => f.url().includes("embed.html"));
+
+    return (await found?.evaluate(fn)) as T;
+  };
+
+  const background = async (): Promise<string> =>
+    await inFrame(() => {
+      const stage = window.Konva?.stages[0] as unknown as {
+        container: () => HTMLElement;
+      };
+
+      return getComputedStyle(stage.container()).backgroundColor;
+    });
+
+  const light = await background();
+
+  // Perturb the view so it is not at the deterministic fit-to-view state.
+  // Zoom in by scaling the stage, and pan by moving it.
+  await inFrame(() => {
+    const stage = window.Konva?.stages[0] as unknown as {
+      scale: (v: { x: number; y: number }) => void;
+      position: (v: { x: number; y: number }) => void;
+    };
+    if (stage === undefined) return;
+    // Zoom in: reduce scale to make diagram appear larger.
+    stage.scale({ x: 0.7, y: 0.7 });
+    // Pan: move the stage position.
+    stage.position({ x: 100, y: 100 });
+  });
+
+  // Capture the perturbed view.
+  const beforeScale = await inFrame(
+    () => window.Konva?.stages[0]?.scaleX() ?? 0,
+  );
+  const beforePosition = await inFrame(() => {
+    const stage = window.Konva?.stages[0];
+    const pos = stage?.x() ?? 0;
+    const y = stage?.y() ?? 0;
+    return { x: pos, y };
+  });
+
+  await page.evaluate(() => {
+    const frameElement = document.querySelector<HTMLIFrameElement>(
+      ".dbml-diagram iframe",
+    );
+
+    frameElement?.contentWindow?.postMessage(
+      { source: "dbml-frame", type: "theme", theme: "dark" },
+      "*",
+    );
+  });
+
+  await expect.poll(async () => await background()).not.toBe(light);
+
+  // The class on the frame's own root, not only the canvas: Konva is given hex
+  // strings rather than classes, so the two are separately capable of being
+  // wrong, and checking one would pass on a dark canvas in a white page.
+  expect(await inFrame(() => document.documentElement.className)).toContain(
+    "dark",
+  );
+
+  // Same stage, same view: nothing was rebuilt. Check both scale and position.
+  expect(await inFrame(() => window.Konva?.stages[0]?.scaleX() ?? 0)).toBe(
+    beforeScale,
+  );
+  expect(
+    await inFrame(() => {
+      const stage = window.Konva?.stages[0];
+      const x = stage?.x() ?? 0;
+      const y = stage?.y() ?? 0;
+      return { x, y };
+    }),
+  ).toEqual(beforePosition);
 });
 
 test.describe("in a browser that asks for Russian", () => {

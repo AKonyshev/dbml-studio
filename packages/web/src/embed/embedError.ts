@@ -11,6 +11,8 @@ import { t } from "json-table-schema-visualizer/src/i18n/t";
 export type EmbedError =
   | { kind: "srcMissing" }
   | { kind: "srcInvalid"; value: string }
+  | { kind: "modelOffOrigin"; value: string }
+  | { kind: "sourceConflict" }
   | { kind: "notFound"; src: string }
   | { kind: "tableMissing"; name: string }
   | { kind: "tableAmbiguous"; name: string }
@@ -29,6 +31,10 @@ export const embedErrorText = (error: EmbedError): string => {
       return t("embed.srcMissing");
     case "srcInvalid":
       return `${t("embed.srcInvalid")}: ${error.value}`;
+    case "modelOffOrigin":
+      return `${t("embed.modelOffOrigin")}: ${error.value}`;
+    case "sourceConflict":
+      return t("embed.sourceConflict");
     case "notFound":
       return `${t("embed.notFound")}: ${error.src}`;
     case "tableMissing":
