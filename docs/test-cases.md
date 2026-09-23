@@ -217,7 +217,8 @@ plugin), not the site of documentation.
 | 9.26 | The host's script loads after the frame     | The frame draws unanswered, then the script is added to the page        | The expand button appears anyway — the host greets frames it finds                | `embed.spec.ts`          |
 | 9.27 | A block that named a theme                  | Page turns dark, one block says `theme: light`, one names none          | Once the other diagram has turned dark, that one is still light                   | `embed.spec.ts`          |
 | 9.28 | A block that did not name a theme           | Page turns dark, script in `<head>` (the default)                       | That diagram follows the page, and the host script raises no error                | `embed.spec.ts`          |
-| 9.29 | Back from an expanded diagram               | Expand, the content is swapped out without a reload, then Back          | `<html>` is no longer locked — the new page scrolls                               | `embed.spec.ts`          |
+| 9.29 | Back from an expanded diagram               | Expand, then Back while the content stays (an earlier anchor)           | `<html>` is no longer locked — the page scrolls                                   | `embed.spec.ts`          |
+| 9.30 | Content swapped out under an expanded one   | Expand, then the content goes without a reload and without Back         | `<html>` is no longer locked — the new page scrolls                               | `embed.spec.ts`          |
 
 ## 10. VS Code extension — DBML Studio
 

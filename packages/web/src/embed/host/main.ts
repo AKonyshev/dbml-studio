@@ -82,13 +82,29 @@ const apply = (frame: HTMLIFrameElement, expanded: boolean): void => {
 };
 
 /**
- * Also for a frame that is no longer in the document at all. Material's instant
- * navigation swaps a page's content without reloading it, so this script and
- * what it remembers outlive the diagram; a detached frame has no window to
- * tell — `post` says nothing to it — but the lock on `<html>` is still ours to
- * take off.
+ * Watches for the expanded diagram leaving the document, for as long as one is
+ * expanded and not a moment longer.
+ *
+ * Material's instant navigation swaps a page's content without reloading it,
+ * so this script and what it remembers outlive the diagram — by Back, by the
+ * `n` and `p` shortcuts, by a search result, by any link. Only Back fires an
+ * event; the others are `pushState`, which fires nothing. What they have in
+ * common is that the expanded frame is taken out of the document, so that is
+ * what is watched. The observer exists only between expand and collapse: a
+ * subtree observer on a documentation page is not free, and there is nothing
+ * to watch for while every diagram is in its place.
+ */
+let detachWatch: MutationObserver | null = null;
+
+/**
+ * Also for a frame that is no longer in the document at all: a detached frame
+ * has no window to tell — `post` says nothing to it — but the lock on `<html>`
+ * is still ours to take off.
  */
 const collapse = (): void => {
+  detachWatch?.disconnect();
+  detachWatch = null;
+
   if (expandedFrame === null) {
     return;
   }
@@ -110,6 +126,15 @@ const expand = (frame: HTMLIFrameElement): void => {
   expandedFrame = frame;
   apply(frame, true);
   document.documentElement.classList.add(LOCKED_CLASS);
+
+  if (detachWatch === null) {
+    detachWatch = new MutationObserver(() => {
+      if (expandedFrame?.isConnected === false) {
+        collapse();
+      }
+    });
+    detachWatch.observe(document.body, { childList: true, subtree: true });
+  }
 };
 
 const darkSchemeName = (): string =>
@@ -166,14 +191,6 @@ const install = (): void => {
   window.__dbmlFrameHost = true;
 
   window.addEventListener("message", (event: MessageEvent) => {
-    // An expanded diagram that went with the content around it is collapsed,
-    // whatever this message turns out to be: the page it left must be free to
-    // scroll. Back is caught below; this catches every other way the content
-    // was swapped, at the next word from any frame.
-    if (expandedFrame?.isConnected === false) {
-      collapse();
-    }
-
     if (event.origin !== window.location.origin) {
       return;
     }
@@ -233,10 +250,10 @@ const install = (): void => {
     collapse();
   });
 
-  // Back — into another page of a site with instant navigation, which swaps the
-  // content and leaves this script running, or to an earlier anchor of this
-  // one. Either way the reader is going somewhere else, and a diagram left
-  // across the page would hold that page still. Collapsing twice is nothing.
+  // Back, even when the content stays — to an earlier anchor of this same
+  // page, say. The reader is going somewhere else, and a diagram left across
+  // the page would hold it still. A Back that also swaps the content is caught
+  // by the detach watch too; collapsing twice is nothing.
   window.addEventListener("popstate", collapse);
 
   // Material rewrites this attribute on `<body>` when the reader turns the

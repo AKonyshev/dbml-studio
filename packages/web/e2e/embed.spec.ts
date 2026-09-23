@@ -1304,9 +1304,13 @@ test("a diagram whose block named a theme is left alone", async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test("going Back from an expanded diagram leaves the page able to scroll", async ({
-  page,
-}) => {
+/**
+ * A host page with one diagram expanded across it, and a way to read whether
+ * the page is still held still. For the two tests below, which each take the
+ * diagram away by one route and must each be the only thing that could have
+ * let the page go.
+ */
+const expandOnHostPage = async (page: Page): Promise<() => Promise<string>> => {
   await serveModel(page);
   await serveHost(page);
   await page.setViewportSize({ width: 1100, height: 700 });
@@ -1324,12 +1328,36 @@ test("going Back from an expanded diagram leaves the page able to scroll", async
 
   await expect.poll(rootClass).toContain("dbml-diagram-host--locked");
 
-  // What Material's instant navigation does on Back: the content the diagram
-  // was part of is swapped out without the page reloading, so the host script
-  // and everything it remembers carry on into the next page.
+  return rootClass;
+};
+
+test("going Back from an expanded diagram leaves the page able to scroll", async ({
+  page,
+}) => {
+  const rootClass = await expandOnHostPage(page);
+
+  // Back to an earlier anchor of this same page: history moves and the
+  // content stays. The diagram is still in the document, so only the
+  // `popstate` listener can be what lets the page go.
+  await page.evaluate(() => {
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+
+  await expect.poll(rootClass).not.toContain("dbml-diagram-host--locked");
+});
+
+test("content swapped out from under an expanded diagram leaves the page able to scroll", async ({
+  page,
+}) => {
+  const rootClass = await expandOnHostPage(page);
+
+  // What Material's instant navigation does on a link, a search result or the
+  // `n`/`p` shortcuts: the content goes by `pushState`, which fires no event,
+  // and the host script carries on into the next page. With no `popstate` to
+  // hear, only the watch on the diagram leaving the document can let the page
+  // go — which is why this test sends none.
   await page.evaluate(() => {
     document.querySelector(".dbml-diagram")?.remove();
-    window.dispatchEvent(new PopStateEvent("popstate"));
   });
 
   await expect.poll(rootClass).not.toContain("dbml-diagram-host--locked");

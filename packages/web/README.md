@@ -83,8 +83,12 @@ site's build, not for readers of this one.
 #### Packaging the frame from the manifest
 
 Start at the manifest's `embed.html` entry and take its `file`, `css` and
-`assets`; then, for every chunk reached through `imports`, recursively, take
-that chunk's `file`, `css` and `assets` too. Collecting `file` alone is not
+`assets`; then, for every chunk reached through `imports` or `dynamicImports`,
+recursively, take that chunk's `file`, `css` and `assets` too. The frame has no
+dynamic imports today, which is exactly why the rule names them: the day one is
+added, a packager following `imports` alone would leave its chunk behind without
+a word, and the frame would fail only when the code that loads it runs.
+Collecting `file` alone is not
 enough: the frame's stylesheet hangs off the chunk `embed.html` imports, not off
 the entry, and a frame packaged without it draws unstyled. Finally take
 `embed.html` itself from the root of `dist` — the manifest's `file` for that

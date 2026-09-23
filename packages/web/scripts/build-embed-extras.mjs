@@ -35,6 +35,11 @@ await build({
   platform: "node",
   format: "esm",
   target: "node18",
+  // Minified because it travels: the documentation plugin vendors this file
+  // into every install, and unminified it is the heaviest thing in the
+  // package by far. Nothing here depends on a name surviving — the findings
+  // it prints are string literals.
+  minify: true,
   // The DBML parser's ANTLR runtime is CommonJS and calls a literal
   // `require("fs")` of its own, for a `FileStream` class this bundle never
   // uses. esbuild cannot turn that into a static import inside a bundle whose
