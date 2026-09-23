@@ -113,6 +113,26 @@ describe("runValidation", () => {
     expect(findings[0].problem).toContain("layout");
   });
 
+  // A block that will not parse must not leave anything behind for the block
+  // that runs after it: each call to `parseDbmlText` gets its own DBML parser
+  // state, but a validator that shared a single instance across blocks could
+  // easily fail this one instead.
+  it("does not let a broken block spoil the one after it", () => {
+    const { findings } = runValidation({
+      blocks: [
+        {
+          id: "docs/a.md:1",
+          model: "broken.dbml",
+          text: "Table {",
+          tables: null,
+        },
+        { id: "docs/a.md:2", model: "acl.dbml", text: ACL, tables: null },
+      ],
+    });
+
+    expect(findings).toEqual([expect.objectContaining({ id: "docs/a.md:1" })]);
+  });
+
   // One block per finding, and a page full of frames reporting all of them: an
   // author fixing one at a time would run the build once per mistake.
   it("reports every block, not the first one that failed", () => {
