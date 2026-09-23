@@ -59,6 +59,13 @@ yarn build:web
 Output lands in `packages/web/dist` — an entry document plus fingerprinted
 assets, ready to be served by any static web server.
 
+### What a documentation site takes from here
+
+`yarn build:web` also leaves two things in `dist` that are not part of the site
+itself: `frame-host.js` and `frame-host.css`, the page's half of the frame
+protocol — the script that lets a diagram expand across the page and follow the
+page's theme. Not fingerprinted, because they are vendored by name.
+
 ## Running the container image
 
 Built from the repository root, because the site depends on four sibling

@@ -206,6 +206,8 @@ a message instead of being fetched — those want a host that pushes documents
 | 9.23 | A changed push keeps a saved arrangement    | A `document`, then a changed one that adds a table to an arranged model | The three arranged tables stay at the file's own coordinates                      | `embed.spec.ts`          |
 | 9.24 | A host that answers late is still heard     | `embed.html`, host replies after the two-second deadline                | The diagram is drawn, and storage is left as clean as one answered in time        | `embed.spec.ts`          |
 | 9.25 | A host that speaks into the handover        | A `document` arrives after the wait ends and before the frame mounts    | Held over and drawn, not dropped                                                  | `hostedDocument.test.ts` |
+| 9.26 | The host's script loads after the frame     | `extra_javascript` order                                                | The expand button appears anyway — the host greets frames it finds                | `embed.spec.ts`          |
+| 9.27 | A block that named a theme                  | Page turns dark, block says `theme: light`                              | That diagram does not follow the page                                             | `embed.spec.ts`          |
 
 ## 10. VS Code extension — DBML Studio
 

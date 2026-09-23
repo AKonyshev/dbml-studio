@@ -1,3 +1,7 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   expect,
   test,
@@ -1058,70 +1062,57 @@ test("the frame leaves no trace in storage", async ({ page }) => {
   expect(state.theme).toBe("dark");
 });
 
-// A page that embeds the frame the way the site of documentation does. The real
-// one is built by `antora/docs/lib/dbml-frame-host.js` in the documentation
-// repository; this is the same protocol written out small, because the two
-// repositories cannot import from each other and what is under test here is the
-// frame's half of it.
+// A page that embeds the frame the way a documentation site does — with the
+// real script, read out of the build. Until this moved into this repository the
+// fixture carried a copy of the protocol written out small, and a copy is a
+// test that passes while the thing it stands for is broken.
 //
 // The box is deliberately small — 400×200 in a viewport several times that — so
 // that expanding it is a change worth measuring rather than a few pixels.
-const HOST_PAGE = `<!doctype html>
+const hostPage = async (
+  frameQuery: string,
+  options: { scriptLast?: boolean; themeFixed?: boolean } = {},
+): Promise<string> => {
+  // `import.meta.url` rather than `__dirname`: this file is loaded as ESM, and
+  // `__dirname` does not exist there.
+  const dist = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "dist",
+  );
+  const script = await readFile(path.join(dist, "frame-host.js"), "utf8");
+  const style = await readFile(path.join(dist, "frame-host.css"), "utf8");
+
+  const tag = `<script>${script}</script>`;
+  const frame = `<div class="dbml-diagram"${
+    options.themeFixed === true ? " data-dbml-theme-fixed" : ""
+  }><iframe src="/embed.html?${frameQuery}"></iframe></div>`;
+
+  return `<!doctype html>
 <html><head><style>
   body { margin: 0; padding: 40px; }
   .dbml-diagram { width: 400px; height: 200px; }
   .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
-  .dbml-diagram--expanded {
-    position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; margin: 0;
-    width: auto; height: auto; max-width: none; max-height: none;
-  }
-  html.locked, html.locked body { overflow: hidden; }
-</style></head>
+${style}
+</style>${options.scriptLast === true ? "" : tag}</head>
 <body>
-<div class="dbml-diagram"><iframe src="/embed.html?src=acl.dbml"></iframe></div>
-<script>
-;(function () {
-  var expandedFrame = null;
-
-  function frameOf(source) {
-    var frames = document.querySelectorAll('.dbml-diagram iframe');
-    for (var i = 0; i < frames.length; i++) {
-      if (frames[i].contentWindow === source) return frames[i];
-    }
-    return null;
-  }
-
-  function post(frame, message) {
-    frame.contentWindow.postMessage(message, window.location.origin);
-  }
-
-  function apply(frame, expanded) {
-    frame.parentNode.classList.toggle('dbml-diagram--expanded', expanded);
-    document.documentElement.classList.toggle('locked', expanded);
-    expandedFrame = expanded ? frame : null;
-    post(frame, { source: 'dbml-frame', type: 'expanded', expanded: expanded });
-  }
-
-  window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin) return;
-    var data = event.data;
-    if (data === null || typeof data !== 'object' || data.source !== 'dbml-frame') return;
-    var frame = frameOf(event.source);
-    if (frame === null) return;
-    if (data.type === 'hello') { post(frame, { source: 'dbml-frame', type: 'ready' }); return; }
-    if (data.type === 'expand') apply(frame, data.expanded);
-  });
-})();
-</script>
+${frame}
+${options.scriptLast === true ? tag : ""}
 </body></html>`;
+};
 
-const serveHost = async (page: Page): Promise<void> => {
+const serveHost = async (
+  page: Page,
+  options: {
+    frameQuery?: string;
+    scriptLast?: boolean;
+    themeFixed?: boolean;
+  } = {},
+): Promise<void> => {
+  const body = await hostPage(options.frameQuery ?? "src=acl.dbml", options);
+
   await page.route("**/host.html", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "text/html",
-      body: HOST_PAGE,
-    });
+    await route.fulfill({ status: 200, contentType: "text/html", body });
   });
 };
 
@@ -1209,6 +1200,55 @@ test("the reader can put the diagram across the page, and Escape puts it back", 
   await expect
     .poll(async () => await embeddedStageScale(page))
     .toBe(fittedSmall);
+});
+
+test("a host whose script loads after the frame still gets a button", async ({
+  page,
+}) => {
+  await serveModel(page);
+  // The order MkDocs gives us: `extra_javascript` lands at the end of the body,
+  // so the frame is up and has already said hello by the time the script runs.
+  // Antora inlines the script ahead of the frame and never sees this.
+  await serveHost(page, { scriptLast: true });
+  await page.goto("/host.html");
+
+  const box = page.locator(".dbml-diagram");
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  await reachForTheToolbar(page, box);
+  await expect(
+    frame.getByRole("button", { name: "Expand across the page" }),
+  ).toBeVisible();
+});
+
+test("a diagram whose block named a theme is left alone", async ({ page }) => {
+  await serveModel(page);
+  await serveHost(page, {
+    frameQuery: "src=acl.dbml&theme=light",
+    themeFixed: true,
+  });
+  await page.goto("/host.html");
+
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // The page is light here, so this passes either way on colour alone — what it
+  // asserts is that the host said nothing, which the frame's own root class
+  // shows: a frame told "light" and a frame told nothing look the same, and a
+  // frame told the page's theme when its author fixed one does not.
+  await page.evaluate(() => {
+    document.body.dataset.mdColorScheme = "slate";
+  });
+
+  const found = page.frames().find((f) => f.url().includes("embed.html"));
+
+  await expect
+    .poll(
+      async () =>
+        await found?.evaluate(() => document.documentElement.className),
+    )
+    .not.toContain("dark");
 });
 
 test("a model of a hundred and fifty tables opens, framed and not as a strip", async ({
