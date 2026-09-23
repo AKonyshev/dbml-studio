@@ -17,6 +17,12 @@ export default defineConfig({
   // site's root, where there is no such directory.
   base: "./",
   build: {
+    // Which chunks each document actually needs, in a file a packager can read.
+    // The frame's half of this build is vendored into the MkDocs plugin, and the
+    // editor's 2.9 MB is not wanted there; a hand-kept list of filenames would
+    // be wrong the first time a chunk is renamed, and wrong silently — the wheel
+    // builds, and the frame does not draw.
+    manifest: true,
     rollupOptions: {
       // Two documents, one bundle. The frame's chunk carries no editor because
       // nothing it imports reaches `setupMonaco` — that is the mechanism, and it

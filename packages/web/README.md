@@ -62,15 +62,21 @@ assets, ready to be served by any static web server.
 ### What a documentation site takes from here
 
 `yarn build:web` also leaves three things in `dist` that are not part of the
-site itself, not fingerprinted because they are vendored by name:
+site itself, not fingerprinted:
 
 - `frame-host.js` and `frame-host.css` — the page's half of the frame
   protocol, the script that lets a diagram expand across the page and follow
-  the page's theme.
+  the page's theme. Vendored by name into the Python plugin.
 - `validate.mjs` — the model checks the frame makes at read time, as a program:
   a job of blocks on standard input, findings on standard output. The rules are
   `src/validate/`, tested here; the file exists because the plugin that calls it
-  is written in Python.
+  is written in Python. Vendored by name.
+- `.vite/manifest.json` — the dependency graph of every build entry, so a
+  packager can extract only what the frame needs. The packager walks `imports`
+  from the `embed.html` entry recursively; the site's own entry and everything
+  only it reaches — the editor, its worker, the icon font — stay out of the
+  wheel. That is the whole mechanism by which the frame is smaller than the
+  site: not a setting, but the absence of an import.
 
 ## Running the container image
 
