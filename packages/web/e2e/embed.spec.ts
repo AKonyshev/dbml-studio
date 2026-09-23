@@ -810,12 +810,17 @@ test("a host that pushes a changed model lays the new tables out instead of stac
     .poll(async () => await embeddedTableNames(page))
     .toEqual(expect.arrayContaining(["table-solo.hub", "table-solo.spoke"]));
 
-  // Not `defaultTableCoord` — the bug this guards piles a table with no
-  // recovered entry exactly there, on top of nothing a reader could tell apart
-  // from an empty canvas.
+  // Somewhere of its own, rather than on top of the table that was already
+  // there: the bug this guards gives a table with no recovered entry
+  // `defaultTableCoord`, and `solo.hub` is laid out at the origin too, so the
+  // two would sit exactly on each other. Asserting "not at the origin" would
+  // say the same thing today and become a false failure the day a layout
+  // legitimately puts this table there.
   const spoke = await positionOf(page, "table-solo.spoke");
+  const hub = await positionOf(page, "table-solo.hub");
   expect(spoke).not.toBeNull();
-  expect(spoke).not.toEqual({ x: 0, y: 0 });
+  expect(hub).not.toBeNull();
+  expect(spoke).not.toEqual(hub);
 });
 
 // `ARRANGED` with one more table added, its `MetaInfo` block left untouched —
@@ -904,11 +909,15 @@ test("a host that pushes a changed model keeps a table's saved arrangement inste
     y: 9000,
   });
 
-  // The table the second push actually added has no saved position of its
-  // own, and is laid out rather than piled on top of nothing.
+  // The table the second push actually added has no saved position of its own,
+  // and is laid out rather than dropped on top of one that has. `arr.left`
+  // sits at the origin by the file's own say-so, which is exactly where a
+  // table with no position lands — so "somewhere other than there" is the
+  // assertion, and it does not turn into a false failure the day a layout
+  // puts a table at the origin for good reasons.
   const extra = await positionOf(page, "table-arr.extra");
   expect(extra).not.toBeNull();
-  expect(extra).not.toEqual({ x: 0, y: 0 });
+  expect(extra).not.toEqual(await positionOf(page, "table-arr.left"));
 });
 
 // A host that has the model but is slow to answer — the shape a cold start on
@@ -1003,12 +1012,15 @@ test("a host that answers after the deadline still leaves no trace in storage", 
     timeout: LATE_HOST_DELAY_MS + 3_000,
   });
 
-  // The same promise test 9.12 checks for a host that answers in time: a
-  // frame rescued by a late reply is not a frame allowed to keep what it drew.
-  // `"hosted"` rather than `"embed:"` — the hosted mode's document key carries
-  // no such prefix.
+  // The same promise test 9.12 checks for a host that answers in time: a frame
+  // rescued by a late reply is not a frame allowed to keep what it drew. Every
+  // layout key rather than the ones naming this document — `hosted` would miss
+  // the store's own starting key, which is where a leak would actually show up
+  // if the late document were handled by the wrong one of `draw`/`redraw`.
   const ours = await page.evaluate(() =>
-    Object.keys(window.localStorage).filter((key) => key.includes("hosted")),
+    Object.keys(window.localStorage).filter((key) =>
+      key.startsWith("tableCoords:"),
+    ),
   );
   expect(ours).toEqual([]);
 });
@@ -1028,8 +1040,14 @@ test("the frame leaves no trace in storage", async ({ page }) => {
     // Computing the layout is also what stores it, so the frame has to take it
     // back out. A key per frame per page would accumulate against a quota the
     // full application shares.
+    //
+    // Every layout key, not only the ones naming this document: switching to a
+    // document saves whatever the store held first, which puts an empty layout
+    // under the store's own starting key. That one names no document, so
+    // nothing else would ever clear it — and a filter looking only for
+    // `embed:` would call the frame clean while it sat there.
     ours: Object.keys(window.localStorage).filter((key) =>
-      key.includes("embed:"),
+      key.startsWith("tableCoords:"),
     ),
     // And the theme is the reader's, not the page's: `web:theme` is one key for
     // this whole origin.

@@ -11,9 +11,11 @@
  * The other half lives in the site of documentation, in
  * `antora/docs/lib/dbml-frame-host.js`, and is written out again there rather
  * than imported: the two are different projects in different repositories, and
- * a shared package for four message shapes would cost more than it saves. The
+ * a shared package for six message shapes would cost more than it saves. The
  * price is that this file and that one have to be changed together, which is
- * why both name the other in a comment.
+ * why both name the other in a comment. Antora's copy speaks the four it was
+ * written for and none of the two added since; a host is free to know fewer
+ * messages than the frame does.
  */
 
 /** Marks a message as belonging to this protocol and not to some other frame's. */

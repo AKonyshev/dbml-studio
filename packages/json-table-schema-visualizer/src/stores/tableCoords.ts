@@ -23,10 +23,28 @@ import { TableDetailLevel } from "@/types/tableDetailLevel";
 const storeKeyFor = (documentKey: string, level: TableDetailLevel): string =>
   `${documentKey}#${level}`;
 
+/**
+ * The document key the store holds before it has been given a real one.
+ *
+ * Exported because it is not only an initial value: `adoptStoreKey` saves the
+ * current store before switching away from it, so the first switch of a
+ * session writes an empty layout under this key and nothing ever names it
+ * again. A host that promises to leave no trace has to be able to say which
+ * key that is.
+ *
+ * Not the same thing as `NO_DOCUMENT_KEY` in the site's `session.ts`, which
+ * means "no document is open" and happens to have chosen the same word. The
+ * two are free to diverge; this one is this store's own starting point.
+ */
+export const NO_DOCUMENT_KEY = "none";
+
 class TableCoordsStore extends PersistableStore<Array<[string, XYWHPosition]>> {
   private tableCoords = new Map<string, XYWHPosition>();
-  private currentDocumentKey = "none";
-  private currentStoreKey = storeKeyFor("none", TableDetailLevel.FullDetails);
+  private currentDocumentKey = NO_DOCUMENT_KEY;
+  private currentStoreKey = storeKeyFor(
+    NO_DOCUMENT_KEY,
+    TableDetailLevel.FullDetails,
+  );
 
   static RESET_POS_EVENT_NAME = "tableCoords:resetTablesPositions";
 

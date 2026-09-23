@@ -50,6 +50,48 @@ export const onHostDocument = (
   };
 };
 
+export interface HostDocumentBridge {
+  /** The last model that arrived while nobody else was listening, once. */
+  take: () => HostDocumentMessage | null;
+  stop: () => void;
+}
+
+/**
+ * Holds what the host says between one listener and the next.
+ *
+ * There is a gap in a hosted frame's life: `waitForHostDocument` stops
+ * listening the moment it has an answer, and the component that listens from
+ * then on does not exist until React has mounted it. A host that answers each
+ * of the frame's greetings papers over the gap by repeating itself, but one
+ * that answers only the first would have its model dropped into it — and the
+ * frame would sit on a message it never receives again.
+ *
+ * The last message rather than a queue: each document supersedes the one
+ * before it, so drawing an intermediate one and then the final one is work
+ * nobody asked for. `take` yields it once; a second call is `null`.
+ */
+export const bridgeHostDocuments = (
+  target: MessageTarget,
+  accept: (event: MessageEvent) => boolean,
+): HostDocumentBridge => {
+  let latest: HostDocumentMessage | null = null;
+
+  const stop = onHostDocument(target, accept, (message) => {
+    latest = message;
+  });
+
+  return {
+    take: () => {
+      const held = latest;
+
+      latest = null;
+
+      return held;
+    },
+    stop,
+  };
+};
+
 /** The first model the host pushes, or `null` if nobody answers in time. */
 export const waitForHostDocument = async (
   target: MessageTarget,

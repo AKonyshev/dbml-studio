@@ -1,4 +1,8 @@
-import { onHostDocument, waitForHostDocument } from "../hostedDocument";
+import {
+  bridgeHostDocuments,
+  onHostDocument,
+  waitForHostDocument,
+} from "../hostedDocument";
 
 /** A `window` for a test that has none: listeners in, events out. */
 const messageTarget = (): {
@@ -173,5 +177,76 @@ describe("onHostDocument", () => {
     send(DOCUMENT, "host");
 
     expect(seen).toEqual([DOCUMENT]);
+  });
+});
+
+describe("bridgeHostDocuments", () => {
+  const SECOND = { ...DOCUMENT, text: "Table b { id integer }" } as const;
+
+  // The gap this exists for: the frame's first listener has let go and its
+  // second does not exist yet. A host that says something once, into that gap,
+  // must still be heard.
+  it("holds what arrived while nobody else was listening", () => {
+    const { target, send } = messageTarget();
+    const bridge = bridgeHostDocuments(target, ACCEPT_ALL);
+
+    send(DOCUMENT);
+
+    expect(bridge.take()).toEqual(DOCUMENT);
+  });
+
+  it("holds nothing when nothing arrived", () => {
+    const { target } = messageTarget();
+
+    expect(bridgeHostDocuments(target, ACCEPT_ALL).take()).toBeNull();
+  });
+
+  // The last, not the first: each document supersedes the one before it, so
+  // drawing an intermediate one and then the final one is work nobody asked for.
+  it("holds the last of several", () => {
+    const { target, send } = messageTarget();
+    const bridge = bridgeHostDocuments(target, ACCEPT_ALL);
+
+    send(DOCUMENT);
+    send(SECOND);
+
+    expect(bridge.take()).toEqual(SECOND);
+  });
+
+  it("yields what it held once, and then has nothing", () => {
+    const { target, send } = messageTarget();
+    const bridge = bridgeHostDocuments(target, ACCEPT_ALL);
+
+    send(DOCUMENT);
+
+    expect(bridge.take()).toEqual(DOCUMENT);
+    expect(bridge.take()).toBeNull();
+  });
+
+  it("stops listening when told to", () => {
+    const { target, send, listenerCount } = messageTarget();
+    const bridge = bridgeHostDocuments(target, ACCEPT_ALL);
+
+    bridge.stop();
+    send(DOCUMENT);
+
+    expect(listenerCount()).toBe(0);
+    expect(bridge.take()).toBeNull();
+  });
+
+  // The same rule as everywhere else the frame listens: a window that is not
+  // the host does not get to put a model in front of the reader, least of all
+  // through the one listener nobody is watching.
+  it("holds nothing from a window accept refuses", () => {
+    const { target, send } = messageTarget();
+    const bridge = bridgeHostDocuments(target, FROM_HOST);
+
+    send(DOCUMENT, "impostor");
+
+    expect(bridge.take()).toBeNull();
+
+    send(DOCUMENT, "host");
+
+    expect(bridge.take()).toEqual(DOCUMENT);
   });
 });

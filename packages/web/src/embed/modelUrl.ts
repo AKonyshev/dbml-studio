@@ -28,10 +28,12 @@ export const resolveModelUrl = (
 
   try {
     const resolved = new URL(value, documentUrl);
-    const document = new URL(documentUrl);
+    // Not `document`: that name belongs to the page, and shadowing it inside a
+    // module that never touches the DOM is a trap for whoever edits this next.
+    const base = new URL(documentUrl);
 
-    return resolved.protocol === document.protocol &&
-      resolved.origin === document.origin
+    return resolved.protocol === base.protocol &&
+      resolved.origin === base.origin
       ? resolved.href
       : null;
   } catch {

@@ -9,7 +9,10 @@ import {
 import { initI18n } from "json-table-schema-visualizer/src/i18n/initI18n";
 import { PER_DOCUMENT_STORES } from "json-table-schema-visualizer/src/stores/perDocumentStores";
 import { switchDocument } from "json-table-schema-visualizer/src/stores/switchDocument";
-import { tableCoordsStore } from "json-table-schema-visualizer/src/stores/tableCoords";
+import {
+  NO_DOCUMENT_KEY,
+  tableCoordsStore,
+} from "json-table-schema-visualizer/src/stores/tableCoords";
 import { ScrollDirection } from "json-table-schema-visualizer/src/types/scrollDirection";
 import { Theme } from "json-table-schema-visualizer/src/types/theme";
 import { type JSONTableSchema } from "shared/types/tableSchema";
@@ -29,8 +32,10 @@ import {
   postToHost,
 } from "./frameHost";
 import {
+  bridgeHostDocuments,
   onHostDocument,
   waitForHostDocument,
+  type HostDocumentBridge,
   type HostDocumentMessage,
 } from "./hostedDocument";
 import { loadModelText } from "./loadModelText";
@@ -64,13 +69,23 @@ initI18n(resolveBrowserLocale(navigator.languages));
  * every document would take the reader's own arrangements in `/_dbml/` with it.
  *
  * Storage only — what the stores hold in memory is what this render draws.
+ *
+ * The stores' own starting key goes with it. `tableCoordsStore.adoptStoreKey`
+ * saves the current store before switching away from it, so the first
+ * `switchDocument` of a frame's life writes an empty layout under
+ * `NO_DOCUMENT_KEY` — a key no document ever names again, which nothing else
+ * would ever clear. Left behind it makes "the frame stores nothing" false in
+ * the letter if not in the spirit, and on a site of hundreds of pages it is
+ * one more key per frame against a quota shared with the full application.
  */
 const forgetThisDocument = (documentKey: string): void => {
   for (const store of PER_DOCUMENT_STORES) {
-    try {
-      store.clear(documentKey);
-    } catch {
-      // Storage that refuses a delete is storage nothing reached either.
+    for (const key of [documentKey, NO_DOCUMENT_KEY]) {
+      try {
+        store.clear(key);
+      } catch {
+        // Storage that refuses a delete is storage nothing reached either.
+      }
     }
   }
 };
@@ -185,18 +200,25 @@ const draw = (
  * `tableCoordsStore.getCoords` falls back to `defaultTableCoord` for a name it
  * does not hold — every new table piled at `{x:0,y:0}` instead of laid out.
  *
- * `clear` before `resetPositions`, the same order `App.tsx`'s own
- * `arrangeLoadedText` uses. Storage under this key is already empty by the
- * time a second push arrives — this function ends with `forgetThisDocument`,
- * same as `draw` — so what the clear actually reaches is the map still held
- * in memory from the push before this one: without it `resetPositions` would
- * keep whatever position that push computed for every table this one still
- * has, and never look at the tables' own coordinates at all. Reading those is
- * the point. A model that carries a layout block of its own is drawn in the
- * author's arrangement, not an invented one, on every push that changes it —
- * the same round trip `App.tsx`'s comment above calls load-bearing for the
- * DBML format. `resetPositions` only reads that block when it finds nothing
- * stored, which is exactly what the `clear` guarantees.
+ * `clear` before `resetPositions` when the model carries a layout block of its
+ * own, and only then — `App.tsx`'s `arrangeLoadedText` makes the same call on
+ * the same condition, for the same reason. `resetPositions` consults a table's
+ * own coordinates only when it finds nothing stored for the key, so a file
+ * arranged by its author is drawn in that arrangement rather than an invented
+ * one — the round trip `App.tsx`'s comment there calls load-bearing for the
+ * DBML format.
+ *
+ * `clear` reaches storage and nothing else (`PersistableStore.clear` is a
+ * `removeItem`); the map in memory is replaced by `resetPositions` either way.
+ * And storage under this key is usually already empty by the time a second
+ * push arrives, because this function and `draw` both end with
+ * `forgetThisDocument`. One thing refills it: a reader switching detail level,
+ * which saves the current layout on its way through `adoptStoreKey`. So the
+ * clear matters in exactly one case — the reader moved tables, pressed `D`,
+ * and then the host pushed a changed model — and that is also the case where a
+ * model with no layout of its own should keep what the reader did rather than
+ * have it recomputed, which is why the condition is there and not a blanket
+ * clear.
  */
 const redraw = (
   text: string,
@@ -209,7 +231,10 @@ const redraw = (
     return { schema: null, errorMessage: result.errorMessage, documentKey };
   }
 
-  tableCoordsStore.clear(documentKey);
+  if (result.schema.tables.some((table) => table.fromMetaInfo === true)) {
+    tableCoordsStore.clear(documentKey);
+  }
+
   tableCoordsStore.resetPositions(result.schema.tables, result.schema.refs);
   forgetThisDocument(documentKey);
 
@@ -227,6 +252,12 @@ interface FrameProps {
    * needs in order to tell a re-send apart from a change.
    */
   initialHostedSource: HostedSource | null;
+  /**
+   * What the host said between `bootstrap` handing over and this component
+   * mounting — `null` for every mode but `hosted`. Taken and closed by the
+   * effect below, which then listens for itself.
+   */
+  bridge: HostDocumentBridge | null;
 }
 
 /**
@@ -248,6 +279,7 @@ const Frame = ({
   theme,
   hosted,
   initialHostedSource,
+  bridge,
 }: FrameProps): JSX.Element => {
   const [drawn, setDrawn] = useState(initial);
   const { themeColors, setTheme, theme: current } = useCreateTheme(theme);
@@ -266,47 +298,58 @@ const Frame = ({
       return;
     }
 
+    const handle = (message: HostDocumentMessage): void => {
+      const next: HostedSource = {
+        text: message.text,
+        tables: message.tables,
+      };
+      const previous = hostedSource.current;
+      hostedSource.current = next;
+
+      // `previous === null` means no document has been drawn under this key
+      // yet — not the ordinary case, where `bootstrap` already drew the one
+      // this effect was seeded with, but the deadline having put an error on
+      // screen instead and left that seed `null`. That first document is
+      // handled exactly as `bootstrap` handles the one that arrives in time:
+      // through `draw`, which is also what actually switches the document
+      // and gives the tables a store to be arranged in — nothing has run
+      // `switchDocument` for this key yet.
+      //
+      // A re-send of the document already on screen — a theme change, the
+      // host's own "refresh diagrams" command, or simply `useHostExpand`'s
+      // own "hello" bringing a second reply — lands on the layout already
+      // there. Redrawing for one would either throw the reader's own
+      // arrangement away (`draw`) or recompute it for nothing (`redraw`);
+      // only the theme below is worth doing again.
+      if (previous === null) {
+        setDrawn(draw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
+      } else if (!sameHostedSource(previous, next)) {
+        setDrawn(redraw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
+      }
+
+      setTheme(themeFromName(message.theme));
+    };
+
+    // Everything below happens in one synchronous run, which is what makes the
+    // handover lossless: nothing can be delivered between taking what the
+    // bridge held, closing it, and listening here instead.
+    const missed = bridge?.take() ?? null;
+
+    bridge?.stop();
+
     // `isFromHost`, and not left to callers to add on their own: a hosted
     // frame is handed its model by the window that created it, and nothing
     // else on the page — another frame, a script with a stale reference —
     // gets to answer for it. Without this, whichever of them posts first at
     // startup can win the race `waitForHostDocument` runs in `bootstrap`.
-    return onHostDocument(
-      window,
-      isFromHost,
-      (message: HostDocumentMessage) => {
-        const next: HostedSource = {
-          text: message.text,
-          tables: message.tables,
-        };
-        const previous = hostedSource.current;
-        hostedSource.current = next;
+    const stop = onHostDocument(window, isFromHost, handle);
 
-        // `previous === null` means no document has been drawn under this key
-        // yet — not the ordinary case, where `bootstrap` already drew the one
-        // this effect was seeded with, but the deadline having put an error on
-        // screen instead and left that seed `null`. That first document is
-        // handled exactly as `bootstrap` handles the one that arrives in time:
-        // through `draw`, which is also what actually switches the document
-        // and gives the tables a store to be arranged in — nothing has run
-        // `switchDocument` for this key yet.
-        //
-        // A re-send of the document already on screen — a theme change, the
-        // host's own "refresh diagrams" command, or simply `useHostExpand`'s
-        // own "hello" bringing a second reply — lands on the layout already
-        // there. Redrawing for one would either throw the reader's own
-        // arrangement away (`draw`) or recompute it for nothing (`redraw`);
-        // only the theme below is worth doing again.
-        if (previous === null) {
-          setDrawn(draw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
-        } else if (!sameHostedSource(previous, next)) {
-          setDrawn(redraw(message.text, message.tables, HOSTED_DOCUMENT_KEY));
-        }
+    if (missed !== null) {
+      handle(missed);
+    }
 
-        setTheme(themeFromName(message.theme));
-      },
-    );
-  }, [hosted, setTheme]);
+    return stop;
+  }, [hosted, setTheme, bridge]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent): void => {
@@ -378,6 +421,7 @@ const bootstrap = async (): Promise<void> => {
     initial: Drawn,
     hosted: boolean,
     initialHostedSource: HostedSource | null,
+    bridge: HostDocumentBridge | null,
   ): void => {
     root.render(
       <Frame
@@ -385,12 +429,13 @@ const bootstrap = async (): Promise<void> => {
         theme={theme}
         hosted={hosted}
         initialHostedSource={initialHostedSource}
+        bridge={bridge}
       />,
     );
   };
 
   const failed = (errorMessage: string | null, documentKey: string): void => {
-    render({ schema: null, errorMessage, documentKey }, false, null);
+    render({ schema: null, errorMessage, documentKey }, false, null, null);
   };
 
   if (!parsed.ok) {
@@ -421,6 +466,12 @@ const bootstrap = async (): Promise<void> => {
       HOST_DOCUMENT_TIMEOUT_MS,
     );
 
+    // Opened before the render and closed by `Frame`'s own effect. Between
+    // those two moments nothing else is listening — `waitForHostDocument` has
+    // let go and the component does not exist yet — and a host that says
+    // something once, into that gap, would otherwise never be heard again.
+    const bridge = bridgeHostDocuments(window, isFromHost);
+
     if (first === null) {
       // The same message the frame gave before there was a hosted mode at
       // all, and for the same reason: `embed.html` opened by hand has to
@@ -441,14 +492,17 @@ const bootstrap = async (): Promise<void> => {
         },
         true,
         null,
+        bridge,
       );
       return;
     }
 
-    render(draw(first.text, first.tables, HOSTED_DOCUMENT_KEY), true, {
-      text: first.text,
-      tables: first.tables,
-    });
+    render(
+      draw(first.text, first.tables, HOSTED_DOCUMENT_KEY),
+      true,
+      { text: first.text, tables: first.tables },
+      bridge,
+    );
     return;
   }
 
@@ -472,6 +526,7 @@ const bootstrap = async (): Promise<void> => {
   render(
     draw(text, tables, `embed:${shown}?${tables?.join(",") ?? ""}`),
     false,
+    null,
     null,
   );
 };

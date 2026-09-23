@@ -60,9 +60,12 @@ export const useHostExpand = (): HostExpand => {
 
     window.addEventListener("message", onMessage);
 
-    // No retry, because none is needed: the host installs its listener from a
-    // script the page carries ahead of the first frame, and a frame's own
-    // scripts cannot run before the element that loads them has been parsed.
+    // No retry, because none is needed here: the host installs its listener
+    // from a script the page carries ahead of the first frame, and a frame's
+    // own scripts cannot run before the element that loads them has been
+    // parsed. Not the only hello a frame sends, though — a hosted one greets
+    // from `bootstrap` too, before this component exists to do it. See
+    // `helloMessage` for why two are cheap.
     postToHost(helloMessage());
 
     return () => {
