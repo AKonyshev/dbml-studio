@@ -61,10 +61,16 @@ assets, ready to be served by any static web server.
 
 ### What a documentation site takes from here
 
-`yarn build:web` also leaves two things in `dist` that are not part of the site
-itself: `frame-host.js` and `frame-host.css`, the page's half of the frame
-protocol — the script that lets a diagram expand across the page and follow the
-page's theme. Not fingerprinted, because they are vendored by name.
+`yarn build:web` also leaves three things in `dist` that are not part of the
+site itself, not fingerprinted because they are vendored by name:
+
+- `frame-host.js` and `frame-host.css` — the page's half of the frame
+  protocol, the script that lets a diagram expand across the page and follow
+  the page's theme.
+- `validate.mjs` — the model checks the frame makes at read time, as a program:
+  a job of blocks on standard input, findings on standard output. The rules are
+  `src/validate/`, tested here; the file exists because the plugin that calls it
+  is written in Python.
 
 ## Running the container image
 
