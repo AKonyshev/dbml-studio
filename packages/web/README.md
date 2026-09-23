@@ -61,7 +61,7 @@ assets, ready to be served by any static web server.
 
 ### What a documentation site takes from here
 
-`yarn build:web` also leaves three things in `dist` that are not part of the
+`yarn build:web` also leaves four files in `dist` that are not part of the
 site itself, not fingerprinted:
 
 - `frame-host.js` and `frame-host.css` — the page's half of the frame
@@ -72,11 +72,58 @@ site itself, not fingerprinted:
   `src/validate/`, tested here; the file exists because the plugin that calls it
   is written in Python. Vendored by name.
 - `.vite/manifest.json` — the dependency graph of every build entry, so a
-  packager can extract only what the frame needs. The packager walks `imports`
-  from the `embed.html` entry recursively; the site's own entry and everything
-  only it reaches — the editor, its worker, the icon font — stay out of the
-  wheel. That is the whole mechanism by which the frame is smaller than the
-  site: not a setting, but the absence of an import.
+  packager can extract only what the frame needs. That is the whole mechanism
+  by which the frame is smaller than the site: not a setting, but the absence
+  of an import. The site's own entry and everything only it reaches — the
+  editor, its worker, the icon font — stay out of the wheel.
+
+The container image carries none of the four: they are for a documentation
+site's build, not for readers of this one.
+
+#### Packaging the frame from the manifest
+
+Start at the manifest's `embed.html` entry and take its `file`, `css` and
+`assets`; then, for every chunk reached through `imports`, recursively, take
+that chunk's `file`, `css` and `assets` too. Collecting `file` alone is not
+enough: the frame's stylesheet hangs off the chunk `embed.html` imports, not off
+the entry, and a frame packaged without it draws unstyled. Finally take
+`embed.html` itself from the root of `dist` — the manifest's `file` for that
+entry is its script, not the document.
+
+#### The validator's contract
+
+Standard input, one JSON object:
+
+```json
+{ "blocks": [{ "id": "…", "model": "…", "text": "…", "tables": ["…"] }] }
+```
+
+`tables` is the list of table names the block asked for, or `null` for the
+whole model. Standard output, one JSON object:
+
+```json
+{ "findings": [{ "id": "…", "model": "…", "problem": "…" }] }
+```
+
+- `id` is returned untouched — whatever the caller needs to point at the block
+  again. `model` is only repeated for the report.
+- An empty `findings` means every block checked out.
+- A non-zero exit, with a message on standard error, means the validator itself
+  could not run. That is different from the models being fine, and a caller
+  must not report it as such.
+
+#### The host script's HTML contract
+
+- Each frame is an `<iframe>` inside `<div class="dbml-diagram">`.
+- `data-dbml-theme-fixed` on that wrapper means leave this frame's theme alone:
+  its block named one.
+- `data-dbml-dark-scheme` on any wrapper names Material's dark palette, the
+  value of `data-md-color-scheme` on `<body>` that means dark. The first one on
+  the page is read; the default is `slate`.
+- While a diagram is expanded, its wrapper carries `dbml-diagram--expanded` and
+  `<html>` carries `dbml-diagram-host--locked`. Going Back takes both off; so
+  does the next message from any frame once the expanded one has left the
+  document.
 
 ## Running the container image
 
@@ -97,7 +144,8 @@ docker run --rm -p 8080:8080 dbml-schema-visualizer-web
 The site is then on <http://localhost:8080>.
 
 The image is two stages: a Node stage that installs and builds, and an nginx
-stage that serves `dist` and nothing else. [`nginx.conf`](./nginx.conf) caches
+stage that serves `dist` and nothing else — less the four files above, which
+the build stage deletes. [`nginx.conf`](./nginx.conf) caches
 the fingerprinted assets for a year and refuses to cache the entry document, so
 a deployment reaches readers without anyone having to hard-refresh. There is
 deliberately no single-page fallback — the site has no routing, so a catch-all
