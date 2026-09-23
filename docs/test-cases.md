@@ -214,9 +214,10 @@ plugin), not the site of documentation.
 | 9.23 | A changed push keeps a saved arrangement    | A `document`, then a changed one that adds a table to an arranged model | The three arranged tables stay at the file's own coordinates                      | `embed.spec.ts`          |
 | 9.24 | A host that answers late is still heard     | `embed.html`, host replies after the two-second deadline                | The diagram is drawn, and storage is left as clean as one answered in time        | `embed.spec.ts`          |
 | 9.25 | A host that speaks into the handover        | A `document` arrives after the wait ends and before the frame mounts    | Held over and drawn, not dropped                                                  | `hostedDocument.test.ts` |
-| 9.26 | The host's script loads after the frame     | `extra_javascript` order                                                | The expand button appears anyway — the host greets frames it finds                | `embed.spec.ts`          |
-| 9.27 | A block that named a theme                  | Page turns dark, block says `theme: light`                              | That diagram does not follow the page                                             | `embed.spec.ts`          |
+| 9.26 | The host's script loads after the frame     | The frame draws unanswered, then the script is added to the page        | The expand button appears anyway — the host greets frames it finds                | `embed.spec.ts`          |
+| 9.27 | A block that named a theme                  | Page turns dark, one block says `theme: light`, one names none          | Once the other diagram has turned dark, that one is still light                   | `embed.spec.ts`          |
 | 9.28 | A block that did not name a theme           | Page turns dark, script in `<head>` (the default)                       | That diagram follows the page, and the host script raises no error                | `embed.spec.ts`          |
+| 9.29 | Back from an expanded diagram               | Expand, the content is swapped out without a reload, then Back          | `<html>` is no longer locked — the new page scrolls                               | `embed.spec.ts`          |
 
 ## 10. VS Code extension — DBML Studio
 

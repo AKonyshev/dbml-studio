@@ -20,7 +20,9 @@ declare global {
   }
 }
 
-const FRAME_SELECTOR = ".dbml-diagram iframe";
+/** The `div` the plugin wraps every frame in. */
+const WRAPPER_SELECTOR = ".dbml-diagram";
+const FRAME_SELECTOR = `${WRAPPER_SELECTOR} iframe`;
 
 /** On the `div` the plugin wraps every frame in. */
 const EXPANDED_CLASS = "dbml-diagram--expanded";
@@ -55,16 +57,37 @@ const frames = (): HTMLIFrameElement[] =>
 const frameOf = (source: MessageEventSource | null): HTMLIFrameElement | null =>
   frames().find((frame) => frame.contentWindow === source) ?? null;
 
+/**
+ * The plugin's wrapper around this frame — the nearest one, not the parent:
+ * `FRAME_SELECTOR` matches an iframe at any depth, so some other extension may
+ * have put a box of its own between the two, and that box must get neither
+ * the expanded class nor a say in the frame's theme.
+ */
+const wrapperOf = (frame: HTMLIFrameElement): Element | null =>
+  frame.closest(WRAPPER_SELECTOR);
+
+/**
+ * `"/"` means "the same origin as this document". Not `window.location.origin`,
+ * which on a page opened from disk is the string `"null"` — a target
+ * `postMessage` throws on.
+ */
 const post = (frame: HTMLIFrameElement, message: HostMessage): void => {
-  frame.contentWindow?.postMessage(message, window.location.origin);
+  frame.contentWindow?.postMessage(message, "/");
 };
 
 /** The class, and the answer that tells the frame which icon to draw. */
 const apply = (frame: HTMLIFrameElement, expanded: boolean): void => {
-  frame.parentElement?.classList.toggle(EXPANDED_CLASS, expanded);
+  wrapperOf(frame)?.classList.toggle(EXPANDED_CLASS, expanded);
   post(frame, { source: FRAME_PROTOCOL, type: "expanded", expanded });
 };
 
+/**
+ * Also for a frame that is no longer in the document at all. Material's instant
+ * navigation swaps a page's content without reloading it, so this script and
+ * what it remembers outlive the diagram; a detached frame has no window to
+ * tell — `post` says nothing to it — but the lock on `<html>` is still ours to
+ * take off.
+ */
 const collapse = (): void => {
   if (expandedFrame === null) {
     return;
@@ -100,7 +123,7 @@ const pageTheme = (): Theme =>
     : Theme.light;
 
 const tellTheme = (frame: HTMLIFrameElement): void => {
-  if (frame.parentElement?.hasAttribute(FIXED_THEME) === true) {
+  if (wrapperOf(frame)?.hasAttribute(FIXED_THEME) === true) {
     return;
   }
 
@@ -143,6 +166,14 @@ const install = (): void => {
   window.__dbmlFrameHost = true;
 
   window.addEventListener("message", (event: MessageEvent) => {
+    // An expanded diagram that went with the content around it is collapsed,
+    // whatever this message turns out to be: the page it left must be free to
+    // scroll. Back is caught below; this catches every other way the content
+    // was swapped, at the next word from any frame.
+    if (expandedFrame?.isConnected === false) {
+      collapse();
+    }
+
     if (event.origin !== window.location.origin) {
       return;
     }
@@ -201,6 +232,12 @@ const install = (): void => {
     event.preventDefault();
     collapse();
   });
+
+  // Back — into another page of a site with instant navigation, which swaps the
+  // content and leaves this script running, or to an earlier anchor of this
+  // one. Either way the reader is going somewhere else, and a diagram left
+  // across the page would hold that page still. Collapsing twice is nothing.
+  window.addEventListener("popstate", collapse);
 
   // Material rewrites this attribute on `<body>` when the reader turns the
   // lights off, and there is no event for it.

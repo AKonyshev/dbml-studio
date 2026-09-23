@@ -1069,24 +1069,38 @@ test("the frame leaves no trace in storage", async ({ page }) => {
 //
 // The box is deliberately small — 400×200 in a viewport several times that — so
 // that expanding it is a change worth measuring rather than a few pixels.
-const hostPage = async (
-  frameQuery: string,
-  options: { scriptLast?: boolean; themeFixed?: boolean } = {},
-): Promise<string> => {
-  // `import.meta.url` rather than `__dirname`: this file is loaded as ESM, and
-  // `__dirname` does not exist there.
-  const dist = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "dist",
+// `import.meta.url` rather than `__dirname`: this file is loaded as ESM, and
+// `__dirname` does not exist there.
+const distFile = async (name: string): Promise<string> =>
+  await readFile(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", name),
+    "utf8",
   );
-  const script = await readFile(path.join(dist, "frame-host.js"), "utf8");
-  const style = await readFile(path.join(dist, "frame-host.css"), "utf8");
 
-  const tag = `<script>${script}</script>`;
-  const frame = `<div class="dbml-diagram"${
-    options.themeFixed === true ? " data-dbml-theme-fixed" : ""
-  }><iframe src="/embed.html?${frameQuery}"></iframe></div>`;
+/** One diagram on the fixture page: its wrapper's id, its query, its block. */
+interface HostedDiagram {
+  id: string;
+  frameQuery: string;
+  themeFixed?: boolean;
+}
+
+const hostPage = async (
+  diagrams: HostedDiagram[],
+  options: { withoutScript?: boolean } = {},
+): Promise<string> => {
+  const script = await distFile("frame-host.js");
+  const style = await distFile("frame-host.css");
+
+  const tag =
+    options.withoutScript === true ? "" : `<script>${script}</script>`;
+  const frames = diagrams
+    .map(
+      (diagram) =>
+        `<div class="dbml-diagram" id="${diagram.id}"${
+          diagram.themeFixed === true ? " data-dbml-theme-fixed" : ""
+        }><iframe src="/embed.html?${diagram.frameQuery}"></iframe></div>`,
+    )
+    .join("\n");
 
   return `<!doctype html>
 <html><head><style>
@@ -1094,22 +1108,20 @@ const hostPage = async (
   .dbml-diagram { width: 400px; height: 200px; }
   .dbml-diagram iframe { width: 100%; height: 100%; border: 0; }
 ${style}
-</style>${options.scriptLast === true ? "" : tag}</head>
+</style>${tag}</head>
 <body>
-${frame}
-${options.scriptLast === true ? tag : ""}
+${frames}
 </body></html>`;
 };
 
 const serveHost = async (
   page: Page,
-  options: {
-    frameQuery?: string;
-    scriptLast?: boolean;
-    themeFixed?: boolean;
-  } = {},
+  options: { diagrams?: HostedDiagram[]; withoutScript?: boolean } = {},
 ): Promise<void> => {
-  const body = await hostPage(options.frameQuery ?? "src=acl.dbml", options);
+  const body = await hostPage(
+    options.diagrams ?? [{ id: "diagram", frameQuery: "src=acl.dbml" }],
+    options,
+  );
 
   await page.route("**/host.html", async (route) => {
     await route.fulfill({ status: 200, contentType: "text/html", body });
@@ -1206,15 +1218,31 @@ test("a host whose script loads after the frame still gets a button", async ({
   page,
 }) => {
   await serveModel(page);
-  // The order MkDocs gives us: `extra_javascript` lands at the end of the body,
-  // so the frame is up and has already said hello by the time the script runs.
-  // Antora inlines the script ahead of the frame and never sees this.
-  await serveHost(page, { scriptLast: true });
+  // The order MkDocs can give us: `extra_javascript` lands at the end of the
+  // body, and a frame that has already loaded and said hello by the time the
+  // script runs has nobody left to answer it. Antora inlines the script ahead
+  // of the frame and never sees this. The page is served without the script so
+  // that the frame's hello certainly goes unanswered, and the script arrives
+  // only once the diagram is drawn.
+  await serveHost(page, { withoutScript: true });
   await page.goto("/host.html");
 
   const box = page.locator(".dbml-diagram");
   const frame = page.frameLocator(".dbml-diagram iframe");
   await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  // No host yet, so no button: the toolbar is up and the button is not.
+  await reachForTheToolbar(page, box);
+  await expect(
+    frame.getByRole("button", { name: "Fit to view" }),
+  ).toBeVisible();
+  await expect(
+    frame.getByRole("button", { name: "Expand across the page" }),
+  ).toHaveCount(0);
+
+  // The frame will not say hello again. Only the host greeting the frames it
+  // finds already on the page can bring the button now.
+  await page.addScriptTag({ content: await distFile("frame-host.js") });
 
   await reachForTheToolbar(page, box);
   await expect(
@@ -1227,36 +1255,84 @@ test("a diagram whose block named a theme is left alone", async ({ page }) => {
   page.on("pageerror", (error) => pageErrors.push(error));
 
   await serveModel(page);
+  // Two diagrams on one page, the way a real page carries them: one whose
+  // block named a theme and one whose block did not. The second is the
+  // witness — once it has turned dark, the host has certainly sent the page's
+  // theme and the frames have certainly had time to act on it, so the first
+  // still being light means it was left alone, not that nobody got round to
+  // it yet.
   await serveHost(page, {
-    frameQuery: "src=acl.dbml&theme=light",
-    themeFixed: true,
+    diagrams: [
+      { id: "fixed", frameQuery: "src=acl.dbml&theme=light", themeFixed: true },
+      { id: "follows", frameQuery: "src=acl.dbml" },
+    ],
   });
   await page.goto("/host.html");
 
-  const frame = page.frameLocator(".dbml-diagram iframe");
-  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+  await expect(
+    page
+      .frameLocator("#fixed iframe")
+      .locator(".konvajs-content canvas")
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .frameLocator("#follows iframe")
+      .locator(".konvajs-content canvas")
+      .first(),
+  ).toBeVisible();
 
-  // The page is light here, so this passes either way on colour alone — what it
-  // asserts is that the host said nothing, which the frame's own root class
-  // shows: a frame told "light" and a frame told nothing look the same, and a
-  // frame told the page's theme when its author fixed one does not.
+  const rootClassOf = async (id: string): Promise<string> => {
+    const handle = await page.locator(`#${id} iframe`).elementHandle();
+    const found = await handle?.contentFrame();
+
+    return (
+      (await found?.evaluate(() => document.documentElement.className)) ?? ""
+    );
+  };
+
+  expect(await rootClassOf("fixed")).not.toContain("dark");
+  expect(await rootClassOf("follows")).not.toContain("dark");
+
   await page.evaluate(() => {
     document.body.dataset.mdColorScheme = "slate";
   });
 
-  const found = page.frames().find((f) => f.url().includes("embed.html"));
+  await expect.poll(async () => await rootClassOf("follows")).toContain("dark");
+  expect(await rootClassOf("fixed")).not.toContain("dark");
 
-  await expect
-    .poll(
-      async () =>
-        await found?.evaluate(() => document.documentElement.className),
-    )
-    .not.toContain("dark");
-
-  // Without this, a host script that crashed before it ever attached its
-  // listener would leave the assertion above passing for the wrong reason —
-  // nothing was ever there to hear the page's theme, fixed or not.
   expect(pageErrors).toEqual([]);
+});
+
+test("going Back from an expanded diagram leaves the page able to scroll", async ({
+  page,
+}) => {
+  await serveModel(page);
+  await serveHost(page);
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto("/host.html");
+
+  const box = page.locator(".dbml-diagram");
+  const frame = page.frameLocator(".dbml-diagram iframe");
+  await expect(frame.locator(".konvajs-content canvas").first()).toBeVisible();
+
+  await reachForTheToolbar(page, box);
+  await frame.getByRole("button", { name: "Expand across the page" }).click();
+
+  const rootClass = async (): Promise<string> =>
+    await page.evaluate(() => document.documentElement.className);
+
+  await expect.poll(rootClass).toContain("dbml-diagram-host--locked");
+
+  // What Material's instant navigation does on Back: the content the diagram
+  // was part of is swapped out without the page reloading, so the host script
+  // and everything it remembers carry on into the next page.
+  await page.evaluate(() => {
+    document.querySelector(".dbml-diagram")?.remove();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+
+  await expect.poll(rootClass).not.toContain("dbml-diagram-host--locked");
 });
 
 test("a diagram whose block did not name a theme follows the page", async ({
