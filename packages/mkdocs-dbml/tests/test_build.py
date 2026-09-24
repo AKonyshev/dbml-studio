@@ -261,6 +261,22 @@ def test_plugin_config_turns_off_validation_and_fixes_every_frames_theme(site, c
         assert html.count("theme=dark") == diagrams
 
 
+@pytest.mark.parametrize("height", ["0", "-100", "true", "12.5"])
+def test_plugin_config_refuses_a_height_a_block_would_refuse(site, height, caplog):
+    write(
+        site / "mkdocs.yml",
+        f"""
+        site_name: fixture
+        plugins:
+          - dbml:
+              height: {height}
+        """,
+    )
+    with pytest.raises(Abort), caplog.at_level(logging.ERROR):
+        load_config(config_file=str(site / "mkdocs.yml"))
+    assert any("above zero" in record.getMessage() for record in caplog.records)
+
+
 def test_a_failing_validator_is_one_warning_and_the_pages_are_whole(site, caplog):
     (site / "docs/broken.md").unlink()
     write(

@@ -21,7 +21,7 @@ from mkdocs.structure.pages import Page
 from mkdocs.utils import get_relative_url
 
 from mkdocs_dbml import validate, vendor
-from mkdocs_dbml.block import BlockError, parse_block
+from mkdocs_dbml.block import HEIGHT_RULE, BlockError, is_height, parse_block
 from mkdocs_dbml.extension import DbmlExtension
 from mkdocs_dbml.html import FRAME_PATH, error_html, frame_html
 from mkdocs_dbml.paths import ExternalModels, PathError, resolve_model
@@ -33,8 +33,20 @@ HOST_SCRIPT = "_dbml/frame-host.js"
 HOST_STYLE = "_dbml/frame-host.css"
 
 
+class _Height(c.Type[int]):
+    """The same rule a block's own `height:` is held to."""
+
+    def __init__(self, default: int) -> None:
+        super().__init__(int, default=default)
+
+    def run_validation(self, value: object) -> int:
+        if not is_height(value):
+            raise base.ValidationError(HEIGHT_RULE)
+        return value
+
+
 class DbmlConfig(base.Config):
-    height = c.Type(int, default=500)
+    height = _Height(default=500)
     theme = c.Optional(c.Choice(("light", "dark")))
     # Named `validate_`: `base.Config` (mkdocs 1.6.1) defines a `validate()`
     # method that `BasePlugin.load_config` calls on this very object, and a

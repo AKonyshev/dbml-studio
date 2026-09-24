@@ -24,6 +24,14 @@ _OURS = re.compile(r"^model\s*:", re.MULTILINE)
 _KEY_LINE = re.compile(r"^([A-Za-z_][\w-]*)\s*:", re.MULTILINE)
 
 
+HEIGHT_RULE = "must be a whole number of pixels, above zero"
+
+
+def is_height(value: object) -> bool:
+    # YAML reads `true` as a bool, and a bool is an int to Python.
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
 @dataclass(frozen=True)
 class Block:
     model: str
@@ -71,10 +79,8 @@ def parse_block(body: str) -> Block | BlockError | None:
         return tables
 
     height = data.get("height")
-    if height is not None and (
-        isinstance(height, bool) or not isinstance(height, int) or height <= 0
-    ):
-        return BlockError("`height` must be a whole number of pixels, above zero")
+    if height is not None and not is_height(height):
+        return BlockError(f"`height` {HEIGHT_RULE}")
 
     theme = data.get("theme")
     if theme is not None and theme not in THEMES:
