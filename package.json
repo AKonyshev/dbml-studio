@@ -35,6 +35,8 @@
     "publish:dbml": "bash scripts/publish-extension.sh dbml",
     "package:dbml": "bash scripts/publish-extension.sh dbml --package",
     "build:web": "yarn workspace web build",
-    "test:e2e": "yarn workspace web test:e2e"
+    "test:e2e": "yarn workspace web test:e2e",
+    "build:obsidian": "yarn workspace obsidian-plugin build",
+    "install:obsidian": "bash scripts/install-obsidian-plugin.sh"
   }
 }

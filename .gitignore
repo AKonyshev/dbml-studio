@@ -38,3 +38,8 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 packages/mkdocs-dbml/src/mkdocs_dbml/_vendor/
+
+# The Obsidian plugin's build output: its bundle, and the frame it copies out of
+# packages/web/dist (packages/obsidian-plugin/README.md).
+packages/obsidian-plugin/main.js
+packages/obsidian-plugin/frame/
