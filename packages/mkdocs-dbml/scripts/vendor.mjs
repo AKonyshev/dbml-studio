@@ -17,29 +17,12 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/**
- * @typedef {{
- *   file?: string;
- *   css?: string[];
- *   assets?: string[];
- *   imports?: string[];
- *   dynamicImports?: string[];
- * }} ManifestChunk
- * @typedef {Record<string, ManifestChunk>} Manifest
- */
-
 const here = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.join(here, "..");
 
-// Plain JS (this runs as `.mjs`, with no TS syntax): the JSDoc `@type` above
-// each of this file's functions is the only return type it can carry.
-/** @type {(name: string, fallback: string) => string} */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const option = (name, fallback) => {
   const index = process.argv.indexOf(name);
-  return index === -1
-    ? fallback
-    : path.resolve(String(process.argv[index + 1]));
+  return index === -1 ? fallback : path.resolve(process.argv[index + 1]);
 };
 
 const dist = option("--dist", path.join(packageRoot, "..", "web", "dist"));
@@ -48,8 +31,6 @@ const out = option(
   path.join(packageRoot, "src", "mkdocs_dbml", "_vendor"),
 );
 
-/** @type {(message: string) => never} */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const fail = (message) => {
   console.error(`vendor: ${message}`);
   process.exit(1);
@@ -59,32 +40,26 @@ const manifestPath = path.join(dist, ".vite", "manifest.json");
 if (!existsSync(manifestPath)) {
   fail(`no ${manifestPath}. Build the site first: yarn build:web`);
 }
-/** @type {Manifest} */
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
 if (manifest["embed.html"] === undefined) {
   fail(`${manifestPath} has no embed.html entry`);
 }
 
-/** @type {string[]} */
-const frameFiles = ["embed.html"];
-/** @type {string[]} */
-const seen = [];
-/** @type {(key: string) => void} */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const frameFiles = new Set(["embed.html"]);
+const seen = new Set();
 const walk = (key) => {
-  if (seen.includes(key)) return;
-  seen.push(key);
+  if (seen.has(key)) return;
+  seen.add(key);
   const chunk = manifest[key];
-  if (chunk === undefined) {
+  if (chunk === undefined)
     fail(`${manifestPath} names ${key} but has no entry for it`);
-  }
   for (const file of [
     chunk.file,
     ...(chunk.css ?? []),
     ...(chunk.assets ?? []),
   ]) {
-    if (file !== undefined && !frameFiles.includes(file)) frameFiles.push(file);
+    if (file) frameFiles.add(file);
   }
   for (const next of [
     ...(chunk.imports ?? []),
@@ -127,5 +102,5 @@ try {
 writeFileSync(path.join(out, "BUILD"), `${build}\n`);
 
 console.log(
-  `vendor: ${frameFiles.length} frame files and ${byName.length} more into ${out} (${build})`,
+  `vendor: ${frameFiles.size} frame files and ${byName.length} more into ${out} (${build})`,
 );
