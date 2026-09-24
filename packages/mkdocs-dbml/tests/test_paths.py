@@ -19,6 +19,8 @@ def project(tmp_path: Path) -> Path:
         "docs/models/acl.dbml",
         "docs/guide/local.dbml",
         "models/to-be/ext.dbml",
+        "models/a/dup.dbml",
+        "models/b/dup.dbml",
     ):
         (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / path).write_text(MODEL)
@@ -101,3 +103,18 @@ def test_an_external_model_may_not_land_on_a_file_the_site_already_has(project):
     error = ExternalModels(taken={model.site_path}).add(model)
     assert isinstance(error, PathError)
     assert model.site_path in error.message
+
+
+def test_two_external_models_sharing_a_basename_get_distinct_site_paths(project):
+    a = resolve(project, "/../models/a/dup.dbml")
+    b = resolve(project, "/../models/b/dup.dbml")
+    assert a.site_path != b.site_path
+    assert a.site_path == EXTERNAL_PREFIX + "models/a/dup.dbml"
+    assert b.site_path == EXTERNAL_PREFIX + "models/b/dup.dbml"
+
+    externals = ExternalModels(taken=set())
+    assert externals.add(a) is None
+    assert externals.add(b) is None
+    assert externals.items() == sorted(
+        [(a.site_path, a.source), (b.site_path, b.source)]
+    )
