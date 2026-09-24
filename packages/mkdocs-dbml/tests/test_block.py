@@ -11,6 +11,19 @@ def test_model_part_way_along_a_line_does_not_make_it_ours():
     assert parse_block("Note: 'the model: users'") is None
 
 
+def test_dbml_with_a_model_line_inside_a_note_is_not_ours():
+    # A multi-line note is free text, and a line of it may well start with
+    # `model:`. The block still opens as DBML, so it is still code.
+    body = "Table users {\n  id integer [pk]\n  Note: '''\nmodel: the account\n'''\n}"
+    assert parse_block(body) is None
+
+
+def test_ours_may_open_with_any_of_its_keys_or_a_comment():
+    assert parse_block("tables: x\nmodel: a.dbml").model == "a.dbml"
+    assert parse_block("# the ACL schema\nmodel: a.dbml").model == "a.dbml"
+    assert parse_block("\n\nmodel: a.dbml").model == "a.dbml"
+
+
 def test_reads_every_key():
     assert parse_block(
         "model: /models/acl.dbml\n"

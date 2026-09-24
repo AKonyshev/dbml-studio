@@ -14,10 +14,25 @@ import yaml
 KEYS = ("model", "tables", "height", "theme")
 THEMES = ("light", "dark")
 
-# A block is ours when a line starts with `model:`. DBML has no such top-level
+# A block is ours when a line starts with `model:` and the block opens with one
+# of our keys (blank lines and `#` comments aside). DBML has no such top-level
 # line, so a block of DBML code — which ```dbml has always meant on pages that
-# document the language — goes on to the highlighter untouched.
+# document the language — goes on to the highlighter untouched, even when a
+# multi-line note inside it has a line that starts with `model:`.
 _OURS = re.compile(r"^model\s*:", re.MULTILINE)
+_OPENS_OURS = re.compile(rf"^(?:{'|'.join(KEYS)})\s*:")
+
+
+def _is_ours(body: str) -> bool:
+    if _OURS.search(body) is None:
+        return False
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped == "" or stripped.startswith("#"):
+            continue
+        return _OPENS_OURS.match(stripped) is not None
+    return False
+
 
 # Top-level keys as the author wrote them, to catch one given twice before
 # YAML quietly keeps the last.
@@ -46,7 +61,7 @@ class BlockError:
 
 
 def parse_block(body: str) -> Block | BlockError | None:
-    if _OURS.search(body) is None:
+    if not _is_ours(body):
         return None
 
     written = _KEY_LINE.findall(body)

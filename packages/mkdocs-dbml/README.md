@@ -36,9 +36,11 @@ height: 600
 - **`height`** — the frame's height in pixels. Default 500.
 - **`theme`** — `light` or `dark`.
 
-A ` ```dbml ` block with no `model:` line is left as highlighted code —
-that is what the fence has always meant on a page documenting the DBML
-language itself, and this plugin does not touch it.
+A block is a diagram when it opens with one of these keys (blank lines and `#`
+comments aside) and has a `model:` line. Any other ` ```dbml ` block — DBML
+code, even with a note inside that has a line starting `model:` — is left as
+highlighted code: that is what the fence has always meant on a page documenting
+the DBML language itself, and this plugin does not touch it.
 
 ## Configuration
 
