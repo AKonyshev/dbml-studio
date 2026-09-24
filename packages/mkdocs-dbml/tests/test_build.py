@@ -303,6 +303,32 @@ def test_an_unreadable_model_is_refused_without_the_build_machines_path(site, ca
     assert not (out / "_dbml/models/models/ext.dbml").exists()
 
 
+def test_a_model_in_an_excluded_docs_folder_is_copied_by_the_plugin(site):
+    with open(site / "mkdocs.yml", "a", encoding="utf-8") as config:
+        config.write("exclude_docs: |\n  /schemas/\n")
+    write(site / "docs/schemas/acl.dbml", MODEL)
+    write(site / "docs/excluded.md", "```dbml\nmodel: /schemas/acl.dbml\n```\n")
+    out = build_site(site)
+    assert not (out / "schemas/acl.dbml").exists()
+    assert (out / "_dbml/models/docs/schemas/acl.dbml").read_text() == MODEL
+    assert (
+        'src="../_dbml/embed.html?model=models%2Fdocs%2Fschemas%2Facl.dbml&amp;'
+        in (out / "excluded/index.html").read_text()
+    )
+
+
+def test_a_model_in_a_dot_folder_is_copied_by_the_plugin(site):
+    write(site / "docs/.models/acl.dbml", MODEL)
+    write(site / "docs/dotted.md", "```dbml\nmodel: /.models/acl.dbml\n```\n")
+    out = build_site(site)
+    assert not (out / ".models/acl.dbml").exists()
+    assert (out / "_dbml/models/docs/.models/acl.dbml").read_text() == MODEL
+    assert (
+        'src="../_dbml/embed.html?model=models%2Fdocs%2F.models%2Facl.dbml&amp;'
+        in (out / "dotted/index.html").read_text()
+    )
+
+
 # Material's blog plugin renders a post's excerpt in `on_page_context` — after
 # every page's Markdown is done — with a Markdown of its own built from
 # `config.markdown_extensions`, ours among them. This hook does the same.

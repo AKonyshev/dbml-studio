@@ -27,8 +27,10 @@ def project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def resolve(project: Path, model: str, page: str = "guide/page.md"):
-    return resolve_model(model, page, project / "docs", project)
+def resolve(
+    project: Path, model: str, page: str = "guide/page.md", served=lambda uri: True
+):
+    return resolve_model(model, page, project / "docs", project, served=served)
 
 
 def test_a_leading_slash_starts_at_the_docs_root(project):
@@ -53,6 +55,16 @@ def test_a_model_outside_docs_lands_under_the_plugins_folder(project):
     assert resolve(project, "/../models/to-be/ext.dbml") == ResolvedModel(
         (project / "models/to-be/ext.dbml").resolve(),
         EXTERNAL_PREFIX + "models/to-be/ext.dbml",
+        external=True,
+    )
+
+
+def test_a_model_in_docs_the_site_leaves_out_is_copied_like_an_outside_one(project):
+    assert resolve(
+        project, "/models/acl.dbml", served=lambda uri: uri != "models/acl.dbml"
+    ) == ResolvedModel(
+        (project / "docs/models/acl.dbml").resolve(),
+        EXTERNAL_PREFIX + "docs/models/acl.dbml",
         external=True,
     )
 

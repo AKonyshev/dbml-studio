@@ -88,8 +88,10 @@ diagram opens in the theme the block or the config names, or light by default.
 The diagram frame and the host script go into `_dbml/` at the site root — that
 path is reserved; a `docs_dir` that already has a file there fails the build.
 A model outside `docs_dir` is copied to
-`_dbml/models/<path from mkdocs.yml's folder>`; a model inside `docs_dir`
-is left where MkDocs already copies it.
+`_dbml/models/<path from mkdocs.yml's folder>`, and so is a model inside
+`docs_dir` that MkDocs leaves out of the site — under `exclude_docs:`, or in a
+dot-folder such as `.models/`, which MkDocs excludes by default. Any other
+model inside `docs_dir` is left where MkDocs already copies it.
 
 ## Known limits
 

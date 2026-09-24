@@ -53,6 +53,7 @@ class DbmlPlugin(BasePlugin[DbmlConfig]):
         self._page: Page | None = None
         self._ordinal = 0
         self._externals = ExternalModels(taken=set())
+        self._served: set[str] = set()
         self._to_validate: list[validate.ValidationBlock] = []
         self._docs_dir = Path()
         self._project_dir = Path()
@@ -92,6 +93,10 @@ class DbmlPlugin(BasePlugin[DbmlConfig]):
             raise PluginError(str(error)) from error
 
         taken = {file.dest_uri for file in files}
+        # `files` also holds what `exclude_docs:` and MkDocs's own default (any
+        # dot-file or dot-folder, `.models/` say) keep out of the site; a model
+        # there is one the plugin has to copy.
+        self._served = {file.src_uri for file in files if file.inclusion.is_included()}
         for site_path, source in shipped:
             if site_path in taken:
                 raise PluginError(
@@ -138,7 +143,11 @@ class DbmlPlugin(BasePlugin[DbmlConfig]):
             return self._refuse(where, parsed.message)
 
         resolved = resolve_model(
-            parsed.model, page.file.src_uri, self._docs_dir, self._project_dir
+            parsed.model,
+            page.file.src_uri,
+            self._docs_dir,
+            self._project_dir,
+            served=self._served.__contains__,
         )
         if isinstance(resolved, PathError):
             return self._refuse(where, resolved.message)
