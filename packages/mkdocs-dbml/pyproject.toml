@@ -31,6 +31,13 @@ packages = ["src/mkdocs_dbml"]
 # ignored files out unless told otherwise. It is the whole point of the wheel.
 artifacts = ["src/mkdocs_dbml/_vendor/**"]
 
+# The MIT license asks that its notice travel with every copy, and the one it
+# names is the repository's, two folders up, outside this project.
+# `license-files` takes that path but writes it into the wheel verbatim, as
+# `dist-info/licenses/../../LICENSE` (hatchling 1.32).
+[tool.hatch.build.targets.wheel.force-include]
+"../../LICENSE" = "mkdocs_dbml/LICENSE"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

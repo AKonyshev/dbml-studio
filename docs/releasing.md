@@ -138,11 +138,12 @@ yarn build:web
 yarn workspace mkdocs-dbml build
 ```
 
-The wheel is in `packages/mkdocs-dbml/dist/`. Check it carries the frame
-before anything else:
+The wheel is in `packages/mkdocs-dbml/dist/`. Check it carries the frame and
+the license notice before anything else — two lines, `_vendor/frame/embed.html`
+and `mkdocs_dbml/LICENSE`:
 
 ```bash
-unzip -l packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl | grep _vendor/frame/embed.html
+unzip -l packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl | grep -E '_vendor/frame/embed.html|LICENSE'
 ```
 
 Copy it to the root `dist/`, beside the `.vsix` archive, and attach it to the
