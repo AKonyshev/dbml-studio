@@ -48,10 +48,20 @@ docker compose up --build
 See [packages/web/README.md](./packages/web/README.md) for local development,
 the container image, and the tests.
 
+## In a MkDocs site
+
+The same diagram as a block in a MkDocs page. A plugin puts the frame into the
+site and checks every model against the rules the frame draws by, so a page
+that names a table the model does not have fails `mkdocs build --strict`
+instead of shipping an error message.
+
+See [packages/mkdocs-dbml/README.md](./packages/mkdocs-dbml/README.md).
+
 ## Extension packages
 
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
 - [The site](./packages/web/README.md)
+- [MkDocs plugin](./packages/mkdocs-dbml/README.md)
 
 ## Attribution & license
 

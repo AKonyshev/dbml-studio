@@ -8,6 +8,8 @@ A release is the extension's release. `packages/dbml-vs-code-extension/package.j
 carries the version everything else is named after; the root `package.json`
 version is unrelated and is not touched.
 
+The MkDocs plugin has its own version and its own release, below.
+
 ## Deciding the number
 
 Read what has landed since the last tag and ask what a **user of the previous
@@ -121,6 +123,37 @@ it reaches every installed copy. The publisher has been blocked once, in July
 are what got it back. Nothing about a GitHub release requires this to follow
 immediately — a release that only exists as a tag and a `.vsix` is a complete
 release for anyone reading the repository.
+
+## The MkDocs plugin
+
+The plugin is versioned on its own, in `packages/mkdocs-dbml/pyproject.toml`,
+by the same rule as above: what would a user of the previous version notice?
+
+It carries a built copy of the diagram frame, so the build order matters and
+is enforced — the wheel refuses to build from a `dist` that is missing
+anything the frame needs:
+
+```bash
+yarn build:web
+yarn workspace mkdocs-dbml build
+```
+
+The wheel is in `packages/mkdocs-dbml/dist/`. Check it carries the frame
+before anything else:
+
+```bash
+unzip -l packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl | grep _vendor/frame/embed.html
+```
+
+Copy it to the root `dist/`, beside the `.vsix` archive, and attach it to the
+GitHub release as step 6 attaches the extension.
+
+Publishing to PyPI is separate, last, and only when somebody decides to — like
+the Marketplace, it cannot be taken back:
+
+```bash
+packages/mkdocs-dbml/.venv/bin/python -m twine upload packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl
+```
 
 ## What has gone wrong before
 

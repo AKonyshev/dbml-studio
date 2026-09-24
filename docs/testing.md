@@ -223,3 +223,23 @@ failures first; the last two are what one test needs to see anything at all:
   this host at all. Nothing in the suite uses API newer than 1.87 —
   `window.tabGroups` landed in 1.68 — but the version actually proven is the
   current one. Running the floor needs an older macOS or a Linux CI box.
+
+## The MkDocs plugin (Python)
+
+`packages/mkdocs-dbml` has its own suite, pytest, and it is in `yarn test`
+like every other package. Its environment is not created automatically:
+
+```bash
+yarn workspace mkdocs-dbml setup
+```
+
+That builds a `.venv` inside the package, once. Without it, **every** commit
+fails on `.husky/pre-commit` with this same instruction — deliberately, since
+silently skipping the suite would look exactly like a green run. `ruff` on
+`*.py` runs from that same environment, in `lint-staged`, alongside prettier
+and eslint.
+
+The suite's one integration test builds a real MkDocs site against a fake
+diagram frame, standing in for the vendored one. The wheel that carries the
+real frame is checked separately, at release time — see
+[releasing.md](./releasing.md).
