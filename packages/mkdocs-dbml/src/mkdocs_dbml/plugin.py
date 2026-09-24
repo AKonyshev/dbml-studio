@@ -110,13 +110,27 @@ class DbmlPlugin(BasePlugin[DbmlConfig]):
         self._ordinal = 0
         return markdown
 
+    def on_page_content(
+        self, html: str, /, *, page: Page, config: MkDocsConfig, files: Files
+    ) -> str:
+        # The page's Markdown is done. A block converted after this belongs to
+        # no page we know of — Material's blog renders post excerpts later, in
+        # `on_page_context`, with a Markdown of its own built from our
+        # extension — and `_render` must not lay it out as the last page's.
+        self._page = None
+        return html
+
     def _render(self, body: str) -> str | None:
         parsed = parse_block(body)
         if parsed is None:
             return None
 
         page = self._page
-        assert page is not None, "a page is always being rendered when a block is"
+        if page is None:
+            # Converted outside any page's own render (a blog excerpt, say):
+            # its URLs, its block number and its warnings would all be another
+            # page's. Left as code; the post's own page draws the diagram.
+            return None
         self._ordinal += 1
         where = f"{page.file.src_uri}, block {self._ordinal}"
 

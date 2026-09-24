@@ -301,3 +301,43 @@ def test_an_unreadable_model_is_refused_without_the_build_machines_path(site, ca
         for message in warnings(caplog)
     )
     assert not (out / "_dbml/models/models/ext.dbml").exists()
+
+
+# Material's blog plugin renders a post's excerpt in `on_page_context` — after
+# every page's Markdown is done — with a Markdown of its own built from
+# `config.markdown_extensions`, ours among them. This hook does the same.
+EXCERPT_HOOK = """
+import markdown
+
+EXCERPT = "```dbml\\nmodel: /../models/excerpt.dbml\\ntables: nope\\n```\\n"
+
+
+def on_page_context(context, page, config, nav):
+    if page.file.src_uri == "index.md":
+        md = markdown.Markdown(
+            extensions=config.markdown_extensions,
+            extension_configs=config.mdx_configs,
+        )
+        page.content += '<div id="excerpt">' + md.convert(EXCERPT) + "</div>"
+    return context
+"""
+
+
+def test_a_block_rendered_after_its_page_is_done_stays_code(site, caplog):
+    (site / "docs/broken.md").unlink()
+    write(site / "hooks/excerpt.py", EXCERPT_HOOK)
+    write(site / "models/excerpt.dbml", MODEL)
+    with open(site / "mkdocs.yml", "a", encoding="utf-8") as config:
+        config.write("hooks:\n  - hooks/excerpt.py\n")
+    with caplog.at_level(logging.WARNING):
+        out = build_site(site)
+    html = (out / "index.html").read_text()
+    excerpt = html[html.index('<div id="excerpt">') :]
+    assert "dbml-diagram" not in excerpt
+    assert "model: /../models/excerpt.dbml" in excerpt
+    assert "<code" in excerpt
+    # guide/deep.md's own finding, and nothing for the excerpt.
+    assert [message for message in warnings(caplog) if "nope" in message] == [
+        "mkdocs_dbml: guide/deep.md, block 3: /models/acl.dbml: Table not found: nope"
+    ]
+    assert not (out / "_dbml/models/models/excerpt.dbml").exists()
