@@ -38,6 +38,18 @@ process.stdin.on("end", () => {
 FAILS = 'process.stderr.write("could not parse the job\\n"); process.exit(3);'
 GARBAGE = 'process.stdout.write("this is not json");'
 
+# Always reports the same non-ASCII finding, regardless of the job sent.
+NON_ASCII_FINDING = r"""
+let raw = "";
+process.stdin.on("data", (chunk) => { raw += chunk; });
+process.stdin.on("end", () => {
+  const { blocks } = JSON.parse(raw);
+  process.stdout.write(JSON.stringify({ findings: blocks.map((block) => ({
+    id: block.id, model: block.model, problem: "нет таблицы «заказы»",
+  })) }));
+});
+"""
+
 
 @pytest.fixture
 def node() -> str:
@@ -48,7 +60,7 @@ def node() -> str:
 
 def script(tmp_path: Path, body: str) -> Path:
     path = tmp_path / "validate.mjs"
-    path.write_text(body)
+    path.write_text(body, encoding="utf-8")
     return path
 
 
@@ -93,3 +105,14 @@ def test_a_node_that_is_not_there_is_a_failure(tmp_path):
         run_validator(
             str(tmp_path / "no-node-here"), script(tmp_path, FINDS_NOPE), [block()]
         )
+
+
+def test_a_non_ascii_problem_comes_back_intact(node, tmp_path):
+    findings = run_validator(node, script(tmp_path, NON_ASCII_FINDING), [block()])
+    assert findings == [
+        Finding(
+            id="page.md, block 1",
+            model="acl.dbml",
+            problem="нет таблицы «заказы»",
+        )
+    ]

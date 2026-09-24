@@ -63,6 +63,7 @@ def run_validator(
             input=json.dumps(job),
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=timeout,
             check=False,
         )
