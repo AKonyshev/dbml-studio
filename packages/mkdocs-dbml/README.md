@@ -85,8 +85,12 @@ diagram opens in the theme the block or the config names, or light by default.
 
 ## What goes into the site
 
-The diagram frame and the host script go into `_dbml/` at the site root — that
-path is reserved; a `docs_dir` that already has a file there fails the build.
+The diagram frame and the host script go into `_dbml/` at the site root. A
+`docs_dir` file at one of their paths — `_dbml/embed.html`, say — fails the
+build. A `docs_dir` file at the path a copied model needs, under
+`_dbml/models/`, refuses only the block naming that model: it shows an error in
+the page and warns in the log.
+
 A model outside `docs_dir` is copied to
 `_dbml/models/<path from mkdocs.yml's folder>`, and so is a model inside
 `docs_dir` that MkDocs leaves out of the site — under `exclude_docs:`, or in a
@@ -100,9 +104,16 @@ model inside `docs_dir` is left where MkDocs already copies it.
 - `mkdocs serve` watches the folders of models outside `docs_dir`, but only
   once it has seen them in a first build; a block naming a new outside folder
   needs the server restarted.
+- Only backtick fences are claimed: a `~~~dbml` block is left to the other
+  Markdown extensions and stays code.
+- A block in a Material blog post's excerpt, on the blog index, shows as code.
+  The excerpt is rendered after every page is done, with no page of its own to
+  resolve the model from; the diagram is on the post's own page.
 - An unclosed `/*MetaInfo` comment is reported as a DBML parse error, not as a
   layout problem — the parser fails before the layout check ever runs.
 
 ## License
 
-MIT. See [LICENSE](../../LICENSE) in the repository root.
+MIT. See
+[LICENSE](https://github.com/AKonyshev/dbml-studio/blob/main/LICENSE) in the
+repository root.
