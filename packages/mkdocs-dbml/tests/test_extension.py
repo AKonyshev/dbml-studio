@@ -61,3 +61,30 @@ def test_it_gets_there_before_superfences():
         extensions=("pymdownx.superfences",),
     )
     assert '<div class="x"></div>' in html
+
+
+def test_a_dbml_example_inside_another_fence_is_left_verbatim():
+    seen = []
+    convert(
+        "````markdown\n```dbml\nmodel: a.dbml\n```\n````\n",
+        lambda body: seen.append(body) or "<p></p>",
+    )
+    assert seen == []
+
+
+def test_a_dbml_example_inside_a_tilde_fence_is_left_verbatim():
+    seen = []
+    convert(
+        "~~~text\n```dbml\nmodel: a.dbml\n```\n~~~\n",
+        lambda body: seen.append(body) or "<p></p>",
+    )
+    assert seen == []
+
+
+def test_a_real_block_after_a_closed_other_fence_is_still_claimed():
+    seen = []
+    convert(
+        "~~~text\nsomething\n~~~\n\n```dbml\nmodel: a.dbml\n```\n",
+        lambda body: seen.append(body) or "<p></p>",
+    )
+    assert seen == ["model: a.dbml"]

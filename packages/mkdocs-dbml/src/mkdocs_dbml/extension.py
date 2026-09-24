@@ -2,7 +2,9 @@
 
 What a block becomes is not decided here. `render` is handed the body and
 returns HTML, or None for a block that is not a diagram; this module only knows
-where blocks begin and end.
+where blocks begin and end. Only column-0 backtick fences are claimed;
+`~~~dbml` and fences indented inside lists or admonitions are left to the
+other extensions.
 """
 
 from __future__ import annotations
@@ -20,12 +22,19 @@ PRIORITY = 27
 
 _OPEN = re.compile(r"^(?P<fence>`{3,})[ \t]*dbml[ \t]*$")
 
+# Any other fence opener at column 0 — backticks or tildes, any info string
+# (or none). A fence like this is not ours; its contents are not ours to
+# scan into either, so a nested ```dbml example inside it must not be
+# mistaken for a real block.
+_OTHER_OPEN = re.compile(r"^(?P<fence>`{3,}|~{3,})")
+
 Render = Callable[[str], "str | None"]
 
 
 def _closes(line: str, fence: str) -> bool:
     stripped = line.strip()
-    return len(stripped) >= len(fence) and set(stripped) == {"`"}
+    char = fence[0]
+    return len(stripped) >= len(fence) and set(stripped) == {char}
 
 
 class DbmlPreprocessor(Preprocessor):
@@ -38,28 +47,43 @@ class DbmlPreprocessor(Preprocessor):
         index = 0
         while index < len(lines):
             opening = _OPEN.match(lines[index])
-            if opening is None:
-                out.append(lines[index])
-                index += 1
+            if opening is not None:
+                end = index + 1
+                while end < len(lines) and not _closes(lines[end], opening["fence"]):
+                    end += 1
+                if end == len(lines):
+                    # Unclosed. Not ours to repair: the code fence extension
+                    # decides what an unclosed fence means.
+                    out.extend(lines[index:])
+                    break
+
+                html = self._render("\n".join(lines[index + 1 : end]))
+                if html is None:
+                    out.extend(lines[index : end + 1])
+                else:
+                    # A blank line either side, so the placeholder is a paragraph
+                    # of its own and Markdown puts the stored HTML back in place.
+                    out.extend(["", self.md.htmlStash.store(html), ""])
+                index = end + 1
                 continue
 
-            end = index + 1
-            while end < len(lines) and not _closes(lines[end], opening["fence"]):
-                end += 1
-            if end == len(lines):
-                # Unclosed. Not ours to repair: the code fence extension decides
-                # what an unclosed fence means.
-                out.extend(lines[index:])
-                break
-
-            html = self._render("\n".join(lines[index + 1 : end]))
-            if html is None:
+            other = _OTHER_OPEN.match(lines[index])
+            if other is not None:
+                # Some other fence — its contents (a markdown example showing
+                # ```dbml, say) are not ours to look inside. Copy it through
+                # untouched, up to its own matching close.
+                end = index + 1
+                while end < len(lines) and not _closes(lines[end], other["fence"]):
+                    end += 1
+                if end == len(lines):
+                    out.extend(lines[index:])
+                    break
                 out.extend(lines[index : end + 1])
-            else:
-                # A blank line either side, so the placeholder is a paragraph of
-                # its own and Markdown puts the stored HTML back in its place.
-                out.extend(["", self.md.htmlStash.store(html), ""])
-            index = end + 1
+                index = end + 1
+                continue
+
+            out.append(lines[index])
+            index += 1
         return out
 
 
