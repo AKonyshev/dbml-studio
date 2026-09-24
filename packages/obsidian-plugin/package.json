@@ -7,6 +7,9 @@
     "build": "node scripts/build-plugin.mjs",
     "test": "jest"
   },
+  "dependencies": {
+    "web": "0.0.0"
+  },
   "devDependencies": {
     "esbuild": "^0.28.2",
     "jest-environment-jsdom": "^29.7.0",
