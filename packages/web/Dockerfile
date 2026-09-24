@@ -48,6 +48,18 @@ ENV NODE_OPTIONS=--max-old-space-size=4096
 
 RUN yarn workspace web build
 
+# The same build also leaves what a documentation site takes from here (see the
+# README): `validate.mjs`, a Node program of several megabytes that the MkDocs
+# plugin runs at build time; `frame-host.js` and `.css`, which that plugin
+# vendors into the sites it builds; and `.vite/manifest.json`, the graph it
+# packages the frame by — which names source paths under `node_modules`. None
+# of them is anything a reader of this site requests, and the manifest is
+# nothing to publish, so the image does not carry them. Deleted here rather than
+# built elsewhere: the frame's own chunks stay in `dist`, where the plugin's
+# packaging finds them.
+RUN cd packages/web/dist \
+ && rm -r validate.mjs frame-host.js frame-host.css .vite
+
 # The catalogue's folder, as a stage rather than a plain COPY so that BuildKit
 # can replace it wholesale:
 #

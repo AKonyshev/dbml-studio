@@ -8,14 +8,17 @@
  * write `window.parent` and are exercised by the Playwright suite
  * (`embed.spec.ts`) rather than by this package's Node tests.
  *
- * The other half lives in the site of documentation, in
- * `antora/docs/lib/dbml-frame-host.js`, and is written out again there rather
- * than imported: the two are different projects in different repositories, and
- * a shared package for six message shapes would cost more than it saves. The
- * price is that this file and that one have to be changed together, which is
- * why both name the other in a comment. Antora's copy speaks the four it was
- * written for and none of the two added since; a host is free to know fewer
- * messages than the frame does.
+ * There are two other halves now. `host/main.ts` beside this file is the one
+ * that changes with it — same package, same commit, no excuse for the two to
+ * drift. Antora's copy, `antora/docs/lib/dbml-frame-host.js` in the
+ * documentation repository, predates that sibling and stays a separate file by
+ * necessity: the two repositories cannot import from each other, and a shared
+ * package for six message shapes would cost more than it saves. The price is
+ * that this file and Antora's have to be changed together by hand, which is
+ * why both name the other in a comment. Antora's copy speaks the four
+ * messages it was written for and none of the two added since; a host is free
+ * to know fewer messages than the frame does. Anything new is written against
+ * `host/main.ts`.
  */
 
 /** Marks a message as belonging to this protocol and not to some other frame's. */

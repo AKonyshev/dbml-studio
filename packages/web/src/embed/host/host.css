@@ -1,0 +1,33 @@
+/* The page's half of an expanded diagram. Above everything the UI places — its
+   own layers stop at 100 — and nowhere near the top of the range, so a later
+   overlay can still be put over this one. */
+.dbml-diagram--expanded {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  margin: 0;
+  /* Explicitly, because a box given a size by some other rule stays that size:
+     with a width set, the left and right offsets are over-constrained and the
+     box sits in the corner of a page that has stopped scrolling behind it. */
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+}
+
+/* The frame paints its own background over all of this, so the box needs none:
+   one here would be the wrong colour for half the diagrams, which carry the
+   theme their author chose rather than the site's. */
+.dbml-diagram--expanded iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+html.dbml-diagram-host--locked,
+html.dbml-diagram-host--locked body {
+  overflow: hidden;
+}

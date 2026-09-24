@@ -173,11 +173,19 @@ legend; case 6.3 checks the two agree.
 
 ## 9. Embedded frame
 
-The host page's half of this lives in the documentation repository
-(`antora/docs/lib/dbml-frame-host.js`); cases 9.7–9.10 need both halves
-deployed. Cases 9.18 and after are the hosted mode, where the model arrives as
-a message instead of being fetched — those want a host that pushes documents
-(an editor plugin), not the site of documentation.
+There are two page-side halves now. `packages/web/src/embed/host/main.ts`, in
+this package, is the one built into `dist/frame-host.js` and vendored by the
+MkDocs plugin; `embed.spec.ts` builds its fixture page around that real, built
+script, so cases 9.7–9.10 and the rest of the hosted cases below need nothing
+deployed anywhere — a browser and this repository's own build are enough.
+Antora's own copy, `antora/docs/lib/dbml-frame-host.js` in the documentation
+repository, is a separate file that predates this one and speaks only the four
+messages it was written for. No case in this table depends on that repository
+being deployed: 9.13, still manual, exercises whichever host it is pointed at,
+and this repository's own fixture serves as well as a live documentation site.
+Cases 9.18 and after are the hosted mode, where the model arrives as a message
+instead of being fetched — those want a host that pushes documents (an editor
+plugin), not the site of documentation.
 
 | #    | Case                                        | Steps                                                                   | Expected                                                                          | Automated                |
 | ---- | ------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------ |
@@ -206,6 +214,11 @@ a message instead of being fetched — those want a host that pushes documents
 | 9.23 | A changed push keeps a saved arrangement    | A `document`, then a changed one that adds a table to an arranged model | The three arranged tables stay at the file's own coordinates                      | `embed.spec.ts`          |
 | 9.24 | A host that answers late is still heard     | `embed.html`, host replies after the two-second deadline                | The diagram is drawn, and storage is left as clean as one answered in time        | `embed.spec.ts`          |
 | 9.25 | A host that speaks into the handover        | A `document` arrives after the wait ends and before the frame mounts    | Held over and drawn, not dropped                                                  | `hostedDocument.test.ts` |
+| 9.26 | The host's script loads after the frame     | The frame draws unanswered, then the script is added to the page        | The expand button appears anyway — the host greets frames it finds                | `embed.spec.ts`          |
+| 9.27 | A block that named a theme                  | Page turns dark, one block says `theme: light`, one names none          | Once the other diagram has turned dark, that one is still light                   | `embed.spec.ts`          |
+| 9.28 | A block that did not name a theme           | Page turns dark, script in `<head>` (the default)                       | That diagram follows the page, and the host script raises no error                | `embed.spec.ts`          |
+| 9.29 | Back from an expanded diagram               | Expand, then Back while the content stays (an earlier anchor)           | `<html>` is no longer locked — the page scrolls                                   | `embed.spec.ts`          |
+| 9.30 | Content swapped out under an expanded one   | Expand, then the content goes without a reload and without Back         | `<html>` is no longer locked — the new page scrolls                               | `embed.spec.ts`          |
 
 ## 10. VS Code extension — DBML Studio
 
