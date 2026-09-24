@@ -6,6 +6,7 @@
   "scripts": {
     "setup": "python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install -e '.[dev]'",
     "test": "node scripts/run-pytest.mjs",
-    "vendor": "node scripts/vendor.mjs"
+    "vendor": "node scripts/vendor.mjs",
+    "build": "node scripts/vendor.mjs && .venv/bin/python -m build --wheel"
   }
 }
