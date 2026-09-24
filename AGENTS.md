@@ -30,6 +30,11 @@ Marketplace is the last step and a deliberate one.
 suite. Both run on every commit, invoked from `.husky/pre-commit` rather than
 through lint-staged, because neither takes a file list.
 
+One package is Python: `packages/mkdocs-dbml`. Its tests and its linter (ruff,
+in lint-staged) run from its own environment, created once with
+`yarn workspace mkdocs-dbml setup` (Python 3.10 or later). Without it every
+commit fails, on purpose — a skipped suite would look like a green one.
+
 Package `tsconfig.json` files must stay strict JSON (no comments) —
 `jest.config.js` files `require()` them.
 

@@ -30,7 +30,12 @@ _A fictional library schema — the model is in [`examples/library.dbml`](./exam
 git clone https://github.com/AKonyshev/dbml-studio.git
 cd dbml-studio
 yarn install
+yarn workspace mkdocs-dbml setup
 ```
+
+The last line creates the MkDocs plugin's Python environment (Python 3.10 or
+later). Every commit runs every package's tests, the plugin's among them, so
+without it the first commit stops and says to run exactly this.
 
 Open the repo in VS Code or Cursor, then **Run and Debug → Debug DBML Extension** (`F5`). See [packages/dbml-vs-code-extension/TESTING.md](./packages/dbml-vs-code-extension/TESTING.md) for manual test steps.
 
