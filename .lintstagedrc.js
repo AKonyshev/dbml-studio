@@ -18,4 +18,11 @@ module.exports = {
   // trap 5, one file extension over.
   "*.{ts,tsx,js,cjs,mjs}": ["eslint --fix", "prettier --write"],
   "*.{md,json}": "prettier --write",
+  // Python lives in one package, and its linter in that package's own
+  // environment rather than on anyone's PATH: a missing environment fails the
+  // commit with "no such file", fixed by `yarn workspace mkdocs-dbml setup`.
+  "*.py": [
+    "packages/mkdocs-dbml/.venv/bin/ruff check --fix",
+    "packages/mkdocs-dbml/.venv/bin/ruff format",
+  ],
 };
