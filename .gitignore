@@ -29,3 +29,12 @@ yarn-error.log
 # three and a half megabytes that would otherwise be committed by whoever ran
 # `create:package` last. See docs/releasing.md.
 *.vsix
+
+# The MkDocs plugin's Python environment and caches, and the frame it vendors
+# from packages/web/dist when a wheel is built (packages/mkdocs-dbml/README.md).
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+packages/mkdocs-dbml/src/mkdocs_dbml/_vendor/

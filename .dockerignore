@@ -40,6 +40,10 @@ packages/extension-shared/**
 !packages/extension-shared/package.json
 packages/schema-diff/**
 !packages/schema-diff/package.json
+# The MkDocs plugin is Python; its local environment (~80 MB) and the frame it
+# vendors (~20 MB) would otherwise ride along in every image build.
+packages/mkdocs-dbml/**
+!packages/mkdocs-dbml/package.json
 
 # Tests, coverage, docs, and editor noise.
 docs

@@ -20,9 +20,11 @@ module.exports = {
       },
     },
     {
-      // Repo tooling: plain CommonJS Node scripts, not typed application
-      // source, so the type-aware rules have nothing real to work with.
-      files: ["scripts/**/*.js"],
+      // Repo tooling: the repository's own scripts and each package's own
+      // build/test scripts, `.mjs` included — plain Node tooling, not typed
+      // application source, so the type-aware rules have nothing real to
+      // work with.
+      files: ["scripts/**/*.js", "packages/*/scripts/**/*.{js,mjs}"],
       env: { node: true },
       rules: {
         "@typescript-eslint/no-var-requires": "off",

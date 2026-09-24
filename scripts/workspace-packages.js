@@ -21,6 +21,13 @@ const IGNORED_DIRS = new Set([
   "out",
   ".turbo",
   "coverage",
+  // A Python environment is thousands of files of someone else's packages,
+  // and one stray `.ts` among them would make `typecheck.js` call the
+  // package "TypeScript without a tsconfig".
+  ".venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".ruff_cache",
 ]);
 
 /** Absolute paths of every directory directly under `packages/`. */

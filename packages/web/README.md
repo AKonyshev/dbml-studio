@@ -126,8 +126,9 @@ whole model. Standard output, one JSON object:
   the page is read; the default is `slate`.
 - While a diagram is expanded, its wrapper carries `dbml-diagram--expanded` and
   `<html>` carries `dbml-diagram-host--locked`. Going Back takes both off; so
-  does the next message from any frame once the expanded one has left the
-  document.
+  does the expanded diagram leaving the document by any other route — a link,
+  a search result, Material's `n` and `p` — which the script watches for while
+  one is expanded.
 
 ## Running the container image
 

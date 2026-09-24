@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mkdocs-dbml"
+version = "0.1.0"
+description = "Interactive DBML entity-relationship diagrams in MkDocs pages."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+# MkDocs 2.0 removes the plugin system, so this plugin cannot load under it —
+# the same bound mkdocs-material sets.
+dependencies = ["mkdocs>=1.6,<2", "PyYAML>=6"]
+classifiers = [
+  "Framework :: MkDocs",
+  "Programming Language :: Python :: 3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "build>=1.2", "twine>=5", "pymdown-extensions>=10"]
+
+[project.urls]
+Source = "https://github.com/AKonyshev/dbml-studio"
+
+[project.entry-points."mkdocs.plugins"]
+dbml = "mkdocs_dbml.plugin:DbmlPlugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mkdocs_dbml"]
+# `_vendor/` is git-ignored — it is built, not written — and hatchling leaves
+# ignored files out unless told otherwise. It is the whole point of the wheel.
+artifacts = ["src/mkdocs_dbml/_vendor/**"]
+
+# The MIT license asks that its notice travel with every copy, and the one it
+# names is the repository's, two folders up, outside this project.
+# `license-files` takes that path but writes it into the wheel verbatim, as
+# `dist-info/licenses/../../LICENSE` (hatchling 1.32).
+[tool.hatch.build.targets.wheel.force-include]
+"../../LICENSE" = "mkdocs_dbml/LICENSE"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"

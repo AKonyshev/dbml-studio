@@ -30,7 +30,12 @@ _A fictional library schema — the model is in [`examples/library.dbml`](./exam
 git clone https://github.com/AKonyshev/dbml-studio.git
 cd dbml-studio
 yarn install
+yarn workspace mkdocs-dbml setup
 ```
+
+The last line creates the MkDocs plugin's Python environment (Python 3.10 or
+later). Every commit runs every package's tests, the plugin's among them, so
+without it the first commit stops and says to run exactly this.
 
 Open the repo in VS Code or Cursor, then **Run and Debug → Debug DBML Extension** (`F5`). See [packages/dbml-vs-code-extension/TESTING.md](./packages/dbml-vs-code-extension/TESTING.md) for manual test steps.
 
@@ -48,10 +53,20 @@ docker compose up --build
 See [packages/web/README.md](./packages/web/README.md) for local development,
 the container image, and the tests.
 
+## In a MkDocs site
+
+The same diagram as a block in a MkDocs page. A plugin puts the frame into the
+site and checks every model against the rules the frame draws by, so a page
+that names a table the model does not have fails `mkdocs build --strict`
+instead of shipping an error message.
+
+See [packages/mkdocs-dbml/README.md](./packages/mkdocs-dbml/README.md).
+
 ## Extension packages
 
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
 - [The site](./packages/web/README.md)
+- [MkDocs plugin](./packages/mkdocs-dbml/README.md)
 
 ## Attribution & license
 
