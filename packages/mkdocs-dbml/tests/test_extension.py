@@ -88,3 +88,24 @@ def test_a_real_block_after_a_closed_other_fence_is_still_claimed():
         lambda body: seen.append(body) or "<p></p>",
     )
     assert seen == ["model: a.dbml"]
+
+
+def test_a_line_starting_with_inline_code_is_not_a_fence():
+    # CommonMark: a backtick fence's info string cannot hold a backtick, so
+    # this line is a paragraph opening with a code span, and what follows it
+    # is not inside any fence.
+    seen = []
+    convert(
+        "```dbml``` blocks draw diagrams.\n\n```dbml\nmodel: a.dbml\n```\n",
+        lambda body: seen.append(body) or "<p></p>",
+    )
+    assert seen == ["model: a.dbml"]
+
+
+def test_a_tilde_fence_may_carry_backticks_in_its_info_string():
+    seen = []
+    convert(
+        "~~~text `x`\n```dbml\nmodel: a.dbml\n```\n~~~\n",
+        lambda body: seen.append(body) or "<p></p>",
+    )
+    assert seen == []

@@ -25,8 +25,10 @@ _OPEN = re.compile(r"^(?P<fence>`{3,})[ \t]*dbml[ \t]*$")
 # Any other fence opener at column 0 — backticks or tildes, any info string
 # (or none). A fence like this is not ours; its contents are not ours to
 # scan into either, so a nested ```dbml example inside it must not be
-# mistaken for a real block.
-_OTHER_OPEN = re.compile(r"^(?P<fence>`{3,}|~{3,})")
+# mistaken for a real block. As in CommonMark, a backtick fence's info string
+# holds no backtick: a line such as "```dbml``` blocks draw diagrams" opens
+# with a code span, not a fence. A tilde fence's info string may hold one.
+_OTHER_OPEN = re.compile(r"^(?:(?P<backticks>`{3,})[^`]*|(?P<tildes>~{3,}).*)$")
 
 Render = Callable[[str], "str | None"]
 
@@ -72,8 +74,9 @@ class DbmlPreprocessor(Preprocessor):
                 # Some other fence — its contents (a markdown example showing
                 # ```dbml, say) are not ours to look inside. Copy it through
                 # untouched, up to its own matching close.
+                fence = other["backticks"] or other["tildes"]
                 end = index + 1
-                while end < len(lines) and not _closes(lines[end], other["fence"]):
+                while end < len(lines) and not _closes(lines[end], fence):
                     end += 1
                 if end == len(lines):
                     out.extend(lines[index:])
