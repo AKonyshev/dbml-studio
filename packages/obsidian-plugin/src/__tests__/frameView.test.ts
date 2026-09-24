@@ -96,6 +96,16 @@ describe("FrameView", () => {
     ]);
   });
 
+  it("answers a hello with only ready when no document is set yet", () => {
+    const { post, greet } = setup();
+
+    greet();
+
+    expect(post.mock.calls).toEqual([
+      [{ source: "dbml-frame", type: "ready" }, "*"],
+    ]);
+  });
+
   it("sends a later document straight away", () => {
     const { view, post, greet } = setup();
 
@@ -146,6 +156,21 @@ describe("FrameView", () => {
     const { post } = setup();
 
     window.dispatchEvent(messageFrom(window, HELLO));
+
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("ignores a message from its frame that is not a hello", () => {
+    const { frameWindow, post } = setup();
+
+    window.dispatchEvent(
+      messageFrom(frameWindow, {
+        source: "dbml-frame",
+        type: "expand",
+        expanded: true,
+      }),
+    );
+    window.dispatchEvent(messageFrom(frameWindow, { nonsense: true }));
 
     expect(post).not.toHaveBeenCalled();
   });
