@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,12 +7,13 @@ name = "mkdocs-dbml"
 version = "0.1.0"
 description = "Interactive DBML entity-relationship diagrams in MkDocs pages."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
-dependencies = ["mkdocs>=1.6", "PyYAML>=6"]
+# MkDocs 2.0 removes the plugin system, so this plugin cannot load under it —
+# the same bound mkdocs-material sets.
+dependencies = ["mkdocs>=1.6,<2", "PyYAML>=6"]
 classifiers = [
   "Framework :: MkDocs",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
 ]
 
