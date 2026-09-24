@@ -1,4 +1,5 @@
 import logging
+import os
 import textwrap
 from pathlib import Path
 
@@ -227,9 +228,76 @@ def test_a_second_build_carries_nothing_of_the_first(site, caplog):
     assert sum("Table not found: nope" in message for message in warnings(caplog)) == 1
     page = (Path(config.site_dir) / "index.html").read_text()
     assert page.count('src="_dbml/frame-host.js"') == 1
+    assert page.count('href="_dbml/frame-host.css"') == 1
 
 
 def test_a_docs_file_where_the_frame_goes_stops_the_build(site):
     write(site / "docs/_dbml/embed.html", "mine\n")
     with pytest.raises(Abort):
         build_site(site)
+
+
+def test_plugin_config_turns_off_validation_and_fixes_every_frames_theme(site, caplog):
+    write(
+        site / "mkdocs.yml",
+        """
+        site_name: fixture
+        plugins:
+          - dbml:
+              validate: false
+              theme: dark
+        markdown_extensions:
+          - pymdownx.superfences
+        """,
+    )
+    with caplog.at_level(logging.WARNING):
+        out = build_site(site)
+    assert not any("Table not found: nope" in message for message in warnings(caplog))
+    for relative in ("index.html", "guide/deep/index.html"):
+        html = (out / relative).read_text()
+        diagrams = html.count('class="dbml-diagram"')
+        assert diagrams > 0
+        assert html.count("data-dbml-theme-fixed") == diagrams
+        assert html.count("theme=dark") == diagrams
+
+
+def test_a_failing_validator_is_one_warning_and_the_pages_are_whole(site, caplog):
+    (site / "docs/broken.md").unlink()
+    write(
+        site.parent / "vendor/validate.mjs",
+        """
+        process.stderr.write("the fake validator always fails\\n");
+        process.exitCode = 1;
+        """,
+    )
+    with caplog.at_level(logging.WARNING):
+        out = build_site(site)
+    said = warnings(caplog)
+    assert len(said) == 1
+    assert "not checked" in said[0]
+    assert "dbml-diagram" in (out / "index.html").read_text()
+
+
+def test_an_unreadable_model_is_refused_without_the_build_machines_path(site, caplog):
+    # An unreadable file under docs_dir also breaks MkDocs's own unrelated
+    # static-asset copy step, so this uses an external model instead — one
+    # only our own code ever opens.
+    if os.geteuid() == 0:
+        pytest.skip("running as root, which ignores file permissions")
+    model = site / "models/ext.dbml"
+    model.chmod(0o000)
+    try:
+        with caplog.at_level(logging.WARNING):
+            out = build_site(site)
+    finally:
+        model.chmod(0o644)
+    page = (out / "guide/deep/index.html").read_text()
+    assert str(site) not in page
+    assert "could not be read" in page
+    assert any(
+        "guide/deep.md, block 1" in message
+        and "could not be read" in message
+        and str(site) not in message
+        for message in warnings(caplog)
+    )
+    assert not (out / "_dbml/models/models/ext.dbml").exists()

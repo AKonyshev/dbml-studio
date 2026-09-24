@@ -129,14 +129,23 @@ class DbmlPlugin(BasePlugin[DbmlConfig]):
         if isinstance(resolved, PathError):
             return self._refuse(where, resolved.message)
 
-        clash = self._externals.add(resolved)
-        if clash is not None:
-            return self._refuse(where, clash.message)
-
+        # Read before registering the model for copying: a file that cannot be
+        # read at all must not be queued for `on_post_build`'s own
+        # `shutil.copyfile`, which would then crash the build outright instead
+        # of leaving the page with a clean, warned-about gap.
         try:
             text = resolved.source.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             return self._refuse(where, f"`{parsed.model}` is not UTF-8 text")
+        except OSError as error:
+            # `strerror` ("Permission denied", "Is a directory") never carries
+            # the build machine's path the way `str(error)` would.
+            reason = error.strerror or "could not be read"
+            return self._refuse(where, f"`{parsed.model}` could not be read: {reason}")
+
+        clash = self._externals.add(resolved)
+        if clash is not None:
+            return self._refuse(where, clash.message)
 
         self._to_validate.append(
             validate.ValidationBlock(
