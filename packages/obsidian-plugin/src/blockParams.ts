@@ -10,13 +10,29 @@ export interface BlockParams {
   theme: FrameTheme | null;
 }
 
+/**
+ * The first thing wrong with a block that is ours, by the same rules the
+ * MkDocs plugin's YAML load enforces (`packages/mkdocs-dbml/src/mkdocs_dbml/block.py`):
+ * - `modelMissing` — no `model:` value, or a blank one.
+ * - `modelNotAPath` — `model:` given a list or a mapping instead of a path.
+ * - `unknownKey` — a key that is not `model`, `tables`, `height` or `theme`
+ *   (lower-case only, as YAML reads keys).
+ * - `duplicateKey` — the same key given twice; nobody can say which was meant.
+ * - `malformedLine` — a line that is not `key: value`.
+ * - `heightInvalid` — not a whole number of pixels above zero.
+ * - `themeInvalid` — not `light` or `dark`.
+ * - `tablesInvalid` — a mapping, a list opened but never closed, or a name
+ *   YAML would read as a number rather than text.
+ */
 export type BlockError =
   | { kind: "modelMissing" }
+  | { kind: "modelNotAPath"; value: string }
   | { kind: "unknownKey"; key: string }
   | { kind: "duplicateKey"; key: string }
   | { kind: "malformedLine"; line: string }
   | { kind: "heightInvalid"; value: string }
-  | { kind: "themeInvalid"; value: string };
+  | { kind: "themeInvalid"; value: string }
+  | { kind: "tablesInvalid"; value: string };
 
 export type BlockParamsResult =
   | { ok: true; params: BlockParams }
@@ -68,14 +84,35 @@ const isOurs = (source: string): boolean => {
 /** Pixels, and nothing a hand might mean as something else: no fraction, no sign. */
 const WHOLE_NUMBER = /^\d+$/;
 
-const parseTables = (value: string): string[] | null => {
+/** What YAML would read back as a number, not text — `1`, `-2`, `1.5`. */
+const BARE_NUMBER = /^-?\d+(\.\d+)?$/;
+
+/**
+ * `undefined` marks a value the MkDocs plugin's YAML load also refuses: a
+ * mapping (`{a: b}`), a list opened but never closed (`[x`), or a name YAML
+ * would read as a number rather than text (`[1, 2]`).
+ */
+const parseTables = (value: string): string[] | null | undefined => {
+  if (value.startsWith("{")) {
+    return undefined;
+  }
+
   // `[a, b]` is what a hand used to YAML writes, and the MkDocs plugin takes it.
-  const list =
-    value.startsWith("[") && value.endsWith("]") ? value.slice(1, -1) : value;
+  const isList = value.startsWith("[");
+
+  if (isList && !value.endsWith("]")) {
+    return undefined;
+  }
+
+  const list = isList ? value.slice(1, -1) : value;
   const names = list
     .split(",")
     .map((name) => name.trim())
     .filter((name) => name !== "");
+
+  if (names.some((name) => BARE_NUMBER.test(name))) {
+    return undefined;
+  }
 
   return names.length === 0 ? null : names;
 };
@@ -122,6 +159,10 @@ export const parseBlockParams = (source: string): BlockParamsResult | null => {
     return { ok: false, error: { kind: "modelMissing" } };
   }
 
+  if (model.startsWith("[") || model.startsWith("{")) {
+    return { ok: false, error: { kind: "modelNotAPath", value: model } };
+  }
+
   const rawHeight = values.get("height");
   let height = DEFAULT_HEIGHT;
 
@@ -145,12 +186,23 @@ export const parseBlockParams = (source: string): BlockParamsResult | null => {
   }
 
   const rawTables = values.get("tables");
+  let tables: string[] | null = null;
+
+  if (rawTables !== undefined) {
+    const parsed = parseTables(rawTables);
+
+    if (parsed === undefined) {
+      return { ok: false, error: { kind: "tablesInvalid", value: rawTables } };
+    }
+
+    tables = parsed;
+  }
 
   return {
     ok: true,
     params: {
       model,
-      tables: rawTables === undefined ? null : parseTables(rawTables),
+      tables,
       height,
       theme,
     },

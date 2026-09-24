@@ -171,4 +171,39 @@ describe("parseBlockParams", () => {
       error: { kind: "themeInvalid", value: "solarized" },
     });
   });
+
+  // YAML reads `[1, 2]` as numbers, and the MkDocs plugin refuses them — a
+  // table name is text, never a bare number.
+  it("refuses a table list with a bare number in it", () => {
+    expect(parseBlockParams("model: rd.dbml\ntables: [1, 2]")).toEqual({
+      ok: false,
+      error: { kind: "tablesInvalid", value: "[1, 2]" },
+    });
+  });
+
+  // A mapping is not a list of names.
+  it("refuses a table value written as a mapping", () => {
+    expect(parseBlockParams("model: rd.dbml\ntables: {a: b}")).toEqual({
+      ok: false,
+      error: { kind: "tablesInvalid", value: "{a: b}" },
+    });
+  });
+
+  it("refuses an unclosed table list", () => {
+    expect(parseBlockParams("model: rd.dbml\ntables: [x")).toEqual({
+      ok: false,
+      error: { kind: "tablesInvalid", value: "[x" },
+    });
+  });
+
+  it("refuses a model value written as a list or a mapping", () => {
+    expect(parseBlockParams("model: [a, b]")).toEqual({
+      ok: false,
+      error: { kind: "modelNotAPath", value: "[a, b]" },
+    });
+    expect(parseBlockParams("model: {a: b}")).toEqual({
+      ok: false,
+      error: { kind: "modelNotAPath", value: "{a: b}" },
+    });
+  });
 });
