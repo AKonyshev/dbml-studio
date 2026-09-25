@@ -32,13 +32,7 @@ if [ "${#missing[@]}" -gt 0 ]; then
 fi
 
 mkdir -p "$DEST"
-cp "$SRC/manifest.json" "$SRC/main.js" "$DEST/"
-
-# `if`, not `[ -f x ] && cp`: under `set -e` a failed `&&` list ends the script,
-# and there is no stylesheet until the plugin draws diagrams.
-if [ -f "$SRC/styles.css" ]; then
-  cp "$SRC/styles.css" "$DEST/"
-fi
+cp "$SRC/manifest.json" "$SRC/main.js" "$SRC/styles.css" "$DEST/"
 
 rm -rf "$DEST/frame"
 cp -R "$SRC/frame" "$DEST/frame"
