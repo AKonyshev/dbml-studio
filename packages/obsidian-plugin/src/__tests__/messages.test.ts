@@ -20,10 +20,11 @@ const EVERY_KIND: BlockError[] = [
 ];
 
 describe("blockErrorText", () => {
-  // Checked against the catalog function itself, not a substring of its
-  // wording: this fails if `blockErrorText` picks the wrong entry, or if the
-  // entry stops quoting the author's value, without this file needing to know
-  // what the quoting looks like.
+  // Dispatch only: this fails if `blockErrorText` calls the wrong catalog
+  // entry for a kind, or drops the value it was given — but calling the same
+  // `ru.blockError.*` function on both sides of `toBe` means it can never
+  // catch a corrupted Russian sentence inside `ru.ts` itself. That is what
+  // `i18n/locales/__tests__/ru.test.ts` pins with literal expected strings.
   it("picks the catalog entry for the error's kind, with its value", () => {
     expect(blockErrorText({ kind: "modelMissing" })).toBe(
       ru.blockError.modelMissing(),
@@ -82,6 +83,8 @@ describe("blockErrorText", () => {
 const fsError = (code: string): Error =>
   Object.assign(new Error(`${code}: whatever`), { code });
 
+// Dispatch only, throughout this describe: which catalog reason an fs error
+// code maps to, not what the reason says — `ru.test.ts` pins the wording.
 describe("readFailureReason", () => {
   it("says the file is not there", () => {
     expect(readFailureReason(fsError("ENOENT"))).toBe(
@@ -127,7 +130,11 @@ describe("modelUnreadableText", () => {
     ).toContain("/Users/kav/devzone/antora/models/rd.dbml");
   });
 
-  it("says why it could not read it, via the catalog", () => {
+  // Dispatch only, like the `blockErrorText` tests above: this checks that
+  // `modelUnreadableText` passes both arguments through to `ru.modelUnreadable`
+  // unchanged, not what the resulting Russian sentence says — that is
+  // `ru.test.ts`'s job.
+  it("passes the path and reason through to the catalog", () => {
     expect(modelUnreadableText("/models/", ru.readFailureReasons.EISDIR)).toBe(
       ru.modelUnreadable("/models/", ru.readFailureReasons.EISDIR),
     );
@@ -139,7 +146,8 @@ describe("vaultNotOnDiskText", () => {
     expect(vaultNotOnDiskText()).not.toBe("");
   });
 
-  it("matches the catalog entry", () => {
+  // Dispatch only — the wording itself is pinned in `ru.test.ts`.
+  it("calls the catalog entry", () => {
     expect(vaultNotOnDiskText()).toBe(ru.vaultNotOnDisk());
   });
 });
