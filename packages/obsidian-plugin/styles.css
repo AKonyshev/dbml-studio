@@ -12,3 +12,34 @@
   color: var(--text-muted);
   padding: 0.5em 0.8em;
 }
+
+/* An expanded diagram: across the whole window. The classes are the contract
+   the documentation sites' host keeps too (packages/web/README.md, host.css);
+   the layer is Obsidian's own for modals rather than host.css's 1000, so that
+   menus, notices and tooltips still open over it. */
+.dbml-diagram--expanded {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--layer-modal);
+  margin: 0;
+  /* Explicitly, because a box given a size by some other rule stays that size:
+     with a width set, the left and right offsets are over-constrained. */
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+}
+
+/* Over the frame's own height attribute. The frame paints its own background,
+   so the box needs none. */
+.dbml-diagram--expanded .dbml-diagram-frame {
+  height: 100%;
+}
+
+html.dbml-diagram-host--locked,
+html.dbml-diagram-host--locked body {
+  overflow: hidden;
+}

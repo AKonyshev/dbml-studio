@@ -271,3 +271,68 @@ describe("FrameView.setTheme", () => {
     ]);
   });
 });
+
+describe("FrameView, expanding", () => {
+  it("hands a request to expand, and to go back, to its host", () => {
+    const seen: boolean[] = [];
+    const { frameWindow } = setup({
+      onExpand: (expanded) => seen.push(expanded),
+    });
+
+    window.dispatchEvent(
+      messageFrom(frameWindow, {
+        source: "dbml-frame",
+        type: "expand",
+        expanded: true,
+      }),
+    );
+    window.dispatchEvent(
+      messageFrom(frameWindow, {
+        source: "dbml-frame",
+        type: "expand",
+        expanded: false,
+      }),
+    );
+
+    expect(seen).toEqual([true, false]);
+  });
+
+  it("ignores a request to expand from a window that is not its frame", () => {
+    const seen: boolean[] = [];
+
+    setup({ onExpand: (expanded) => seen.push(expanded) });
+    window.dispatchEvent(
+      messageFrom(window, {
+        source: "dbml-frame",
+        type: "expand",
+        expanded: true,
+      }),
+    );
+
+    expect(seen).toEqual([]);
+  });
+
+  it("marks its wrapper and tells the frame what was settled", () => {
+    const { view, post } = setup();
+
+    view.setExpanded(true);
+
+    expect(view.wrapper.classList.contains("dbml-diagram--expanded")).toBe(
+      true,
+    );
+    expect(post).toHaveBeenLastCalledWith(
+      { source: "dbml-frame", type: "expanded", expanded: true },
+      "*",
+    );
+
+    view.setExpanded(false);
+
+    expect(view.wrapper.classList.contains("dbml-diagram--expanded")).toBe(
+      false,
+    );
+    expect(post).toHaveBeenLastCalledWith(
+      { source: "dbml-frame", type: "expanded", expanded: false },
+      "*",
+    );
+  });
+});

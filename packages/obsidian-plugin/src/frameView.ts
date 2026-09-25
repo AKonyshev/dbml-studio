@@ -1,6 +1,7 @@
 import { type FrameTheme } from "./blockParams";
 import {
   documentMessage,
+  expandedMessage,
   parseFrameMessage,
   readyMessage,
   themeMessage,
@@ -21,6 +22,8 @@ export interface FrameViewOptions {
   title: string;
   /** The window whose `message` events carry the frame's half of the protocol. */
   messageTarget: Window;
+  /** The frame's toolbar asked to take the whole window, or to give it back. */
+  onExpand?: (expanded: boolean) => void;
 }
 
 /**
@@ -30,6 +33,7 @@ export interface FrameViewOptions {
  */
 const WRAPPER_CLASS = "dbml-diagram";
 const FRAME_CLASS = "dbml-diagram-frame";
+const EXPANDED_CLASS = "dbml-diagram--expanded";
 
 /**
  * One diagram in a note: the frame, and the conversation with it.
@@ -50,6 +54,7 @@ export class FrameView {
 
   private readonly messageTarget: Window;
   private readonly onMessage: (event: MessageEvent) => void;
+  private readonly onExpand: ((expanded: boolean) => void) | undefined;
   private pending: FrameDocument | null = null;
   private greeted = false;
 
@@ -59,6 +64,7 @@ export class FrameView {
     height,
     title,
     messageTarget,
+    onExpand,
   }: FrameViewOptions) {
     const doc = container.ownerDocument;
 
@@ -73,6 +79,7 @@ export class FrameView {
     this.element.src = url;
 
     this.messageTarget = messageTarget;
+    this.onExpand = onExpand;
     this.onMessage = (event) => {
       this.receive(event);
     };
@@ -114,6 +121,16 @@ export class FrameView {
     }
   }
 
+  /**
+   * The class the stylesheet acts on, and the answer that tells the frame
+   * which icon to draw: the frame shows the state the host settled on, not the
+   * one it asked for.
+   */
+  setExpanded(expanded: boolean): void {
+    this.wrapper.classList.toggle(EXPANDED_CLASS, expanded);
+    this.send(expandedMessage(expanded));
+  }
+
   destroy(): void {
     this.messageTarget.removeEventListener("message", this.onMessage);
     this.wrapper.remove();
@@ -126,9 +143,16 @@ export class FrameView {
 
     const message = parseFrameMessage(event.data);
 
-    if (message?.type === "hello") {
-      this.greet();
+    if (message === null) {
+      return;
     }
+
+    if (message.type === "hello") {
+      this.greet();
+      return;
+    }
+
+    this.onExpand?.(message.expanded);
   }
 
   /**

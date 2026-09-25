@@ -11,6 +11,7 @@ import {
 import { themeOf } from "./appTheme";
 import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
+import { ExpandHosts, type ExpandHost } from "./expandHost";
 import { withTheme } from "./frameSrc";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
@@ -26,6 +27,8 @@ import { resolveModelPath } from "./resolveModelPath";
 /** One live diagram, and everything needed to send it its model again. */
 interface Diagram {
   view: FrameView;
+  /** The host of the window the diagram is drawn in. */
+  expandHost: ExpandHost;
   path: string;
   tables: string[] | null;
   /** The theme the block pinned, or `null` to follow the application. */
@@ -59,6 +62,14 @@ class BlockChild extends MarkdownRenderChild {
 
 export default class DbmlStudioPlugin extends Plugin {
   private readonly diagrams = new Set<Diagram>();
+
+  /**
+   * One expanded diagram per window, not per application: an expanded
+   * diagram covers only its own window, and one in a popout is behind nothing
+   * in the main window. Each host locks its own document and hears Escape in
+   * it — a keydown in a popout never reaches the main window.
+   */
+  private readonly expandHosts = new ExpandHosts();
 
   /**
    * Set once the plugin is switched off. A model read already under way when
@@ -97,10 +108,19 @@ export default class DbmlStudioPlugin extends Plugin {
     this.unloaded = true;
 
     for (const diagram of this.diagrams) {
-      diagram.view.destroy();
+      this.drop(diagram);
     }
+  }
 
-    this.diagrams.clear();
+  /**
+   * Take a diagram down. Released first: if it is the expanded one, its window
+   * is unlocked and stops listening for Escape; if it is any other, the
+   * expanded one stays where the reader put it.
+   */
+  private drop(diagram: Diagram): void {
+    diagram.expandHost.release(diagram.view);
+    diagram.view.destroy();
+    this.diagrams.delete(diagram);
   }
 
   /**
@@ -221,6 +241,7 @@ export default class DbmlStudioPlugin extends Plugin {
     // a listener on the main one would never hear it. Read after the model,
     // when the block is in the note it belongs to.
     const theme = pinnedTheme ?? themeOf(element.doc.body);
+    const expandHost = this.expandHosts.of(element.doc);
 
     // The frame's message listener is FrameView's own, added here and removed
     // by `destroy` — which the child runs when Obsidian drops this rendering
@@ -235,14 +256,18 @@ export default class DbmlStudioPlugin extends Plugin {
       height,
       title: model,
       messageTarget: element.win,
+      // `view` is read when the frame asks, long after this constructor has
+      // returned.
+      onExpand: (expanded) => {
+        expandHost.toggle(view, expanded);
+      },
     });
 
-    const diagram: Diagram = { view, path, tables, pinnedTheme };
+    const diagram: Diagram = { view, expandHost, path, tables, pinnedTheme };
 
     this.diagrams.add(diagram);
     child.own(() => {
-      view.destroy();
-      this.diagrams.delete(diagram);
+      this.drop(diagram);
     });
 
     view.setDocument({ text, tables, theme });
