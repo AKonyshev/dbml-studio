@@ -35,6 +35,29 @@ const WRAPPER_CLASS = "dbml-diagram";
 const FRAME_CLASS = "dbml-diagram-frame";
 const EXPANDED_CLASS = "dbml-diagram--expanded";
 
+type Poster = (target: Window, message: HostMessage) => void;
+
+/**
+ * A `postMessage` call that runs in `owner`'s realm.
+ *
+ * The frame accepts a message only when `event.source` is its parent
+ * (`isFromHost` in `frameHost.ts`), and the browser sets `event.source` to the
+ * window of the code that *calls* `postMessage`, not to the window the target
+ * frame sits in. Obsidian runs every plugin in its main window, so a diagram
+ * in a popout window, posted to directly, hears the main window speaking and
+ * drops every message — the frame stays at "no model". A function compiled by
+ * the popout's own `Function` constructor belongs to the popout's realm, and a
+ * `postMessage` it makes comes from the popout, even when main-window code
+ * calls it. In the main window the poster is that window's, and posting
+ * through it is the same as posting directly.
+ */
+const posterFor = (owner: Window & typeof globalThis): Poster =>
+  new owner.Function(
+    "target",
+    "message",
+    "target.postMessage(message, '*');",
+  ) as Poster;
+
 /**
  * One diagram in a note: the frame, and the conversation with it.
  *
@@ -53,6 +76,7 @@ export class FrameView {
   readonly element: HTMLIFrameElement;
 
   private readonly messageTarget: Window;
+  private readonly post: Poster;
   private readonly onMessage: (event: MessageEvent) => void;
   private readonly onExpand: ((expanded: boolean) => void) | undefined;
   private pending: FrameDocument | null = null;
@@ -79,6 +103,11 @@ export class FrameView {
     this.element.src = url;
 
     this.messageTarget = messageTarget;
+    // The window the frame's parent document is, which is the one the frame
+    // listens for; `messageTarget` is that same window as the host hands it.
+    this.post = posterFor(
+      doc.defaultView ?? (messageTarget as Window & typeof globalThis),
+    );
     this.onExpand = onExpand;
     this.onMessage = (event) => {
       this.receive(event);
@@ -179,6 +208,10 @@ export class FrameView {
   }
 
   private send(message: HostMessage): void {
-    this.element.contentWindow?.postMessage(message, "*");
+    const target = this.element.contentWindow;
+
+    if (target !== null) {
+      this.post(target, message);
+    }
   }
 }

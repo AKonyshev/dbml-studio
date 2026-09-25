@@ -111,6 +111,13 @@ whole window covers only the window it is in, and at most one diagram is
 expanded per window at a time — a second expand in the same window puts the
 first back; Escape does too.
 
+The plugin's code, though, runs in the main window, and a browser stamps a
+message's `event.source` with the window of the code that calls
+`postMessage` — so a popout's frame, posted to directly, would hear the main
+window and drop everything, since it accepts only its parent. Each
+`FrameView` therefore posts through a one-line function compiled by its own
+window's `Function` constructor, which speaks as that window whoever calls it.
+
 All the text a reader of a note sees — block errors, the read failure, the
 command name — is Russian and lives in `src/i18n/locales/ru.ts`, the one path
 the repository's Cyrillic guard

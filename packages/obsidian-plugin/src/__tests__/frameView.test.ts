@@ -336,3 +336,49 @@ describe("FrameView, expanding", () => {
     );
   });
 });
+
+// Obsidian runs the plugin in its main window, and a note opened in a popout
+// draws its frame in that popout. A plain `contentWindow.postMessage` called
+// from main-window code arrives with `event.source` set to the main window, and
+// the frame, which accepts only its parent, drops it. A poster compiled by the
+// frame's parent window's own `Function` posts as that window.
+describe("FrameView, posting as the frame's parent window", () => {
+  it("posts every message through a poster built by its container's window", () => {
+    const poster = jest.fn();
+    const construct = jest
+      .spyOn(window, "Function")
+      .mockImplementation(() => poster as never);
+    const { view, frameWindow, post, greet } = setup();
+
+    expect(construct).toHaveBeenCalledTimes(1);
+    expect(construct).toHaveBeenCalledWith(
+      "target",
+      "message",
+      "target.postMessage(message, '*');",
+    );
+
+    view.setDocument({
+      text: "Table a { id int }",
+      tables: null,
+      theme: "light",
+    });
+    greet();
+    view.setTheme("dark");
+    view.setExpanded(true);
+
+    expect(poster.mock.calls.map(([target]) => target)).toEqual([
+      frameWindow,
+      frameWindow,
+      frameWindow,
+      frameWindow,
+    ]);
+    expect(poster.mock.calls.map(([, message]) => message.type)).toEqual([
+      "ready",
+      "document",
+      "theme",
+      "expanded",
+    ]);
+    expect(post).not.toHaveBeenCalled();
+    expect(construct).toHaveBeenCalledTimes(1);
+  });
+});

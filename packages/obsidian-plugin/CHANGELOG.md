@@ -14,4 +14,5 @@ is [Keep a Changelog](http://keepachangelog.com/).
   one, and keeps its view and layout when the theme changes.
 - "Обновить диаграммы" re-reads every model on screen.
 - A diagram can take the whole window, and Escape puts it back.
+- A note opened in a popout window draws its diagrams there too.
 - A ` ```dbml ` block of DBML code stays code.
