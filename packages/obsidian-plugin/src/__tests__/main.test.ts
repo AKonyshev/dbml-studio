@@ -9,6 +9,7 @@ import {
   type PluginManifest,
 } from "obsidian";
 
+import { FrameView } from "../frameView";
 import DbmlStudioPlugin from "../main";
 
 // The `obsidian` package ships types only; the application provides the module
@@ -91,7 +92,52 @@ interface Rendered {
   migrationHooks: Set<(win: Window) => unknown>;
 }
 
+/**
+ * What Obsidian adds to every node of a window: `doc` and `win`, the document
+ * and window the node belongs to. A window has a `Node` of its own, so each
+ * window a test draws in gets them.
+ */
+const giveNodeHelpers = (win: Window): void => {
+  const { Node: WindowNode } = win as Window & typeof globalThis;
+
+  Object.defineProperties(WindowNode.prototype, {
+    doc: {
+      configurable: true,
+      get(this: Node) {
+        return this.ownerDocument;
+      },
+    },
+    win: {
+      configurable: true,
+      get(this: Node) {
+        return this.ownerDocument?.defaultView;
+      },
+    },
+  });
+};
+
+/** A popout window: a jsdom frame's, which has a document and realm of its own. */
+const popout = (): Window => {
+  const holder = document.createElement("iframe");
+
+  document.body.append(holder);
+
+  const win = holder.contentWindow;
+
+  if (win === null) {
+    throw new Error("jsdom gave the popout no window");
+  }
+
+  giveNodeHelpers(win);
+
+  return win;
+};
+
 let vault: string;
+
+beforeAll(() => {
+  giveNodeHelpers(window);
+});
 
 beforeEach(async () => {
   vault = await mkdtemp(join(tmpdir(), "dbml-obsidian-"));
@@ -101,6 +147,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   document.body.innerHTML = "";
+  document.body.className = "";
   jest.restoreAllMocks();
   await rm(vault, { recursive: true, force: true });
 });
@@ -123,8 +170,8 @@ const loadPlugin = (): DbmlStudioPlugin => {
 };
 
 /**
- * Renders `source` the way Obsidian does, into an element of `win`'s document
- * that carries the helpers Obsidian adds to every element.
+ * Renders `source` the way Obsidian does, into an element of `win`'s document,
+ * and records the element's `onWindowMigrated` listeners.
  */
 const render = async (
   plugin: DbmlStudioPlugin,
@@ -142,8 +189,6 @@ const render = async (
 
   win.document.body.append(element);
   Object.assign(element, {
-    doc: win.document,
-    win,
     onWindowMigrated: (listener: (win: Window) => unknown) => {
       migrationHooks.add(listener);
 
@@ -194,11 +239,52 @@ describe("refreshing the diagrams", () => {
     await unlink(join(vault, "b.dbml"));
     await runCommand(plugin, "refresh-diagrams");
 
-    const said = jest.mocked(Notice).mock.calls.map(([message]) => message);
+    // Sorted: the two reads finish in whichever order the disk answers.
+    const said = jest
+      .mocked(Notice)
+      .mock.calls.map(([message]) => String(message))
+      .sort();
 
     expect(said).toHaveLength(2);
     expect(said[0]).toContain(join(vault, "a.dbml"));
     expect(said[1]).toContain(join(vault, "b.dbml"));
+  });
+
+  it("sends the model it read again to every diagram of it", async () => {
+    const plugin = loadPlugin();
+
+    await render(plugin, "model: /a.dbml");
+    await render(plugin, "model: /a.dbml\ntables: [a]");
+
+    const sent = jest.spyOn(FrameView.prototype, "setDocument");
+
+    await writeFile(join(vault, "a.dbml"), "Table a { id int }\nTable b {}");
+    await runCommand(plugin, "refresh-diagrams");
+
+    expect(sent.mock.calls.map(([next]) => [next.text, next.tables])).toEqual([
+      ["Table a { id int }\nTable b {}", null],
+      ["Table a { id int }\nTable b {}", ["a"]],
+    ]);
+  });
+
+  // `css-change` fires before Obsidian moves a popout window's body to the
+  // new theme, so the application's theme is read from the main window's body
+  // everywhere (`followAppTheme`), refresh included.
+  it("sends it in the theme of the main window's body", async () => {
+    const plugin = loadPlugin();
+    const win = popout();
+
+    win.document.body.className = "theme-light";
+    await render(plugin, "model: /a.dbml", win);
+    document.body.className = "theme-dark";
+
+    const sent = jest.spyOn(FrameView.prototype, "setDocument");
+
+    await runCommand(plugin, "refresh-diagrams");
+
+    expect(sent).toHaveBeenCalledWith(
+      expect.objectContaining({ theme: "dark" }),
+    );
   });
 });
 

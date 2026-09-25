@@ -195,11 +195,18 @@ export default class DbmlStudioPlugin extends Plugin {
       return;
     }
 
+    // The application's theme from the main window's body, as theme switching
+    // and moving between windows read it (`followAppTheme`), not from the
+    // diagram's own body. A popout's body lags the theme while `css-change`
+    // is being handled; the main one never does, so there is one reading of
+    // "the application's theme" and no window whose body can be caught out.
+    const appTheme = themeOf(document.body);
+
     for (const diagram of live()) {
       diagram.view.setDocument({
         text,
         tables: diagram.tables,
-        theme: diagram.pinnedTheme ?? themeOf(diagram.view.wrapper.doc.body),
+        theme: diagram.pinnedTheme ?? appTheme,
       });
     }
   }
