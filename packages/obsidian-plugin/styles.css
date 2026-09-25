@@ -1,0 +1,14 @@
+/* The box FrameView puts every frame in, and the frame itself. The wrapper's
+   class is the one the documentation sites' host stylesheet dresses too
+   (packages/web/src/embed/host/host.css). */
+.dbml-diagram-frame {
+  border: 0;
+  display: block;
+  width: 100%;
+}
+
+.dbml-diagram-error {
+  border-left: 3px solid var(--text-error);
+  color: var(--text-muted);
+  padding: 0.5em 0.8em;
+}
