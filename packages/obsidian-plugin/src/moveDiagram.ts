@@ -21,10 +21,10 @@ export interface MovableDiagram {
  *   left, so that window's lock and Escape listener do not stay behind with
  *   nothing to undo them. The reloaded frame starts collapsed anyway.
  * - From now on it expands in the new window's host.
- * - The frame's side moves (`FrameView.moveTo`), and the reloaded frame is
- *   greeted with the document in the application's theme, read from
- *   `appBody`, the main window's body, for the reason `followAppTheme` gives.
- *   A pinned theme stays.
+ * - The frame's side moves (`FrameView.moveTo`), and the reloaded frame
+ *   loads in, and is greeted with the document in, the application's theme,
+ *   read from `appBody`, the main window's body, for the reason
+ *   `followAppTheme` gives. A pinned theme stays.
  */
 export const moveDiagram = (
   diagram: MovableDiagram,
@@ -34,9 +34,5 @@ export const moveDiagram = (
 ): void => {
   diagram.expandHost.release(diagram.view);
   diagram.expandHost = hosts.of(win.document);
-  diagram.view.moveTo(win);
-
-  if (diagram.pinnedTheme === null) {
-    diagram.view.setTheme(themeOf(appBody));
-  }
+  diagram.view.moveTo(win, diagram.pinnedTheme ?? themeOf(appBody));
 };

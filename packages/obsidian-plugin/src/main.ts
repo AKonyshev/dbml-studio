@@ -12,7 +12,6 @@ import { followAppTheme, themeOf } from "./appTheme";
 import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { ExpandHosts, type ExpandHost } from "./expandHost";
-import { withTheme } from "./frameSrc";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
 import { ru } from "./i18n/locales/ru";
@@ -250,8 +249,10 @@ export default class DbmlStudioPlugin extends Plugin {
       container: element,
       // The theme rides in the query as well as in the document: the frame
       // paints before the handshake, and a light frame in a dark note reads as
-      // a second thing having gone wrong.
-      url: withTheme(frameUrl(this, "frame/embed.html"), theme),
+      // a second thing having gone wrong. FrameView puts it in the URL when
+      // the frame actually loads, in whichever theme is current by then.
+      url: frameUrl(this, "frame/embed.html"),
+      theme,
       height,
       title: model,
       messageTarget: element.win,

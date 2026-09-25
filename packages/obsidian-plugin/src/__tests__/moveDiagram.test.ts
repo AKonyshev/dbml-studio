@@ -42,6 +42,7 @@ const diagramIn = (
     view: new FrameView({
       container,
       url: "about:blank",
+      theme: "light",
       height: 500,
       title: "rd.dbml",
       messageTarget: window,
@@ -152,6 +153,24 @@ describe("moveDiagram", () => {
         "*",
       ],
     ]);
+  });
+
+  // The frame reloads in its new window before anyone speaks to it, and
+  // paints the theme its `src` names until then.
+  it("reloads the frame in the application's theme, or the pinned one", () => {
+    const hosts = new ExpandHosts();
+    const following = diagramIn(hosts);
+    const pinned = diagramIn(hosts, "light");
+
+    move(following, otherWindow(), hosts, appBody("dark"));
+    move(pinned, otherWindow(), hosts, appBody("dark"));
+
+    expect(following.view.element.getAttribute("src")).toBe(
+      "about:blank?theme=dark",
+    );
+    expect(pinned.view.element.getAttribute("src")).toBe(
+      "about:blank?theme=light",
+    );
   });
 
   it("keeps a pinned theme", () => {

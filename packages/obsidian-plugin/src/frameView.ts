@@ -1,4 +1,5 @@
 import { type FrameTheme } from "./blockParams";
+import { withTheme } from "./frameSrc";
 import {
   documentMessage,
   expandedMessage,
@@ -16,7 +17,13 @@ export interface FrameDocument {
 
 export interface FrameViewOptions {
   container: HTMLElement;
+  /** The frame's document, without a theme: that is added when it loads. */
   url: string;
+  /**
+   * The theme to paint in if the frame loads before it is given a document.
+   * Once there is one, the document's theme is what the frame loads in.
+   */
+  theme: FrameTheme;
   height: number;
   /** What a screen reader and a broken frame both say: the model's name. */
   title: string;
@@ -76,6 +83,8 @@ export class FrameView {
   readonly element: HTMLIFrameElement;
 
   private readonly url: string;
+  /** What the frame paints in while it has no document; see `srcNow`. */
+  private theme: FrameTheme;
   private messageTarget: Window;
   private post: Poster;
   private observer: IntersectionObserver | null = null;
@@ -87,6 +96,7 @@ export class FrameView {
   constructor({
     container,
     url,
+    theme,
     height,
     title,
     messageTarget,
@@ -104,6 +114,7 @@ export class FrameView {
     this.element.title = title;
 
     this.url = url;
+    this.theme = theme;
     this.messageTarget = messageTarget;
     // The window the frame's parent document is, which is the one the frame
     // listens for; `messageTarget` is that same window as the host hands it.
@@ -122,7 +133,7 @@ export class FrameView {
     this.wrapper.append(this.element);
     container.append(this.wrapper);
 
-    this.loadWhenSeen(url);
+    this.loadWhenSeen();
   }
 
   /**
@@ -137,17 +148,36 @@ export class FrameView {
    * the hello is answered with `ready` and the document. A frame that was
    * never seen is watched for again by the new window's observer, since that
    * is where it now scrolls.
+   *
+   * `theme` is the one the reloaded frame is to wear, kept silently until the
+   * hello like any other change. A frame that had loaded reloads from its
+   * `src`, whose query still names the theme it last loaded in: if that is no
+   * longer the one, `src` is written again, so the reload paints the right
+   * one. Left alone when it is, since writing `src` starts a load of its own.
    */
-  moveTo(win: Window & typeof globalThis): void {
+  moveTo(win: Window & typeof globalThis, theme: FrameTheme): void {
     this.messageTarget.removeEventListener("message", this.onMessage);
     this.messageTarget = win;
     this.post = posterFor(win);
     this.greeted = false;
     win.addEventListener("message", this.onMessage);
 
+    if (this.pending === null) {
+      this.theme = theme;
+    } else {
+      this.pending = { ...this.pending, theme };
+    }
+
     if (this.observer !== null) {
       this.stopWatching();
-      this.loadWhenSeen(this.url);
+      this.loadWhenSeen();
+      return;
+    }
+
+    const src = this.element.getAttribute("src");
+
+    if (src !== null && src !== this.srcNow()) {
+      this.element.src = this.srcNow();
     }
   }
 
@@ -207,22 +237,34 @@ export class FrameView {
    * window's: a note in a popout scrolls in the popout. A document or theme
    * set in the meantime waits in `pending` for the frame's hello, as before.
    */
-  private loadWhenSeen(url: string): void {
+  private loadWhenSeen(): void {
     const Observer =
       this.wrapper.ownerDocument.defaultView?.IntersectionObserver;
 
     if (Observer === undefined) {
-      this.element.src = url;
+      this.element.src = this.srcNow();
       return;
     }
 
     this.observer = new Observer((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) {
         this.stopWatching();
-        this.element.src = url;
+        this.element.src = this.srcNow();
       }
     });
     this.observer.observe(this.wrapper);
+  }
+
+  /**
+   * The frame's URL, in the theme it should paint before the handshake — read
+   * when `src` is written, not when the view was built. A frame loads long
+   * after it is built when it is scrolled to only later, and reloads when it
+   * moves to another window; the application may have switched theme in
+   * between. The document's theme follows every switch (`setTheme`), so it is
+   * the current one; before there is a document, the one the view was given.
+   */
+  private srcNow(): string {
+    return withTheme(this.url, this.pending?.theme ?? this.theme);
   }
 
   private stopWatching(): void {

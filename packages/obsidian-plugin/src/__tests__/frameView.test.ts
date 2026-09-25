@@ -29,6 +29,7 @@ const setup = (overrides: Partial<FrameViewOptions> = {}): Rig => {
   const view = new FrameView({
     container,
     url: "about:blank",
+    theme: "light",
     height: 500,
     title: "rd.dbml",
     messageTarget: window,
@@ -419,7 +420,7 @@ describe("FrameView, loading when first seen", () => {
     }
   }
 
-  const FRAME_URL = "about:blank#diagram";
+  const FRAME_URL = "about:blank?diagram";
 
   beforeEach(() => {
     FakeObserver.made = [];
@@ -463,7 +464,7 @@ describe("FrameView, loading when first seen", () => {
 
     observer().fire(true);
 
-    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+    expect(view.element.getAttribute("src")).toBe(`${FRAME_URL}&theme=light`);
     expect(observer().disconnect).toHaveBeenCalledTimes(1);
   });
 
@@ -526,7 +527,7 @@ describe("FrameView, loading when first seen", () => {
     const [before] = FakeObserver.made;
 
     win.document.body.append(view.wrapper);
-    view.moveTo(win);
+    view.moveTo(win, "dark");
 
     expect(before.disconnect).toHaveBeenCalled();
     expect(FakeObserver.made).toHaveLength(2);
@@ -537,15 +538,32 @@ describe("FrameView, loading when first seen", () => {
 
     after.fire(true);
 
-    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+    expect(view.element.getAttribute("src")).toBe(`${FRAME_URL}&theme=dark`);
+  });
+
+  // The theme rides in the query so the frame paints in it before the
+  // handshake. A frame that loads long after it was built — scrolled to only
+  // now — paints the theme the application wears now, not the one it had then.
+  it("loads in its document's theme as it is when it loads", () => {
+    const { view } = setup({ url: FRAME_URL, theme: "dark" });
+
+    view.setDocument({
+      text: "Table a { id int }",
+      tables: null,
+      theme: "dark",
+    });
+    view.setTheme("light");
+    observer().fire(true);
+
+    expect(view.element.getAttribute("src")).toBe(`${FRAME_URL}&theme=light`);
   });
 
   it("loads straight away where there is no IntersectionObserver", () => {
     delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
 
-    const { view } = setup({ url: FRAME_URL });
+    const { view } = setup({ url: FRAME_URL, theme: "dark" });
 
-    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+    expect(view.element.getAttribute("src")).toBe(`${FRAME_URL}&theme=dark`);
   });
 });
 
@@ -576,9 +594,13 @@ describe("FrameView.moveTo", () => {
   };
 
   /** Moves the diagram's wrapper into `win`, as Obsidian does, then tells it. */
-  const move = (view: FrameView, win: AppWindow): Window => {
+  const move = (
+    view: FrameView,
+    win: AppWindow,
+    theme: "light" | "dark" = "light",
+  ): Window => {
     win.document.body.append(view.wrapper);
-    view.moveTo(win);
+    view.moveTo(win, theme);
 
     const reloaded = view.element.contentWindow;
 
@@ -666,6 +688,19 @@ describe("FrameView.moveTo", () => {
     expect(post).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "document", theme: "dark" }),
       "*",
+    );
+  });
+
+  // A moved frame reloads from its `src`, and a `src` written before a theme
+  // switch names the old theme: it is written again, in the theme it moved in.
+  it("reloads a frame it had loaded in the theme it was moved in", () => {
+    const { view } = setup({ url: "about:blank?diagram" });
+
+    view.setDocument(DOC);
+    move(view, otherWindow(), "dark");
+
+    expect(view.element.getAttribute("src")).toBe(
+      "about:blank?diagram&theme=dark",
     );
   });
 
