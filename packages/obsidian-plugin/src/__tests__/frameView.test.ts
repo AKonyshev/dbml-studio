@@ -510,11 +510,173 @@ describe("FrameView, loading when first seen", () => {
     );
   });
 
+  it("watches for being seen in the window it was moved to", () => {
+    const { view } = setup({ url: FRAME_URL });
+    const holder = document.createElement("iframe");
+
+    document.body.append(holder);
+
+    const win = holder.contentWindow as Window & typeof globalThis;
+
+    Object.defineProperty(win, "IntersectionObserver", {
+      configurable: true,
+      value: FakeObserver,
+    });
+
+    const [before] = FakeObserver.made;
+
+    win.document.body.append(view.wrapper);
+    view.moveTo(win);
+
+    expect(before.disconnect).toHaveBeenCalled();
+    expect(FakeObserver.made).toHaveLength(2);
+
+    const [, after] = FakeObserver.made;
+
+    expect(after.observed).toEqual([view.wrapper]);
+
+    after.fire(true);
+
+    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+  });
+
   it("loads straight away where there is no IntersectionObserver", () => {
     delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
 
     const { view } = setup({ url: FRAME_URL });
 
     expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+  });
+});
+
+// Dragging a note's tab into another window moves the block's elements there
+// without rendering the block again, and the frame reloads in the new window.
+describe("FrameView.moveTo", () => {
+  type AppWindow = Window & typeof globalThis;
+
+  const DOC = {
+    text: "Table a { id int }",
+    tables: null,
+    theme: "light",
+  } as const;
+
+  /** A second window: a jsdom frame's, which has a realm of its own. */
+  const otherWindow = (): AppWindow => {
+    const holder = document.createElement("iframe");
+
+    document.body.append(holder);
+
+    const win = holder.contentWindow;
+
+    if (win === null) {
+      throw new Error("jsdom gave the other window no content");
+    }
+
+    return win as AppWindow;
+  };
+
+  /** Moves the diagram's wrapper into `win`, as Obsidian does, then tells it. */
+  const move = (view: FrameView, win: AppWindow): Window => {
+    win.document.body.append(view.wrapper);
+    view.moveTo(win);
+
+    const reloaded = view.element.contentWindow;
+
+    if (reloaded === null) {
+      throw new Error("jsdom gave the moved frame no window");
+    }
+
+    return reloaded;
+  };
+
+  it("answers a hello heard in its new window with ready and its document", () => {
+    const { view } = setup();
+    const win = otherWindow();
+
+    view.setDocument(DOC);
+
+    const frame = move(view, win);
+    const post = jest
+      .spyOn(frame, "postMessage")
+      .mockImplementation(() => undefined);
+
+    win.dispatchEvent(messageFrom(frame, HELLO));
+
+    expect(post.mock.calls).toEqual([
+      [{ source: "dbml-frame", type: "ready" }, "*"],
+      [{ source: "dbml-frame", type: "document", ...DOC }, "*"],
+    ]);
+  });
+
+  it("no longer listens in the window it left", () => {
+    const { view } = setup();
+    const win = otherWindow();
+    const frame = move(view, win);
+    const post = jest
+      .spyOn(frame, "postMessage")
+      .mockImplementation(() => undefined);
+
+    window.dispatchEvent(messageFrom(frame, HELLO));
+
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("posts as its new window", () => {
+    const { view } = setup();
+    const win = otherWindow();
+    const poster = jest.fn();
+    const construct = jest
+      .spyOn(win, "Function")
+      .mockImplementation(() => poster as never);
+    const frame = move(view, win);
+
+    win.dispatchEvent(messageFrom(frame, HELLO));
+
+    expect(construct).toHaveBeenCalledWith(
+      "target",
+      "message",
+      "target.postMessage(message, '*');",
+    );
+    expect(poster).toHaveBeenCalledWith(frame, {
+      source: "dbml-frame",
+      type: "ready",
+    });
+  });
+
+  // The reloaded frame is not listening yet; what changes before it says
+  // hello waits for it, as it does for a frame that has just been built.
+  it("forgets the old handshake until the reloaded frame says hello", () => {
+    const { view, greet } = setup();
+    const win = otherWindow();
+
+    view.setDocument(DOC);
+    greet();
+
+    const frame = move(view, win);
+    const post = jest
+      .spyOn(frame, "postMessage")
+      .mockImplementation(() => undefined);
+
+    view.setTheme("dark");
+
+    expect(post).not.toHaveBeenCalled();
+
+    win.dispatchEvent(messageFrom(frame, HELLO));
+
+    expect(post).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "document", theme: "dark" }),
+      "*",
+    );
+  });
+
+  it("stops listening in its new window when destroyed", () => {
+    const { view } = setup();
+    const win = otherWindow();
+    const removed = jest.spyOn(win, "removeEventListener");
+
+    move(view, win);
+    view.destroy();
+
+    expect(removed).toHaveBeenCalledWith("message", expect.any(Function));
   });
 });

@@ -75,8 +75,9 @@ export class FrameView {
   readonly wrapper: HTMLDivElement;
   readonly element: HTMLIFrameElement;
 
-  private readonly messageTarget: Window;
-  private readonly post: Poster;
+  private readonly url: string;
+  private messageTarget: Window;
+  private post: Poster;
   private observer: IntersectionObserver | null = null;
   private readonly onMessage: (event: MessageEvent) => void;
   private readonly onExpand: ((expanded: boolean) => void) | undefined;
@@ -102,6 +103,7 @@ export class FrameView {
     this.element.height = String(height);
     this.element.title = title;
 
+    this.url = url;
     this.messageTarget = messageTarget;
     // The window the frame's parent document is, which is the one the frame
     // listens for; `messageTarget` is that same window as the host hands it.
@@ -121,6 +123,32 @@ export class FrameView {
     container.append(this.wrapper);
 
     this.loadWhenSeen(url);
+  }
+
+  /**
+   * The block's elements were moved into `win`, another Obsidian window, as
+   * happens when a note's tab is dragged out or `moveLeafToPopout` is called.
+   * Obsidian does not render the block again, and the frame reloads there.
+   *
+   * The reloaded frame says hello to its new parent, so the listener moves to
+   * that window. It accepts only messages from that parent, so the poster is
+   * rebuilt in the new window's realm (see `posterFor`). The old handshake is
+   * forgotten: until the new hello, whatever changes waits in `pending`, and
+   * the hello is answered with `ready` and the document. A frame that was
+   * never seen is watched for again by the new window's observer, since that
+   * is where it now scrolls.
+   */
+  moveTo(win: Window & typeof globalThis): void {
+    this.messageTarget.removeEventListener("message", this.onMessage);
+    this.messageTarget = win;
+    this.post = posterFor(win);
+    this.greeted = false;
+    win.addEventListener("message", this.onMessage);
+
+    if (this.observer !== null) {
+      this.stopWatching();
+      this.loadWhenSeen(this.url);
+    }
   }
 
   /** The model this frame should draw, now or as soon as it says hello. */

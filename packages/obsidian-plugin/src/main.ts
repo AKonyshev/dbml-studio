@@ -22,6 +22,7 @@ import {
   readFailureReason,
   vaultNotOnDiskText,
 } from "./messages";
+import { moveDiagram } from "./moveDiagram";
 import { resolveModelPath } from "./resolveModelPath";
 
 /** One live diagram, and everything needed to send it its model again. */
@@ -254,17 +255,29 @@ export default class DbmlStudioPlugin extends Plugin {
       height,
       title: model,
       messageTarget: element.win,
-      // `view` is read when the frame asks, long after this constructor has
-      // returned.
+      // `diagram` is read when the frame asks, long after this constructor has
+      // returned, and its host changes if the diagram moves to another window.
       onExpand: (expanded) => {
-        expandHost.toggle(view, expanded);
+        diagram.expandHost.toggle(view, expanded);
       },
     });
 
     const diagram: Diagram = { view, expandHost, path, tables, pinnedTheme };
 
+    // Dragging the note's tab into another window moves these elements there
+    // without rendering the block again; the frame reloads in that window.
+    const stopFollowingWindow = element.onWindowMigrated((win) => {
+      moveDiagram(
+        diagram,
+        win as Window & typeof globalThis,
+        this.expandHosts,
+        document.body,
+      );
+    });
+
     this.diagrams.add(diagram);
     child.own(() => {
+      stopFollowingWindow();
       this.drop(diagram);
     });
 

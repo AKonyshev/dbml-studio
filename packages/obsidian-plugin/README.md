@@ -111,6 +111,14 @@ whole window covers only the window it is in, and at most one diagram is
 expanded per window at a time — a second expand in the same window puts the
 first back; Escape does too.
 
+A note's tab dragged into another window takes its blocks along without
+rendering them again, and each frame reloads there. The plugin follows through
+the element's `onWindowMigrated` hook. Each diagram:
+
+- is released from the old window's expand lock
+- moves its listener and poster to the new window
+- greets the reloaded frame with its model, in the application's theme
+
 The plugin's code, though, runs in the main window, and a browser stamps a
 message's `event.source` with the window of the code that calls
 `postMessage` — so a popout's frame, posted to directly, would hear the main

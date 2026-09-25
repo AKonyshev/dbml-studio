@@ -14,7 +14,9 @@ is [Keep a Changelog](http://keepachangelog.com/).
   one, and keeps its view and layout when the theme changes.
 - "Обновить диаграммы" re-reads every model on screen.
 - A diagram can take the whole window, and Escape puts it back.
-- A note opened in a popout window draws its diagrams there too.
+- A note opened in a popout window draws its diagrams there too, keeps
+  following the theme, and keeps its diagrams when its tab moves to another
+  window.
 - A diagram loads when it first comes on screen, so the copy of a note
   Obsidian keeps hidden costs no memory.
 - A ` ```dbml ` block of DBML code stays code.
