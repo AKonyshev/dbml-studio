@@ -294,7 +294,12 @@ describe("vendor-frame.mjs", () => {
     );
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("assets/index-C.css");
+    // The guard's own message, not just any crash that happens to mention
+    // the file: it names the missing file and points at the fix, before any
+    // bundling work runs.
+    expect(result.stderr).toContain(
+      "is missing assets/index-C.css. Rebuild it: yarn build:web",
+    );
   });
 
   it("leaves nothing of an earlier run behind", () => {

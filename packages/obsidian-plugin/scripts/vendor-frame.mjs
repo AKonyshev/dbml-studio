@@ -125,10 +125,17 @@ const css = styles
 
 let bundle;
 try {
+  // The Vite chunks on disk are already minified, but esbuild does not copy
+  // their bytes through: bundling re-parses each one to an AST and reprints
+  // it, so without `minify: true` here the output is a full, unminified
+  // reprint of already-minified code — bigger than the sum of the chunks it
+  // came from. Minifying again on the way out keeps the frame the size the
+  // build actually promises.
   const result = await build({
     entryPoints: [path.join(dist, entry.file)],
     bundle: true,
     format: "esm",
+    minify: true,
     write: false,
     logLevel: "silent",
   });
@@ -137,6 +144,10 @@ try {
   fail(`esbuild could not bundle ${entry.file}: ${error.message}`);
 }
 
+// Run on the final (minified) text, not the pre-minify one: minification can
+// in principle fold string literals in ways that only spell "</script" or
+// "<!--" once identifiers are shortened and whitespace is dropped, so the
+// scan has to see exactly what gets embedded.
 const bundled = unsafeInScript(bundle);
 if (bundled !== null) {
   fail(`the bundle of ${entry.file} contains "${bundled}"`);
