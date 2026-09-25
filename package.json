@@ -37,6 +37,7 @@
     "build:web": "yarn workspace web build",
     "test:e2e": "yarn workspace web test:e2e",
     "build:obsidian": "yarn workspace obsidian-plugin build",
-    "install:obsidian": "bash scripts/install-obsidian-plugin.sh"
+    "install:obsidian": "bash scripts/install-obsidian-plugin.sh",
+    "package:obsidian": "bash scripts/package-obsidian-plugin.sh"
   }
 }

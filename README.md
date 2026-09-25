@@ -62,11 +62,21 @@ instead of shipping an error message.
 
 See [packages/mkdocs-dbml/README.md](./packages/mkdocs-dbml/README.md).
 
+## In an Obsidian vault
+
+The same diagram in a note: a `dbml` block names a model on disk, and a
+desktop plugin reads it and hands it to the frame. Theme, table filter,
+height and expanding to the whole window work as they do on a documentation
+page.
+
+See [packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md).
+
 ## Extension packages
 
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
 - [The site](./packages/web/README.md)
 - [MkDocs plugin](./packages/mkdocs-dbml/README.md)
+- [Obsidian plugin](./packages/obsidian-plugin/README.md)
 
 ## Attribution & license
 

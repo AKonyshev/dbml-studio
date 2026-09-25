@@ -243,3 +243,15 @@ The suite's one integration test builds a real MkDocs site against a fake
 diagram frame, standing in for the vendored one. The wheel that carries the
 real frame is checked separately, at release time — see
 [releasing.md](./releasing.md).
+
+## The Obsidian plugin
+
+`packages/obsidian-plugin` runs jest in jsdom rather than Node: `FrameView`
+builds a real `<iframe>` and listens for real `message` events, and jsdom is
+what gives it a frame window to post to. The one test that spawns a script,
+`vendorFrame.test.ts`, asks for the Node environment in its own docblock.
+
+The package `obsidian` carries types and no code, so nothing that imports it
+runs under jest. That is `main.ts` and `frameUrl.ts`: the wiring into the
+application. They are kept thin on purpose, and what they do is checked by
+hand in a real vault — `docs/test-cases.md`, section 14.
