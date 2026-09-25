@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import {
   FileSystemAdapter,
   MarkdownRenderChild,
+  Notice,
   Plugin,
   type MarkdownPostProcessorContext,
 } from "obsidian";
@@ -72,6 +73,23 @@ export default class DbmlStudioPlugin extends Plugin {
         await this.renderBlock(source, element, context);
       },
     );
+
+    // `css-change` is what Obsidian fires when the theme is switched — and for
+    // any other stylesheet change, which is why each diagram compares before
+    // it says anything (`FrameView.setTheme`).
+    this.registerEvent(
+      this.app.workspace.on("css-change", () => {
+        this.followAppTheme();
+      }),
+    );
+
+    this.addCommand({
+      id: "refresh-diagrams",
+      name: "Обновить диаграммы",
+      callback: () => {
+        this.refreshAll();
+      },
+    });
   }
 
   onunload(): void {
@@ -82,6 +100,65 @@ export default class DbmlStudioPlugin extends Plugin {
     }
 
     this.diagrams.clear();
+  }
+
+  /**
+   * Read the theme from each diagram's own window, not a single global one: a
+   * note open in a popout window keeps its own body classes, and `css-change`
+   * does not say which window changed.
+   */
+  private followAppTheme(): void {
+    for (const diagram of this.diagrams) {
+      if (diagram.pinnedTheme === null) {
+        diagram.view.setTheme(themeOf(diagram.view.wrapper.doc.body));
+      }
+    }
+  }
+
+  /**
+   * Re-read every live diagram's model and push it out again.
+   *
+   * The frames keep their document key across this, so the tables stay where
+   * the reader put them and only new ones are laid out — which is the point of
+   * re-sending rather than rebuilding the frames. There is no watching of the
+   * file: this command is how a model edited elsewhere reaches the note.
+   */
+  private refreshAll(): void {
+    for (const diagram of this.diagrams) {
+      void this.refresh(diagram);
+    }
+  }
+
+  private async refresh(diagram: Diagram): Promise<void> {
+    let text: string;
+
+    try {
+      text = await readFile(diagram.path, "utf8");
+    } catch (error) {
+      // Unlike the first render, there is no block element left to write an
+      // error into — the diagram is already on screen. A command the reader
+      // just invoked gets a toast instead, in the same words.
+      if (!this.unloaded && this.diagrams.has(diagram)) {
+        void new Notice(
+          modelUnreadableText(diagram.path, readFailureReason(error)),
+        );
+      }
+
+      return;
+    }
+
+    // The block may have been removed (note edited or closed) while the read
+    // was in flight, or the plugin switched off — the same guard `renderBlock`
+    // uses, expressed through set membership instead of `gone`.
+    if (this.unloaded || !this.diagrams.has(diagram)) {
+      return;
+    }
+
+    diagram.view.setDocument({
+      text,
+      tables: diagram.tables,
+      theme: diagram.pinnedTheme ?? themeOf(diagram.view.wrapper.doc.body),
+    });
   }
 
   private async renderBlock(

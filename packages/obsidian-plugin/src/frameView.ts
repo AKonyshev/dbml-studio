@@ -3,6 +3,7 @@ import {
   documentMessage,
   parseFrameMessage,
   readyMessage,
+  themeMessage,
   type HostMessage,
 } from "./hostProtocol";
 
@@ -90,6 +91,26 @@ export class FrameView {
 
     if (this.greeted) {
       this.send(documentMessage(next.text, next.tables, next.theme));
+    }
+  }
+
+  /**
+   * The application's theme changed — or some other stylesheet did, which
+   * `css-change` does not tell apart, so an unchanged theme says nothing.
+   *
+   * Held in the document as well as sent: the frame hears `theme` only once
+   * its diagram has mounted, and the hello it sends then is answered with the
+   * document — in the theme it should now be wearing.
+   */
+  setTheme(theme: FrameTheme): void {
+    if (this.pending === null || this.pending.theme === theme) {
+      return;
+    }
+
+    this.pending = { ...this.pending, theme };
+
+    if (this.greeted) {
+      this.send(themeMessage(theme));
     }
   }
 

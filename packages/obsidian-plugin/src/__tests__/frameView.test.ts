@@ -207,3 +207,67 @@ describe("FrameView", () => {
     expect(removed).toHaveBeenCalledWith("message", listener);
   });
 });
+
+describe("FrameView.setTheme", () => {
+  const DOC = {
+    text: "Table a { id int }",
+    tables: null,
+    theme: "light",
+  } as const;
+
+  it("tells a greeted frame the new theme", () => {
+    const { view, post, greet } = setup();
+
+    view.setDocument(DOC);
+    greet();
+    post.mockClear();
+    view.setTheme("dark");
+
+    expect(post.mock.calls).toEqual([
+      [{ source: "dbml-frame", type: "theme", theme: "dark" }, "*"],
+    ]);
+  });
+
+  // The frame listens for `theme` only once its diagram has mounted; before
+  // that the message would be lost, so the next hello carries it instead.
+  it("greets a frame that has not said hello yet in the new theme", () => {
+    const { view, post, greet } = setup();
+
+    view.setDocument(DOC);
+    view.setTheme("dark");
+
+    expect(post).not.toHaveBeenCalled();
+
+    greet();
+
+    expect(post).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "document", theme: "dark" }),
+      "*",
+    );
+  });
+
+  // `css-change` fires for every stylesheet change, not only the theme.
+  it("says nothing when the theme has not changed", () => {
+    const { view, post, greet } = setup();
+
+    view.setDocument(DOC);
+    greet();
+    post.mockClear();
+    view.setTheme("light");
+    view.setTheme("dark");
+    view.setTheme("dark");
+
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
+  it("has nothing to say before it has a model", () => {
+    const { view, post, greet } = setup();
+
+    view.setTheme("dark");
+    greet();
+
+    expect(post.mock.calls).toEqual([
+      [{ source: "dbml-frame", type: "ready" }, "*"],
+    ]);
+  });
+});
