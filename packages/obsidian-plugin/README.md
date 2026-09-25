@@ -65,7 +65,9 @@ after every later install.
 
 `build:web` comes first and is not run for you: the plugin's build copies the
 frame out of `packages/web/dist` and fails, naming what is missing, when that
-build is absent or partial.
+build is absent or partial. `install:obsidian` likewise refuses, naming the
+file, when `main.js` or `frame/embed.html` is not built, rather than install a
+plugin that turns on and draws nothing.
 
 A release package — a zip with a `dbml-studio/` folder inside, to unzip into
 `<vault>/.obsidian/plugins/`:
