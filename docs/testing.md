@@ -20,6 +20,55 @@ Two things follow from where it sits:
   does not. `yarn test` tests the working tree rather than the staged snapshot,
   so with a dirty tree it can pass on code the commit does not contain.
 
+## Inside the hook, git's environment comes along
+
+Git exports its own variables to hooks, and everything the hook starts inherits
+them — `yarn test`, every jest process, anything a test spawns. What arrives
+depends on the checkout:
+
+| Where the commit is made | What the hook sees                                          |
+| ------------------------ | ----------------------------------------------------------- |
+| main checkout            | `GIT_INDEX_FILE=.git/index` (relative), no `GIT_DIR`        |
+| linked worktree          | absolute `GIT_DIR` and `GIT_INDEX_FILE`, no `GIT_WORK_TREE` |
+
+The second row is the dangerous one. `GIT_DIR` without `GIT_WORK_TREE` tells git
+that the current directory is the top of the working tree, and a suite's current
+directory is its package. So a test that asks git about the repository gets
+an answer about the package instead: `git rev-parse --show-toplevel` answers
+with the package directory, while `git ls-files` still prints every tracked path.
+
+That is how the source-language guard
+(`packages/json-table-schema-visualizer/src/i18n/__tests__/sourceLanguage.test.ts`)
+passed on every commit made from a worktree. It took the package for the
+repository root and joined each listed path to it, so every file came up
+missing, and it skips missing files (a deleted-but-unstaged file is an ordinary
+state). It scanned nothing and reported green, while the same test run by hand
+failed on the Cyrillic those commits added. In the main checkout the relative
+`GIT_INDEX_FILE` resolves against the real top level, so the hole was
+worktree-only, and every commit made from one went unchecked.
+
+The guard now:
+
+- takes the repository root from its own file's location rather than from git;
+- spawns git with none of the caller's `GIT_*` variables, so git finds the
+  repository and its index from that root as it would in a shell;
+- refuses to pass unless the file list contains the guard itself. An empty list,
+  a list from the wrong index, or one relative to the wrong root all fail
+  loudly instead of scanning nothing.
+
+It was checked through the real hook with a staged Cyrillic `.ts` outside
+`src/i18n/locales/`: red in a linked worktree and in a plain clone, green
+without it. The old guard, in the same worktree, let that commit through.
+
+Anything else that spawns git from a suite has to do the same. Today that is
+only `packages/mkdocs-dbml/scripts/vendor.mjs`, which `test_vendor.py` runs, and
+which records `git describe --dirty` in a `BUILD` file. Under a worktree hook
+that label can say `-dirty` when the tree is clean, since git sees every file
+outside the package as deleted. The test does not assert the label, so it
+passes either way. `scripts/test.js`, `scripts/typecheck.js` and
+`scripts/workspace-packages.js` do not call git: they find the repository from
+`__dirname` and walk the file system.
+
 ## Two suites want a database, and skip without one
 
 `packages/db-to-dbml` and `packages/schema-diff` each have a
