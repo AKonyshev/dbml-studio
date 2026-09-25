@@ -1,9 +1,10 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
   FileSystemAdapter,
+  Notice,
   type MarkdownRenderChild,
   type PluginManifest,
 } from "obsidian";
@@ -80,6 +81,7 @@ type Processor = (
 /** What the stand-in `Plugin` above records. */
 interface Registered {
   processors: Map<string, Processor>;
+  commands: Array<{ id: string; callback: () => unknown }>;
 }
 
 /** One rendering of a block, as Obsidian hands it to the processor. */
@@ -94,6 +96,7 @@ let vault: string;
 beforeEach(async () => {
   vault = await mkdtemp(join(tmpdir(), "dbml-obsidian-"));
   await writeFile(join(vault, "a.dbml"), "Table a { id int }");
+  jest.mocked(Notice).mockClear();
 });
 
 afterEach(async () => {
@@ -157,6 +160,47 @@ const render = async (
 
   return { element, migrationHooks };
 };
+
+/** Runs a command as the palette does, and waits for what it started. */
+const runCommand = async (
+  plugin: DbmlStudioPlugin,
+  id: string,
+): Promise<void> => {
+  const command = (plugin as unknown as Registered).commands.find(
+    (candidate) => candidate.id === id,
+  );
+
+  if (command === undefined) {
+    throw new Error(`the plugin registered no ${id} command`);
+  }
+
+  await command.callback();
+};
+
+describe("refreshing the diagrams", () => {
+  // Obsidian renders every block twice while a note is open — in reading view
+  // and in the hidden Live Preview editor — and a note may draw one model in
+  // several blocks. The reader asked once, and hears once per file.
+  it("says once per model file that it cannot be read", async () => {
+    const plugin = loadPlugin();
+
+    await writeFile(join(vault, "b.dbml"), "Table b { id int }");
+
+    for (const model of ["/a.dbml", "/a.dbml", "/b.dbml", "/b.dbml"]) {
+      await render(plugin, `model: ${model}`);
+    }
+
+    await unlink(join(vault, "a.dbml"));
+    await unlink(join(vault, "b.dbml"));
+    await runCommand(plugin, "refresh-diagrams");
+
+    const said = jest.mocked(Notice).mock.calls.map(([message]) => message);
+
+    expect(said).toHaveLength(2);
+    expect(said[0]).toContain(join(vault, "a.dbml"));
+    expect(said[1]).toContain(join(vault, "b.dbml"));
+  });
+});
 
 describe("switching the plugin off", () => {
   // A note whose view Obsidian does not render again keeps its elements, and

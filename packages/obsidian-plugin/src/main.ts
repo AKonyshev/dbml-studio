@@ -100,8 +100,9 @@ export default class DbmlStudioPlugin extends Plugin {
     this.addCommand({
       id: "refresh-diagrams",
       name: ru.refreshCommandName,
-      callback: () => {
-        this.refreshAll();
+      // Returned, not awaited: Obsidian ignores it, and a test can wait on it.
+      callback: async () => {
+        await this.refreshAll();
       },
     });
   }
@@ -149,43 +150,58 @@ export default class DbmlStudioPlugin extends Plugin {
    * the reader put them and only new ones are laid out — which is the point of
    * re-sending rather than rebuilding the frames. There is no watching of the
    * file: this command is how a model edited elsewhere reaches the note.
+   *
+   * By model file, not by diagram. Obsidian renders every block twice while
+   * a note is open (reading view and the hidden Live Preview editor), and
+   * several blocks may draw one model: each file is read once, and a file
+   * that cannot be read is one toast, not one per rendered copy.
    */
-  private refreshAll(): void {
+  private async refreshAll(): Promise<void> {
+    const byPath = new Map<string, Diagram[]>();
+
     for (const diagram of this.diagrams) {
-      void this.refresh(diagram);
+      byPath.set(diagram.path, [...(byPath.get(diagram.path) ?? []), diagram]);
     }
+
+    await Promise.all(
+      [...byPath].map(async ([path, copies]) => {
+        await this.refresh(path, copies);
+      }),
+    );
   }
 
-  private async refresh(diagram: Diagram): Promise<void> {
+  /** Reads `path` once, for every diagram of it that is still drawn. */
+  private async refresh(path: string, copies: Diagram[]): Promise<void> {
+    // The block may have been removed (note edited or closed) while the read
+    // was in flight, or the plugin switched off — the same guard `renderBlock`
+    // uses, expressed through set membership instead of `gone`.
+    const live = (): Diagram[] =>
+      this.unloaded
+        ? []
+        : copies.filter((diagram) => this.diagrams.has(diagram));
+
     let text: string;
 
     try {
-      text = await readFile(diagram.path, "utf8");
+      text = await readFile(path, "utf8");
     } catch (error) {
       // Unlike the first render, there is no block element left to write an
       // error into — the diagram is already on screen. A command the reader
       // just invoked gets a toast instead, in the same words.
-      if (!this.unloaded && this.diagrams.has(diagram)) {
-        void new Notice(
-          modelUnreadableText(diagram.path, readFailureReason(error)),
-        );
+      if (live().length > 0) {
+        void new Notice(modelUnreadableText(path, readFailureReason(error)));
       }
 
       return;
     }
 
-    // The block may have been removed (note edited or closed) while the read
-    // was in flight, or the plugin switched off — the same guard `renderBlock`
-    // uses, expressed through set membership instead of `gone`.
-    if (this.unloaded || !this.diagrams.has(diagram)) {
-      return;
+    for (const diagram of live()) {
+      diagram.view.setDocument({
+        text,
+        tables: diagram.tables,
+        theme: diagram.pinnedTheme ?? themeOf(diagram.view.wrapper.doc.body),
+      });
     }
-
-    diagram.view.setDocument({
-      text,
-      tables: diagram.tables,
-      theme: diagram.pinnedTheme ?? themeOf(diagram.view.wrapper.doc.body),
-    });
   }
 
   private async renderBlock(
