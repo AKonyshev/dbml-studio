@@ -8,7 +8,7 @@ import {
   type MarkdownPostProcessorContext,
 } from "obsidian";
 
-import { themeOf } from "./appTheme";
+import { followAppTheme, themeOf } from "./appTheme";
 import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { ExpandHosts, type ExpandHost } from "./expandHost";
@@ -124,16 +124,14 @@ export default class DbmlStudioPlugin extends Plugin {
   }
 
   /**
-   * Read the theme from each diagram's own window, not a single global one: a
-   * note open in a popout window keeps its own body classes, and `css-change`
-   * does not say which window changed.
+   * Read the theme once, from the main window's body (the plugin's own
+   * `document`), for every diagram, popouts included. `css-change` fires
+   * before Obsidian updates a popout's body classes, so a popout's own body
+   * still names the old theme at this moment (`followAppTheme` in
+   * `appTheme.ts`).
    */
   private followAppTheme(): void {
-    for (const diagram of this.diagrams) {
-      if (diagram.pinnedTheme === null) {
-        diagram.view.setTheme(themeOf(diagram.view.wrapper.doc.body));
-      }
-    }
+    followAppTheme(this.diagrams, document.body);
   }
 
   /**
