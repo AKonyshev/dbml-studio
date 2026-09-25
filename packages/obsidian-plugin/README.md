@@ -47,7 +47,8 @@ above means the same in both.
 
 - **Обновить диаграммы** — re-reads every model on screen and sends it to its
   diagram again. Tables keep their places; new ones are laid out. The plugin
-  does not watch the files.
+  does not watch the files. Each file is read once, and one that cannot be
+  read is one notice, however many blocks draw it.
 
 ## Build and install
 
@@ -108,18 +109,26 @@ never share one.
 
 Each block draws in its own window: a note opened in a popout keeps its own
 document, and the block's frame, its message listener and its expand lock
-all live there rather than in Obsidian's main window. A diagram taking the
-whole window covers only the window it is in, and at most one diagram is
+all live there rather than in Obsidian's main window. At most one diagram is
 expanded per window at a time — a second expand in the same window puts the
 first back; Escape does too.
+
+An expanded diagram covers the note's pane, not the whole window. Its box is
+`position: fixed`, and Obsidian's workspace leaf contains `fixed` (found in
+the live app, Obsidian 1.13.7), so the pane is what it fills; the frame's
+toolbar stays visible, and puts it back. That is accepted: the spec asks for
+a diagram expanded over the workspace, and the note's pane is where the
+reader was working.
 
 A note's tab dragged into another window takes its blocks along without
 rendering them again, and each frame reloads there. The plugin follows through
 the element's `onWindowMigrated` hook. Each diagram:
 
-- is released from the old window's expand lock
+- is released from the old window's expand lock, so that window is unlocked
+  and an expanded diagram arrives collapsed
 - moves its listener and poster to the new window
-- greets the reloaded frame with its model, in the application's theme
+- reloads in the application's theme, and greets the reloaded frame with its
+  model in that theme
 
 The plugin's code, though, runs in the main window, and a browser stamps a
 message's `event.source` with the window of the code that calls
@@ -134,7 +143,14 @@ editor it keeps hidden — and each frame is the 11.6 MB document above, some
 70 MB once running. The frame element is placed at its full height at once,
 but gets its `src` from an `IntersectionObserver` of the block's own window,
 so the hidden copy never loads. The model sent before then waits for the
-frame's hello.
+frame's hello. The theme in the frame's URL, which it paints in before the
+hello, is read when `src` is written, not when the block rendered: a diagram
+scrolled to after a theme switch loads in the new theme.
+
+Measured in Obsidian 1.13.7 with four diagrams in a note: the frames load in
+0.5–1.4 s and the diagrams are visible about 1.8 s after the note opens.
+Obsidian's main window never stalls (worst 1 ms), because the frames run out
+of process; each loaded frame costs about 70 MB.
 
 All the text a reader of a note sees — block errors, the read failure, the
 command name — is Russian and lives in `src/i18n/locales/ru.ts`, the one path
@@ -151,5 +167,7 @@ yarn workspace obsidian-plugin test
 
 Jest in jsdom, over the pure modules and the frame's side of the
 conversation; one test spawns `scripts/vendor-frame.mjs` against a fixture
-`dist` and runs the script it inlines. The wiring into Obsidian itself is
-checked by hand, against a real vault: `docs/test-cases.md`, section 14.
+`dist` and runs the script it inlines. `main.test.ts` runs the plugin itself
+against a stand-in for the `obsidian` module, which ships types only. The
+wiring into Obsidian — windows, views, scrolling, the theme — is checked by
+hand, against a real vault: `docs/test-cases.md`, section 14.

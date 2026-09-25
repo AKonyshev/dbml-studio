@@ -13,7 +13,7 @@ is [Keep a Changelog](http://keepachangelog.com/).
 - The diagram follows Obsidian's light and dark theme unless the block pins
   one, and keeps its view and layout when the theme changes.
 - "Обновить диаграммы" re-reads every model on screen.
-- A diagram can take the whole window, and Escape puts it back.
+- A diagram can be expanded over its note's pane, and Escape puts it back.
 - A note opened in a popout window draws its diagrams there too, keeps
   following the theme, and keeps its diagrams when its tab moves to another
   window.

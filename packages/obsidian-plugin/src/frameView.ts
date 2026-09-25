@@ -29,7 +29,7 @@ export interface FrameViewOptions {
   title: string;
   /** The window whose `message` events carry the frame's half of the protocol. */
   messageTarget: Window;
-  /** The frame's toolbar asked to take the whole window, or to give it back. */
+  /** The frame's toolbar asked to be expanded, or to be put back. */
   onExpand?: (expanded: boolean) => void;
 }
 

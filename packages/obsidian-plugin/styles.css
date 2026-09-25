@@ -13,7 +13,10 @@
   padding: 0.5em 0.8em;
 }
 
-/* An expanded diagram: across the whole window. The classes are the contract
+/* An expanded diagram. Fixed, so it fills the nearest box that contains
+   `fixed` — in Obsidian that is the note's workspace leaf, not the window, so
+   an expanded diagram covers the note's pane and leaves the rest of the
+   workspace in view (docs/test-cases.md, 14.21). The classes are the contract
    the documentation sites' host keeps too (packages/web/README.md, host.css);
    the layer is Obsidian's own for modals rather than host.css's 1000, so that
    menus, notices and tooltips still open over it. */

@@ -67,7 +67,7 @@ export default class DbmlStudioPlugin extends Plugin {
 
   /**
    * One expanded diagram per window, not per application: an expanded
-   * diagram covers only its own window, and one in a popout is behind nothing
+   * diagram stays inside its own window, and one in a popout is behind nothing
    * in the main window. Each host locks its own document and hears Escape in
    * it — a keydown in a popout never reaches the main window.
    */
