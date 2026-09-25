@@ -33,6 +33,8 @@ interface Diagram {
   tables: string[] | null;
   /** The theme the block pinned, or `null` to follow the application. */
   pinnedTheme: FrameTheme | null;
+  /** Takes back the `onWindowMigrated` listener that moves the diagram. */
+  stopFollowingWindow: () => void;
 }
 
 /**
@@ -116,8 +118,14 @@ export default class DbmlStudioPlugin extends Plugin {
    * Take a diagram down. Released first: if it is the expanded one, its window
    * is unlocked and stops listening for Escape; if it is any other, the
    * expanded one stays where the reader put it.
+   *
+   * It stops following its window here too, not only when its block goes: a
+   * plugin switched off leaves the elements of a note Obsidian does not render
+   * again, and a tab dragged elsewhere afterwards would move a dead diagram,
+   * listening in the new window and keeping the plugin alive.
    */
   private drop(diagram: Diagram): void {
+    diagram.stopFollowingWindow();
     diagram.expandHost.release(diagram.view);
     diagram.view.destroy();
     this.diagrams.delete(diagram);
@@ -263,22 +271,26 @@ export default class DbmlStudioPlugin extends Plugin {
       },
     });
 
-    const diagram: Diagram = { view, expandHost, path, tables, pinnedTheme };
-
-    // Dragging the note's tab into another window moves these elements there
-    // without rendering the block again; the frame reloads in that window.
-    const stopFollowingWindow = element.onWindowMigrated((win) => {
-      moveDiagram(
-        diagram,
-        win as Window & typeof globalThis,
-        this.expandHosts,
-        document.body,
-      );
-    });
+    const diagram: Diagram = {
+      view,
+      expandHost,
+      path,
+      tables,
+      pinnedTheme,
+      // Dragging the note's tab into another window moves these elements
+      // there without rendering the block again; the frame reloads there.
+      stopFollowingWindow: element.onWindowMigrated((win) => {
+        moveDiagram(
+          diagram,
+          win as Window & typeof globalThis,
+          this.expandHosts,
+          document.body,
+        );
+      }),
+    };
 
     this.diagrams.add(diagram);
     child.own(() => {
-      stopFollowingWindow();
       this.drop(diagram);
     });
 
