@@ -16,6 +16,7 @@ import { FrameView } from "./frameView";
 import {
   blockErrorText,
   modelUnreadableText,
+  readFailureReason,
   vaultNotOnDiskText,
 } from "./messages";
 import { resolveModelPath } from "./resolveModelPath";
@@ -57,6 +58,13 @@ class BlockChild extends MarkdownRenderChild {
 export default class DbmlStudioPlugin extends Plugin {
   private readonly diagrams = new Set<Diagram>();
 
+  /**
+   * Set once the plugin is switched off. A model read already under way when
+   * that happens finishes afterwards, and must find nobody to draw for: its
+   * diagram would outlive the plugin, with no `onunload` left to take it down.
+   */
+  private unloaded = false;
+
   onload(): void {
     this.registerMarkdownCodeBlockProcessor(
       "dbml",
@@ -67,6 +75,8 @@ export default class DbmlStudioPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.unloaded = true;
+
     for (const diagram of this.diagrams) {
       diagram.view.destroy();
     }
@@ -113,19 +123,26 @@ export default class DbmlStudioPlugin extends Plugin {
 
     try {
       text = await readFile(path, "utf8");
-    } catch {
-      if (!child.gone) {
-        renderBlockError(element, modelUnreadableText(path));
+    } catch (error) {
+      if (!child.gone && !this.unloaded) {
+        renderBlockError(
+          element,
+          modelUnreadableText(path, readFailureReason(error)),
+        );
       }
 
       return;
     }
 
-    if (child.gone) {
+    if (child.gone || this.unloaded) {
       return;
     }
 
-    const theme = pinnedTheme ?? themeOf(document.body);
+    // The block's own window and document, not the globals: a note opened in
+    // a popout window renders there, its frame says hello to that window, and
+    // a listener on the main one would never hear it. Read after the model,
+    // when the block is in the note it belongs to.
+    const theme = pinnedTheme ?? themeOf(element.doc.body);
 
     // The frame's message listener is FrameView's own, added here and removed
     // by `destroy` — which the child runs when Obsidian drops this rendering
@@ -139,7 +156,7 @@ export default class DbmlStudioPlugin extends Plugin {
       url: withTheme(frameUrl(this, "frame/embed.html"), theme),
       height,
       title: model,
-      messageTarget: window,
+      messageTarget: element.win,
     });
 
     const diagram: Diagram = { view, path, tables, pinnedTheme };
