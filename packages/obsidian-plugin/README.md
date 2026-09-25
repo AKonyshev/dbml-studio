@@ -118,6 +118,14 @@ window and drop everything, since it accepts only its parent. Each
 `FrameView` therefore posts through a one-line function compiled by its own
 window's `Function` constructor, which speaks as that window whoever calls it.
 
+A frame loads only when its block first comes on screen. Obsidian renders
+every block twice while a note is open — reading view, and the Live Preview
+editor it keeps hidden — and each frame is the 11.6 MB document above, some
+70 MB once running. The frame element is placed at its full height at once,
+but gets its `src` from an `IntersectionObserver` of the block's own window,
+so the hidden copy never loads. The model sent before then waits for the
+frame's hello.
+
 All the text a reader of a note sees — block errors, the read failure, the
 command name — is Russian and lives in `src/i18n/locales/ru.ts`, the one path
 the repository's Cyrillic guard

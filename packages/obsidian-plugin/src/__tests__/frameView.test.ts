@@ -382,3 +382,139 @@ describe("FrameView, posting as the frame's parent window", () => {
     expect(construct).toHaveBeenCalledTimes(1);
   });
 });
+
+// Obsidian renders a block twice while a note is open — once in reading view
+// and once in the hidden Live Preview editor — and every frame is an 11.6 MB
+// document. A frame loads only once its wrapper is first on screen.
+describe("FrameView, loading when first seen", () => {
+  class FakeObserver {
+    static made: FakeObserver[] = [];
+
+    readonly observed: Element[] = [];
+    readonly disconnect = jest.fn();
+
+    constructor(private readonly callback: IntersectionObserverCallback) {
+      FakeObserver.made.push(this);
+    }
+
+    observe(target: Element): void {
+      this.observed.push(target);
+    }
+
+    unobserve(): void {}
+
+    fire(isIntersecting: boolean): void {
+      this.callback(
+        this.observed.map((target) => {
+          // All FrameView reads of an entry.
+          const entry: Partial<IntersectionObserverEntry> = {
+            target,
+            isIntersecting,
+          };
+
+          return entry as IntersectionObserverEntry;
+        }),
+        this as unknown as IntersectionObserver,
+      );
+    }
+  }
+
+  const FRAME_URL = "about:blank#diagram";
+
+  beforeEach(() => {
+    FakeObserver.made = [];
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      writable: true,
+      value: FakeObserver,
+    });
+  });
+
+  afterEach(() => {
+    delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
+  });
+
+  const observer = (): FakeObserver => {
+    expect(FakeObserver.made).toHaveLength(1);
+
+    return FakeObserver.made[0];
+  };
+
+  it("builds the frame, sized and in its wrapper, but loads nothing yet", () => {
+    const { view } = setup({ url: FRAME_URL });
+
+    expect(view.element.parentElement).toBe(view.wrapper);
+    expect(view.element.height).toBe("500");
+    expect(view.element.getAttribute("src")).toBeNull();
+    expect(observer().observed).toEqual([view.wrapper]);
+  });
+
+  it("does not load while its wrapper stays off screen", () => {
+    const { view } = setup({ url: FRAME_URL });
+
+    observer().fire(false);
+
+    expect(view.element.getAttribute("src")).toBeNull();
+    expect(observer().disconnect).not.toHaveBeenCalled();
+  });
+
+  it("loads the first time its wrapper is on screen, then stops watching", () => {
+    const { view } = setup({ url: FRAME_URL });
+
+    observer().fire(true);
+
+    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+    expect(observer().disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops watching when destroyed before it was ever seen", () => {
+    const { view } = setup({ url: FRAME_URL });
+
+    view.destroy();
+
+    expect(observer().disconnect).toHaveBeenCalled();
+  });
+
+  it("delivers a document set before loading once the frame says hello", () => {
+    const { view } = setup({ url: FRAME_URL });
+
+    view.setDocument({
+      text: "Table a { id int }",
+      tables: null,
+      theme: "dark",
+    });
+    observer().fire(true);
+
+    // Loading gives the frame a window of its own; the hello comes from that.
+    const loaded = view.element.contentWindow;
+
+    if (loaded === null) {
+      throw new Error("jsdom gave the loaded frame no window");
+    }
+
+    const post = jest
+      .spyOn(loaded, "postMessage")
+      .mockImplementation(() => undefined);
+
+    window.dispatchEvent(messageFrom(loaded, HELLO));
+
+    expect(post).toHaveBeenLastCalledWith(
+      {
+        source: "dbml-frame",
+        type: "document",
+        text: "Table a { id int }",
+        tables: null,
+        theme: "dark",
+      },
+      "*",
+    );
+  });
+
+  it("loads straight away where there is no IntersectionObserver", () => {
+    delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
+
+    const { view } = setup({ url: FRAME_URL });
+
+    expect(view.element.getAttribute("src")).toBe(FRAME_URL);
+  });
+});

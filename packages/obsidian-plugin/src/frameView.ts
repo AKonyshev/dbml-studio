@@ -77,6 +77,7 @@ export class FrameView {
 
   private readonly messageTarget: Window;
   private readonly post: Poster;
+  private observer: IntersectionObserver | null = null;
   private readonly onMessage: (event: MessageEvent) => void;
   private readonly onExpand: ((expanded: boolean) => void) | undefined;
   private pending: FrameDocument | null = null;
@@ -100,7 +101,6 @@ export class FrameView {
     this.element.width = "100%";
     this.element.height = String(height);
     this.element.title = title;
-    this.element.src = url;
 
     this.messageTarget = messageTarget;
     // The window the frame's parent document is, which is the one the frame
@@ -119,6 +119,8 @@ export class FrameView {
 
     this.wrapper.append(this.element);
     container.append(this.wrapper);
+
+    this.loadWhenSeen(url);
   }
 
   /** The model this frame should draw, now or as soon as it says hello. */
@@ -161,8 +163,43 @@ export class FrameView {
   }
 
   destroy(): void {
+    this.stopWatching();
     this.messageTarget.removeEventListener("message", this.onMessage);
     this.wrapper.remove();
+  }
+
+  /**
+   * Gives the frame its `src` only when its wrapper first comes on screen.
+   *
+   * Obsidian renders every block twice while a note is open — in reading view
+   * and in the Live Preview editor it keeps hidden — and each frame is an
+   * 11.6 MB document costing some 70 MB once loaded. The hidden copy is never
+   * on screen, so it never loads. The frame itself is built at once, at its
+   * height, so the note keeps its layout. The observer is the element's own
+   * window's: a note in a popout scrolls in the popout. A document or theme
+   * set in the meantime waits in `pending` for the frame's hello, as before.
+   */
+  private loadWhenSeen(url: string): void {
+    const Observer =
+      this.wrapper.ownerDocument.defaultView?.IntersectionObserver;
+
+    if (Observer === undefined) {
+      this.element.src = url;
+      return;
+    }
+
+    this.observer = new Observer((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        this.stopWatching();
+        this.element.src = url;
+      }
+    });
+    this.observer.observe(this.wrapper);
+  }
+
+  private stopWatching(): void {
+    this.observer?.disconnect();
+    this.observer = null;
   }
 
   private receive(event: MessageEvent): void {
