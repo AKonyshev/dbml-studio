@@ -14,6 +14,7 @@ import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { withTheme } from "./frameSrc";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
+import { ru } from "./i18n/locales/ru";
 import {
   blockErrorText,
   modelUnreadableText,
@@ -85,7 +86,7 @@ export default class DbmlStudioPlugin extends Plugin {
 
     this.addCommand({
       id: "refresh-diagrams",
-      name: "Обновить диаграммы",
+      name: ru.refreshCommandName,
       callback: () => {
         this.refreshAll();
       },

@@ -1,10 +1,12 @@
 import { type BlockError } from "./blockParams";
+import { ru } from "./i18n/locales/ru";
 
 /**
  * What the reader of a note is shown when a block cannot be drawn.
  *
- * In Russian, as every note around it is. Everything inside the frame — a
- * broken model, a table that is not there — is the frame's to say
+ * The wording itself lives in `./i18n/locales/ru` — this only picks which
+ * entry answers which kind of error. Everything inside the frame — a broken
+ * model, a table that is not there — is the frame's to say
  * (`packages/web/src/embed/embedError.ts`), and is not repeated here: two
  * places writing the text of one error drift apart within a month.
  *
@@ -14,30 +16,22 @@ import { type BlockError } from "./blockParams";
 export const blockErrorText = (error: BlockError): string => {
   switch (error.kind) {
     case "modelMissing":
-      return "Ключ model пуст — укажите путь к файлу .dbml.";
+      return ru.blockError.modelMissing();
     case "modelNotAPath":
-      return `model — путь к файлу .dbml, а не «${error.value}».`;
+      return ru.blockError.modelNotAPath(error.value);
     case "unknownKey":
-      return `Неизвестный ключ «${error.key}». Блок понимает model, tables, height и theme.`;
+      return ru.blockError.unknownKey(error.key);
     case "duplicateKey":
-      return `Ключ «${error.key}» указан дважды.`;
+      return ru.blockError.duplicateKey(error.key);
     case "malformedLine":
-      return `Строка «${error.line}» не похожа на «ключ: значение».`;
+      return ru.blockError.malformedLine(error.line);
     case "heightInvalid":
-      return `height — положительное целое число пикселей, а не «${error.value}».`;
+      return ru.blockError.heightInvalid(error.value);
     case "themeInvalid":
-      return `theme — light или dark, а не «${error.value}».`;
+      return ru.blockError.themeInvalid(error.value);
     case "tablesInvalid":
-      return `tables — имена таблиц через запятую, а не «${error.value}».`;
+      return ru.blockError.tablesInvalid(error.value);
   }
-};
-
-/** What `fs` said, in the reader's words where there are words for it. */
-const READ_FAILURES: Readonly<Record<string, string>> = {
-  ENOENT: "файла нет",
-  EACCES: "нет прав на чтение",
-  EPERM: "нет прав на чтение",
-  EISDIR: "это папка",
 };
 
 /**
@@ -53,7 +47,7 @@ export const readFailureReason = (error: unknown): string => {
     error instanceof Error && "code" in error ? error.code : undefined;
 
   if (typeof code === "string") {
-    return READ_FAILURES[code] ?? code;
+    return ru.readFailureReasons[code] ?? code;
   }
 
   return error instanceof Error ? error.message : String(error);
@@ -64,7 +58,6 @@ export const readFailureReason = (error: unknown): string => {
  * sentence's punctuation never runs into it.
  */
 export const modelUnreadableText = (path: string, reason: string): string =>
-  `Не удалось прочитать модель (${reason}): ${path}`;
+  ru.modelUnreadable(path, reason);
 
-export const vaultNotOnDiskText = (): string =>
-  "Хранилище открыто не с диска — модель читать неоткуда.";
+export const vaultNotOnDiskText = (): string => ru.vaultNotOnDisk();

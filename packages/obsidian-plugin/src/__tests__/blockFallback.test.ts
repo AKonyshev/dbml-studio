@@ -13,13 +13,17 @@ afterEach(() => {
 });
 
 describe("renderBlockError", () => {
+  // The message is an opaque string here: `renderBlockError` only places
+  // whatever text it is given, and the wording itself is `messages.ts`'s
+  // concern (covered by `messages.test.ts`) — so a plain, arbitrary fixture
+  // is enough to check the placing.
   it("puts the message in the note", () => {
     const element = container();
 
-    renderBlockError(element, "Неизвестный ключ: tabels");
+    renderBlockError(element, "unknown key: tabels");
 
     expect(element.querySelector(".dbml-diagram-error")?.textContent).toBe(
-      "Неизвестный ключ: tabels",
+      "unknown key: tabels",
     );
   });
 
@@ -28,11 +32,11 @@ describe("renderBlockError", () => {
   it("replaces whatever the container held", () => {
     const element = container();
 
-    renderBlockError(element, "первая");
-    renderBlockError(element, "вторая");
+    renderBlockError(element, "first");
+    renderBlockError(element, "second");
 
     expect(element.querySelectorAll(".dbml-diagram-error")).toHaveLength(1);
-    expect(element.textContent).toBe("вторая");
+    expect(element.textContent).toBe("second");
   });
 });
 
