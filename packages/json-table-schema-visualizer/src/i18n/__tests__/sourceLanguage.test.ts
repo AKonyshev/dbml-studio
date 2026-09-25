@@ -17,9 +17,22 @@ const NON_ENGLISH = /[\p{Script=Cyrillic}\p{Script=Han}]/u;
 
 const EXCLUDED = ["src/i18n/locales/", "/l10n/", "package.nls"];
 
-const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
-  encoding: "utf-8",
-}).trim();
+// The repository is the one this file sits in, not whichever one the caller's
+// environment names. Git exports GIT_DIR and GIT_INDEX_FILE to its hooks, and
+// every child of the pre-commit hook inherits them. In a linked worktree that
+// GIT_DIR comes without a GIT_WORK_TREE, so git takes the current directory —
+// this package, where jest runs — for the top level: `rev-parse --show-toplevel`
+// answered with the package, `ls-files` still printed every path, each of them
+// joined to the wrong root was missing on disk, and the scan read nothing and
+// passed. On every commit made from a worktree, for as long as that stood.
+const repoRoot = path.resolve(__dirname, "..", "..", "..", "..", "..");
+const thisFile = path.relative(repoRoot, __filename).split(path.sep).join("/");
+
+// So git is asked with none of the caller's GIT_* variables, and finds the
+// repository and its index from `repoRoot` the way it would in a shell.
+const gitEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")),
+);
 
 function listSourceFiles(): string[] {
   // Every tracked TypeScript file under `packages/`, rather than a list of the
@@ -31,7 +44,12 @@ function listSourceFiles(): string[] {
   const output = execFileSync(
     "git",
     ["ls-files", "packages/**/*.ts", "packages/**/*.tsx"],
-    { cwd: repoRoot, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
+    {
+      cwd: repoRoot,
+      env: gitEnv,
+      encoding: "utf-8",
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
 
   return output
@@ -43,8 +61,19 @@ function listSourceFiles(): string[] {
 describe("source language", () => {
   test("sources contain no Cyrillic or CJK outside locale files", () => {
     const offenders: string[] = [];
+    const files = listSourceFiles();
 
-    for (const file of listSourceFiles()) {
+    // A scan of nothing finds nothing, and reads as a pass. Before trusting the
+    // result, prove the list is this repository's: it must contain this very
+    // file. An empty list fails here, and so does a list read from some other
+    // index or relative to some other root.
+    if (!files.includes(thisFile)) {
+      throw new Error(
+        `The source list is not this repository's (${files.length} files, ${thisFile} not among them) — refusing to report a pass on it.`,
+      );
+    }
+
+    for (const file of files) {
       const absolute = path.join(repoRoot, file);
 
       // `git ls-files` reads the index, so a file deleted but not yet staged is
