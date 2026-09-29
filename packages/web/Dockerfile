@@ -25,6 +25,7 @@ COPY packages/dbml-vs-code-extension/package.json packages/dbml-vs-code-extensio
 COPY packages/extension-shared/package.json packages/extension-shared/
 COPY packages/json-table-schema-visualizer/package.json packages/json-table-schema-visualizer/
 COPY packages/mkdocs-dbml/package.json packages/mkdocs-dbml/
+COPY packages/obsidian-plugin/package.json packages/obsidian-plugin/
 COPY packages/schema-diff/package.json packages/schema-diff/
 COPY packages/shared/package.json packages/shared/
 COPY packages/web/package.json packages/web/

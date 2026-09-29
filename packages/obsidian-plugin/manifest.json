@@ -1,0 +1,9 @@
+{
+  "id": "dbml-studio",
+  "name": "DBML Studio",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Renders DBML models as ER diagrams inside notes.",
+  "author": "AKonyshev",
+  "isDesktopOnly": true
+}

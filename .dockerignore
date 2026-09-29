@@ -44,6 +44,11 @@ packages/schema-diff/**
 # vendors (~20 MB) would otherwise ride along in every image build.
 packages/mkdocs-dbml/**
 !packages/mkdocs-dbml/package.json
+# The Obsidian plugin is built on a developer's machine, never in the image;
+# its bundle and the frame it copies out of the site's build (~12 MB) would
+# otherwise ride along in every image build.
+packages/obsidian-plugin/**
+!packages/obsidian-plugin/package.json
 
 # Tests, coverage, docs, and editor noise.
 docs

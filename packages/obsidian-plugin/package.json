@@ -1,0 +1,20 @@
+{
+  "name": "obsidian-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build-plugin.mjs && node scripts/vendor-frame.mjs",
+    "build:plugin": "node scripts/build-plugin.mjs",
+    "vendor": "node scripts/vendor-frame.mjs",
+    "test": "jest"
+  },
+  "dependencies": {
+    "web": "0.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jest-environment-jsdom": "^29.7.0",
+    "obsidian": "^1.7.2"
+  }
+}

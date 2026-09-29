@@ -8,7 +8,8 @@ A release is the extension's release. `packages/dbml-vs-code-extension/package.j
 carries the version everything else is named after; the root `package.json`
 version is unrelated and is not touched.
 
-The MkDocs plugin has its own version and its own release, below.
+The MkDocs plugin and the Obsidian plugin each have their own version and
+their own release, below.
 
 ## Deciding the number
 
@@ -155,6 +156,32 @@ the Marketplace, it cannot be taken back:
 ```bash
 packages/mkdocs-dbml/.venv/bin/python -m twine upload packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl
 ```
+
+## The Obsidian plugin
+
+The plugin is versioned on its own, in `packages/obsidian-plugin/manifest.json`,
+by the same rule: what would a user of the previous version notice? The entry
+goes in `packages/obsidian-plugin/CHANGELOG.md`.
+
+It carries a copy of the diagram frame taken from the site's build, so the
+order matters and is enforced — the plugin's build refuses a `dist` that is
+missing anything the frame needs:
+
+```bash
+yarn build:web
+yarn package:obsidian
+```
+
+The zip lands in the root `dist/`, beside the `.vsix` archive. Check the frame
+is in it, as one file of about 11.6 MB with no `assets/` folder beside it:
+
+```bash
+unzip -l dist/dbml-studio-obsidian-<version>.zip | grep -E 'dbml-studio/frame/'
+```
+
+Attach it to the GitHub release as step 6 attaches the extension. There is no
+registry step: the plugin is installed by unzipping it into a vault's
+`.obsidian/plugins/`.
 
 ## What has gone wrong before
 
