@@ -125,10 +125,32 @@ are what got it back. Nothing about a GitHub release requires this to follow
 immediately — a release that only exists as a tag and a `.vsix` is a complete
 release for anyone reading the repository.
 
+## Releasing a plugin
+
+Each plugin is released on its own, by the steps above with three differences:
+
+- **The release commit** changes the plugin's version file and its
+  `CHANGELOG.md` (below, per plugin), not the extension's, and is committed as
+  `chore(release): <plugin> <version>`. Two plugins released together share one
+  commit and one pull request.
+- **The tag** names the plugin, so it cannot be mistaken for an extension
+  version: `mkdocs-dbml-v<version>` and `obsidian-plugin-v<version>`, on the
+  merge commit, annotated like the extension's.
+- **The GitHub release** is the plugin's own, titled
+  `<plugin> <version> — <the short name>`, with its package attached in place of
+  the `.vsix`. Mark it `--latest=false`: "latest" on the repository's page is
+  the extension's.
+
+```bash
+gh release create mkdocs-dbml-v<version> --latest=false --title "mkdocs-dbml <version> — <the short name>" --notes "..."
+gh release upload mkdocs-dbml-v<version> dist/mkdocs_dbml-<version>-py3-none-any.whl
+```
+
 ## The MkDocs plugin
 
 The plugin is versioned on its own, in `packages/mkdocs-dbml/pyproject.toml`,
 by the same rule as above: what would a user of the previous version notice?
+The entry goes in `packages/mkdocs-dbml/CHANGELOG.md`.
 
 It carries a built copy of the diagram frame, so the build order matters and
 is enforced — the wheel refuses to build from a `dist` that is missing
