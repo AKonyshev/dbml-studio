@@ -43,6 +43,14 @@ the same line are YAML's and are not understood here — each is read as part
 of the plain text after the `:`, not stripped. A block written in the form
 above means the same in both.
 
+In Live Preview the block the cursor is in shows as its source, not as a
+diagram — that is how Obsidian lets any code block be edited, Mermaid
+included, and a plugin cannot change it. Right after a note opens the cursor
+sits at its first line, so a note that starts with a diagram shows that one
+as text until the cursor leaves it. Reading view always draws every block.
+When the cursor leaves a block, Obsidian renders it afresh, and its frame
+loads again — about a second.
+
 ## Commands
 
 - **Обновить диаграммы** — re-reads every model on screen and sends it to its
