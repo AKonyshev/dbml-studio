@@ -3,7 +3,11 @@
 The Obsidian plugin's own history. The version is `manifest.json`'s; the format
 is [Keep a Changelog](http://keepachangelog.com/).
 
-## [0.1.0]
+## [0.1.0] - 2026-09-29
+
+The first release. Installed by unzipping `dbml-studio-obsidian-0.1.0.zip`
+into a vault's `.obsidian/plugins/`; desktop only, because models are read
+from outside the vault.
 
 ### Added
 
