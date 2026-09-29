@@ -82,6 +82,12 @@ follows the toggle afterward, without reloading the frame; the name of the
 dark palette is read from `palette` in `mkdocs.yml`. A block that names its
 own `theme:` is fixed and does not follow the toggle.
 
+When the palette follows the reader's system — Material's automatic toggle, or
+light and dark entries chosen by `media: "(prefers-color-scheme: …)"` — the
+build cannot know which colour a reader will get, so the diagram opens in the
+reader's system theme (`theme=auto` in the frame's URL) and has the page's
+colour from its first paint. A block or config `theme` still wins.
+
 With any other theme, there is no toggle the plugin knows how to watch. The
 diagram opens in the theme the block or the config names, or light by default.
 

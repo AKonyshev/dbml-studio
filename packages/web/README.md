@@ -116,6 +116,27 @@ whole model. Standard output, one JSON object:
   could not run. That is different from the models being fine, and a caller
   must not report it as such.
 
+#### The frame's query
+
+`embed.html` reads its first state from the query string:
+
+- `src` — a model path inside `/schemas/` (the container and Antora), or
+  `model` — a model URL relative to the frame, on the same site (a
+  documentation site's own). Neither means a host will send the model as a
+  message; both at once is refused.
+- `tables` — a comma-separated list of the tables to draw; absent or empty
+  draws the whole model.
+- `theme` — the theme of the first paint, one of three values:
+
+  - `light`, the default, and what any value the frame does not know means;
+  - `dark`;
+  - `auto` — the frame's own `prefers-color-scheme`, read once at load, and
+    dark when the browser will not say. For a page that picks its own colours
+    by the system, so the frame opens in the page's colour before the host
+    script has said anything.
+
+  A `theme` message from the host overrides any of the three.
+
 #### The host script's HTML contract
 
 - Each frame is an `<iframe>` inside `<div class="dbml-diagram">`.

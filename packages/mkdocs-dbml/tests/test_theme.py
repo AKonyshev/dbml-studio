@@ -48,3 +48,53 @@ def test_a_custom_dark_scheme_first_opens_dark():
 
 def test_otherwise_light():
     assert initial_theme(None, None, None) == "light"
+
+
+# Material's automatic toggle: the first entry follows the system outright, the
+# other two are what the reader can switch to.
+AUTOMATIC = [
+    {"media": "(prefers-color-scheme)", "toggle": {"icon": "auto"}},
+    {"media": "(prefers-color-scheme: light)", "scheme": "default"},
+    {"media": "(prefers-color-scheme: dark)", "scheme": "slate"},
+]
+
+# The older recipe: a light/dark pair, the one shown first chosen by the system.
+BY_SYSTEM = [
+    {"media": "(prefers-color-scheme: light)", "scheme": "default"},
+    {"media": "(prefers-color-scheme: dark)", "scheme": "slate"},
+]
+
+
+def test_a_palette_that_follows_the_system_leaves_it_to_the_frame():
+    assert initial_theme(None, None, AUTOMATIC) == "auto"
+    assert initial_theme(None, None, BY_SYSTEM) == "auto"
+
+
+def test_one_entry_that_follows_the_system_is_enough():
+    assert (
+        initial_theme(None, None, {"media": "(prefers-color-scheme: dark)"}) == "auto"
+    )
+    assert (
+        initial_theme(
+            None,
+            None,
+            [{"scheme": "slate"}, {"media": "(prefers-color-scheme: light)"}],
+        )
+        == "auto"
+    )
+
+
+def test_the_block_and_the_plugin_config_still_decide_first():
+    assert initial_theme("dark", None, AUTOMATIC) == "dark"
+    assert initial_theme("light", None, BY_SYSTEM) == "light"
+    assert initial_theme(None, "dark", AUTOMATIC) == "dark"
+    assert initial_theme(None, "light", BY_SYSTEM) == "light"
+
+
+def test_a_media_query_about_something_else_is_not_the_system_theme():
+    palette = [
+        {"media": "(min-width: 800px)", "scheme": "slate"},
+        {"media": None, "scheme": "default"},
+        {"media": 42, "scheme": "default"},
+    ]
+    assert initial_theme(None, None, palette) == "dark"
