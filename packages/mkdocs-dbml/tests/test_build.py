@@ -261,6 +261,39 @@ def test_plugin_config_turns_off_validation_and_fixes_every_frames_theme(site, c
         assert html.count("theme=dark") == diagrams
 
 
+def test_a_palette_that_follows_the_system_opens_frames_in_the_system_theme(site):
+    # Material's automatic toggle, written into the built-in theme's config:
+    # the plugin reads `theme.palette` whichever theme carries it, and this keeps
+    # the test off a dependency the package does not otherwise need.
+    write(
+        site / "mkdocs.yml",
+        """
+        site_name: fixture
+        theme:
+          name: mkdocs
+          palette:
+            - media: "(prefers-color-scheme)"
+            - media: "(prefers-color-scheme: light)"
+              scheme: default
+            - media: "(prefers-color-scheme: dark)"
+              scheme: slate
+        plugins:
+          - dbml
+        markdown_extensions:
+          - pymdownx.superfences
+        """,
+    )
+    out = build_site(site)
+    assert (
+        'src="_dbml/embed.html?model=..%2Fmodels%2Facl.dbml&amp;tables=analysis&amp;theme=auto"'
+        in (out / "index.html").read_text()
+    )
+    # The block that named a theme keeps it.
+    deep = (out / "guide/deep/index.html").read_text()
+    assert deep.count("theme=auto") == 2
+    assert deep.count("theme=dark") == 1
+
+
 @pytest.mark.parametrize("height", ["0", "-100", "true", "12.5"])
 def test_plugin_config_refuses_a_height_a_block_would_refuse(site, height, caplog):
     write(

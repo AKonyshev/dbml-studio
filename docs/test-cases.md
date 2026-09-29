@@ -317,6 +317,8 @@ this one.
 | 13.35 | `mkdocs build --strict` on a page asking for a missing table     | Build `--strict` with a block naming a table the model lacks                                                   | The build fails, naming the page                                                                            | Manual                           |
 | 13.36 | A ` ```dbml ` block with no `model:`                             | Build a page about the DBML language, showing plain DBML in a `dbml` fence                                     | It stays highlighted code                                                                                   | Manual                           |
 | 13.37 | Material instant navigation, from an expanded diagram            | Expand a diagram, then follow a link or press `n`                                                              | The page scrolls again                                                                                      | Manual                           |
+| 13.38 | A palette that follows the system                                | A `palette` entry with `media: "(prefers-color-scheme…)"`, build                                               | Frames without `theme:` get `theme=auto`; a block or config `theme` still wins                              | `test_build.py`, `test_theme.py` |
+| 13.39 | Material's automatic palette in a dark browser                   | Build with the automatic toggle, open a page with the system set to dark                                       | The diagram is dark from its first paint, with no light flash                                               | Manual                           |
 
 ---
 

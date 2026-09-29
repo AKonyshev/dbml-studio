@@ -31,13 +31,34 @@ def dark_scheme_of(palette: object) -> str | None:
     return candidates[0] if len(candidates) == 1 else None
 
 
+def follows_the_system(palette: object) -> bool:
+    """Whether the page picks its palette by the reader's system.
+
+    Material's automatic toggle and the older light/dark pair both mark their
+    entries with a `media` query on `prefers-color-scheme`. One such entry is
+    enough: the page's first colour is then the system's, which the build cannot
+    know and the frame can.
+    """
+    return any(
+        isinstance(entry.get("media"), str) and "prefers-color-scheme" in entry["media"]
+        for entry in _entries(palette)
+    )
+
+
 def initial_theme(
     block_theme: str | None, config_theme: str | None, palette: object
 ) -> str:
+    """`light`, `dark`, or `auto` — the frame's own `prefers-color-scheme`.
+
+    `auto` only ever comes from the palette: a block or the plugin config that
+    names a theme has fixed it, and the page's own palette does not move it.
+    """
     if block_theme is not None:
         return block_theme
     if config_theme is not None:
         return config_theme
+    if follows_the_system(palette):
+        return "auto"
     first = next(
         (entry["scheme"] for entry in _entries(palette) if entry.get("scheme")), None
     )
