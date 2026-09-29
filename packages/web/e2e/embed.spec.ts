@@ -1496,6 +1496,50 @@ test("the theme in the query reaches the canvas, not only the chrome", async ({
   expect(light.root).not.toContain("dark");
 });
 
+// `theme=auto` is what a documentation site writes when its page picks its own
+// colours by the system: the frame asks its own window the same question, so it
+// opens the page's colour without waiting for the host to say. Compared with a
+// frame told the theme outright, canvas and root both, for the same reason as
+// the test above.
+for (const colorScheme of ["dark", "light"] as const) {
+  test.describe(`on a ${colorScheme} system`, () => {
+    test.use({ colorScheme });
+
+    test(`theme=auto opens ${colorScheme}`, async ({ page }) => {
+      await serveModel(page);
+
+      const opened = async (
+        theme: string,
+      ): Promise<{ canvas: string; root: string }> => {
+        await page.goto(`/embed.html?src=acl.dbml&theme=${theme}`);
+        await expect(canvasOf(page)).toBeVisible();
+
+        return await page.evaluate(() => {
+          const stage = window.Konva?.stages[0] as unknown as {
+            container: () => HTMLElement;
+          };
+
+          return {
+            canvas: getComputedStyle(stage.container()).backgroundColor,
+            root: document.documentElement.className,
+          };
+        });
+      };
+
+      const auto = await opened("auto");
+      const told = await opened(colorScheme);
+
+      expect(auto.canvas).toBe(told.canvas);
+
+      if (colorScheme === "dark") {
+        expect(auto.root).toContain("dark");
+      } else {
+        expect(auto.root).not.toContain("dark");
+      }
+    });
+  });
+}
+
 test("the host can turn the diagram's lights off without reloading it", async ({
   page,
 }) => {

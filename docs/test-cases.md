@@ -219,6 +219,7 @@ plugin), not the site of documentation.
 | 9.28 | A block that did not name a theme           | Page turns dark, script in `<head>` (the default)                       | That diagram follows the page, and the host script raises no error                | `embed.spec.ts`          |
 | 9.29 | Back from an expanded diagram               | Expand, then Back while the content stays (an earlier anchor)           | `<html>` is no longer locked — the page scrolls                                   | `embed.spec.ts`          |
 | 9.30 | Content swapped out under an expanded one   | Expand, then the content goes without a reload and without Back         | `<html>` is no longer locked — the new page scrolls                               | `embed.spec.ts`          |
+| 9.31 | Theme from the system                       | `&theme=auto` in a browser set to dark, then to light                   | Opens dark, then light, canvas and chrome; unit: dark if the browser cannot say   | `embed.spec.ts`          |
 
 ## 10. VS Code extension — DBML Studio
 

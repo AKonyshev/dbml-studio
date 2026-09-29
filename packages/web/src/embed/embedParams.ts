@@ -1,5 +1,7 @@
 import { Theme } from "json-table-schema-visualizer/src/types/theme";
 
+import { systemPrefersDark } from "../theme/preferredTheme";
+
 import { type EmbedError } from "./embedError";
 import { resolveModelUrl } from "./modelUrl";
 
@@ -50,8 +52,22 @@ const isCatalogPath = (value: string): boolean => {
 export const themeFromName = (value: "light" | "dark"): Theme =>
   value === "dark" ? Theme.dark : Theme.light;
 
-const parseTheme = (value: string | null): Theme =>
-  value === Theme.dark ? Theme.dark : Theme.light;
+/**
+ * `light`, `dark`, or `auto` — the page around the frame picks its colours by
+ * the system, so the frame asks the same of its own window. Once, at load: a
+ * host that knows the page's theme sends it as a message and outranks this,
+ * and a frame opened by hand has no page to keep in step with.
+ *
+ * Anything else is light, as it always was, so no URL written before `auto`
+ * changes meaning.
+ */
+const parseTheme = (value: string | null): Theme => {
+  if (value === "auto") {
+    return systemPrefersDark() ? Theme.dark : Theme.light;
+  }
+
+  return value === Theme.dark ? Theme.dark : Theme.light;
+};
 
 const parseTables = (value: string | null): string[] | null => {
   if (value === null) {
@@ -67,9 +83,11 @@ const parseTables = (value: string | null): string[] | null => {
 };
 
 /**
- * `documentUrl` is asked for rather than read off `window`: the whole of this
- * module is testable without a browser, and a model URL cannot be resolved
- * without knowing where the document resolving it sits.
+ * `documentUrl` is asked for rather than read off `window`: a model URL cannot
+ * be resolved without knowing where the document resolving it sits. The one
+ * thing read off `window` is the system's colour scheme, and only for
+ * `theme=auto` — through `systemPrefersDark`, which answers dark when there is
+ * no window to ask.
  */
 export const parseEmbedParams = (
   search: string,
