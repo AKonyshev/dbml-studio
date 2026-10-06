@@ -58,7 +58,7 @@ type Poster = (target: Window, message: HostMessage) => void;
  * calls it. In the main window the poster is that window's, and posting
  * through it is the same as posting directly.
  */
-const posterFor = (owner: Window & typeof globalThis): Poster =>
+const posterFor = (owner: typeof window): Poster =>
   new owner.Function(
     "target",
     "message",
@@ -118,9 +118,7 @@ export class FrameView {
     this.messageTarget = messageTarget;
     // The window the frame's parent document is, which is the one the frame
     // listens for; `messageTarget` is that same window as the host hands it.
-    this.post = posterFor(
-      doc.defaultView ?? (messageTarget as Window & typeof globalThis),
-    );
+    this.post = posterFor(doc.defaultView ?? (messageTarget as typeof window));
     this.onExpand = onExpand;
     this.onMessage = (event) => {
       this.receive(event);
@@ -155,7 +153,7 @@ export class FrameView {
    * longer the one, `src` is written again, so the reload paints the right
    * one. Left alone when it is, since writing `src` starts a load of its own.
    */
-  moveTo(win: Window & typeof globalThis, theme: FrameTheme): void {
+  moveTo(win: typeof window, theme: FrameTheme): void {
     this.messageTarget.removeEventListener("message", this.onMessage);
     this.messageTarget = win;
     this.post = posterFor(win);
