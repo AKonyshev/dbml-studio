@@ -7,7 +7,7 @@ import type { ImportTarget } from "./pickImportTargets";
 // resolves the `..` away rather than keeping it — an unsanitized name writes
 // outside the folder the user chose. Everything else survives, because a
 // name outside ASCII is a perfectly good file name.
-// eslint-disable-next-line no-control-regex
+// eslint-disable-next-line no-control-regex -- control characters are what this range is for
 const REFUSED = /[/\\:*?"<>|\u0000-\u001f]/g;
 // Names Windows still reserves for devices, with or without an extension.
 const DEVICE = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;

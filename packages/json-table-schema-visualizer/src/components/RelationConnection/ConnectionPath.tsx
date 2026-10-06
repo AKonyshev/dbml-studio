@@ -15,6 +15,7 @@ import {
 import useLocalStorage from "@/hooks/localStorage";
 import { useThemeColors } from "@/hooks/theme";
 import { useIsEitherTableHovered } from "@/hooks/hover";
+import { useCursorChanger } from "@/hooks/cursor";
 import {
   setHighlightedColumns,
   setHoveredTableName,
@@ -78,6 +79,8 @@ const ConnectionPath = ({
   const [btnAngle, setBtnAngle] = useState(0);
   const [btnTarget, setBtnTarget] = useState<string | null>(null);
   const [btnHovering, setBtnHovering] = useState(false);
+  const { onChange: onPointer, onRestore: onPointerRelease } =
+    useCursorChanger("pointer");
   const hideTimeoutRef = useRef<number | null>(null);
   const btnStagePosRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -310,7 +313,7 @@ const ConnectionPath = ({
   };
 
   const handleBtnLeave = () => {
-    document.body.style.cursor = "default";
+    onPointerRelease();
     setBtnHovering(false);
     setIsHovered(false);
     if (hideTimeoutRef.current != null) {
@@ -323,7 +326,7 @@ const ConnectionPath = ({
   };
 
   const handleBtnEnter = () => {
-    document.body.style.cursor = "pointer";
+    onPointer();
     setBtnHovering(true);
     setIsHovered(true); // hover both line and circle
     if (hideTimeoutRef.current != null) {

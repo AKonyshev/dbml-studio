@@ -35,12 +35,12 @@ const SplitLayout = ({ left, right }: SplitLayoutProps): JSX.Element => {
     const onUp = (): void => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
-      document.body.style.userSelect = "";
+      document.body.classList.remove("select-none");
       endDragRef.current = null;
     };
 
     // Dragging across a textarea would otherwise select its text.
-    document.body.style.userSelect = "none";
+    document.body.classList.add("select-none");
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     endDragRef.current = onUp;

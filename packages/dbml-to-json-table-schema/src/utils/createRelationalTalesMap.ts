@@ -41,7 +41,7 @@ const appendRelationalTablesMap = (
   const newMap = new Map<string, string[]>(map);
 
   if (newMap.has(fieldKey)) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guarded by the has() just above
     const tablesSet = newMap.get(fieldKey)!;
     tablesSet.push(tableToAdd);
   } else {

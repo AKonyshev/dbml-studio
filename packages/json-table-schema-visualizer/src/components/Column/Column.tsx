@@ -90,7 +90,7 @@ const Column = ({
             // Narrowed by exactly what the badges take, so the type stops where
             // the first pill begins. Both sides read the same measurement.
             width={tablePreferredWidth - badges.totalWidth}
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
+            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing -- not highlighted, no table colour and an empty one all fall back to the type colour
             fill={(highlighted && tableColors?.regular) || typeTextColor}
             padding={TABLE_FIELD_TYPE_PADDING}
             fontStyle={fontStyle}

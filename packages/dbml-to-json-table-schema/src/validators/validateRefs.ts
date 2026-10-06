@@ -23,7 +23,7 @@ export const validateRefs = (refs: Ref[], tables: Table[]): void => {
         endpoint.schemaName,
       );
       if (tableMap.has(relatedTableFullName)) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guarded by the has() just above
         validateEndpoint(endpoint, tableMap.get(relatedTableFullName)!);
         return;
       }

@@ -27,11 +27,11 @@ declare global {
   // Injected at build time by @tomjs/vscode-extension-webview: the dev-server
   // form takes a URL, the packaged form resolves the bundled assets. The
   // dunder name is fixed by that tool, so it cannot satisfy naming-convention.
-  /* eslint-disable @typescript-eslint/naming-convention */
+  /* eslint-disable @typescript-eslint/naming-convention -- the plugin's dunder name, see above */
   function __getWebviewHtml__(url: string): string;
   function __getWebviewHtml__(
     webview: Webview,
     context: ExtensionContext,
   ): string;
-  /* eslint-enable @typescript-eslint/naming-convention */
+  /* eslint-enable @typescript-eslint/naming-convention -- back to the rule for anything added below */
 }

@@ -18,7 +18,7 @@ export const downloadTextFile = (filename: string, text: string): void => {
   link.download = filename;
   // In the document rather than detached: Firefox ignores a click on an anchor
   // that was never attached.
-  link.style.display = "none";
+  link.hidden = true;
   document.body.appendChild(link);
   link.click();
   link.remove();

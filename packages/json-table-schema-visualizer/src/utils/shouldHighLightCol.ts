@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 export const shouldHighLightCol = (
   hovered: boolean,
   tableName: string | null,
@@ -30,11 +29,15 @@ export const shouldHighLightCol = (
     return false;
   }
 
-  if (hoveredTable === tableName && !!relationalTables) {
+  if (hoveredTable === tableName && relationalTables != null) {
     return true;
   }
 
-  if (!!hoveredTable && relationalTables?.includes(hoveredTable)) {
+  if (
+    hoveredTable != null &&
+    hoveredTable !== "" &&
+    relationalTables?.includes(hoveredTable) === true
+  ) {
     return true;
   }
 

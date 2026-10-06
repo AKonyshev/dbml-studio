@@ -28,7 +28,7 @@ export interface MovableDiagram {
  */
 export const moveDiagram = (
   diagram: MovableDiagram,
-  win: Window & typeof globalThis,
+  win: typeof window,
   hosts: ExpandHosts,
   appBody: HTMLElement,
 ): void => {
