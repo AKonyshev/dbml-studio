@@ -13,7 +13,7 @@ const DEFAULT_BASE = "schema";
 // The suppression is the point rather than an escape from it: `no-control-regex`
 // exists to catch a control character nobody meant to type, and this range is
 // written out deliberately, in escapes, with a test at each end of it.
-// eslint-disable-next-line no-control-regex
+// eslint-disable-next-line no-control-regex -- control characters are what this range is for
 const ILLEGAL_IN_FILENAME = /[<>:"/\\|?*\u0000-\u001F]/g;
 
 // Not dropped. Dropping would map `a/b` and `ab` onto one filename, and a

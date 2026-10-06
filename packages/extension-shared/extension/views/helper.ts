@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error */
-/* eslint-disable @typescript-eslint/no-extraneous-class */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-
 import {
   type Disposable,
   type ExtensionContext,
@@ -53,15 +48,18 @@ export interface WebviewHooksOptions {
   onTypingFocusChanged?: (typing: boolean) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- a namespace for the webview's helpers, called as `WebviewHelper.x` from diagramView.ts
 export class WebviewHelper {
   public static setupHtml(
     webview: Webview,
     context: ExtensionContext,
     defaultConfig: DefaultPageConfig,
   ): string {
-    const html: string = process.env.VITE_DEV_SERVER_URL
-      ? __getWebviewHtml__(process.env.VITE_DEV_SERVER_URL)
-      : __getWebviewHtml__(webview, context);
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+    const html: string =
+      devServerUrl !== undefined && devServerUrl !== ""
+        ? __getWebviewHtml__(devServerUrl)
+        : __getWebviewHtml__(webview, context);
 
     return WebviewHelper.injectScripts(html, defaultConfig);
   }

@@ -20,7 +20,7 @@ export const computeFieldDetailBoxDimension = (
   const finalWidth = Math.min(preferredWidth, FIELD_DETAILS_TOOLTIPS_W);
 
   const letterApproximateDim = getLetterApproximateDimension();
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- an empty note takes no lines, same as none
   const noteH = note
     ? estimateSentenceLineCount(note, finalWidth) * letterApproximateDim.height
     : 0;
