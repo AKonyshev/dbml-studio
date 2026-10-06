@@ -4,10 +4,11 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "node scripts/build-plugin.mjs && node scripts/vendor-frame.mjs",
+    "build": "node scripts/vendor-frame.mjs && node scripts/build-plugin.mjs",
     "build:plugin": "node scripts/build-plugin.mjs",
     "vendor": "node scripts/vendor-frame.mjs",
-    "test": "jest"
+    "test": "jest",
+    "release:github": "bash scripts/release-github.sh"
   },
   "dependencies": {
     "web": "0.0.0"

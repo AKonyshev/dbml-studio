@@ -14,13 +14,13 @@ SRC="$ROOT/packages/obsidian-plugin"
 
 yarn workspace obsidian-plugin build
 
-VERSION="$(node -p "require('$SRC/manifest.json').version")"
+VERSION="$(node -p "require('$ROOT/manifest.json').version")"
 ARTIFACT="$ROOT/dist/dbml-studio-obsidian-$VERSION.zip"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
 mkdir -p "$STAGE/dbml-studio" "$ROOT/dist"
-cp "$SRC/manifest.json" "$SRC/main.js" "$SRC/styles.css" "$STAGE/dbml-studio/"
+cp "$ROOT/manifest.json" "$SRC/main.js" "$SRC/styles.css" "$STAGE/dbml-studio/"
 cp -R "$SRC/frame" "$STAGE/dbml-studio/frame"
 
 rm -f "$ARTIFACT"

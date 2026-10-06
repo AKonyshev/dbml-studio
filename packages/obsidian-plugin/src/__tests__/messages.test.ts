@@ -1,11 +1,17 @@
 import { type BlockError } from "../blockParams";
+import { en } from "../i18n/locales/en";
 import { ru } from "../i18n/locales/ru";
-import {
+import { messagesFor } from "../messages";
+
+// Dispatch is the same for every catalog; these run it against the Russian
+// one, and the last describe shows the English one is reached the same way.
+const {
   blockErrorText,
+  frameUnavailableText,
   modelUnreadableText,
   readFailureReason,
   vaultNotOnDiskText,
-} from "../messages";
+} = messagesFor(ru);
 
 /** One of every kind, so a sentence-level rule is checked on all of them. */
 const EVERY_KIND: BlockError[] = [
@@ -138,6 +144,36 @@ describe("modelUnreadableText", () => {
     expect(modelUnreadableText("/models/", ru.readFailureReasons.EISDIR)).toBe(
       ru.modelUnreadable("/models/", ru.readFailureReasons.EISDIR),
     );
+  });
+});
+
+describe("frameUnavailableText", () => {
+  // Dispatch only — the wording itself is pinned in the catalog's own test.
+  it("passes the error's message to the catalog", () => {
+    expect(frameUnavailableText(new Error("EROFS: read-only"))).toBe(
+      ru.frameUnavailable("EROFS: read-only"),
+    );
+  });
+
+  it("still gives a reason for something thrown that is not an Error", () => {
+    expect(frameUnavailableText("disk full")).toBe(
+      ru.frameUnavailable("disk full"),
+    );
+  });
+});
+
+describe("messagesFor", () => {
+  it("speaks the catalog it is given", () => {
+    const english = messagesFor(en);
+
+    expect(english.blockErrorText({ kind: "unknownKey", key: "tabels" })).toBe(
+      en.blockError.unknownKey("tabels"),
+    );
+    expect(english.readFailureReason(fsError("ENOENT"))).toBe(
+      en.readFailureReasons.ENOENT,
+    );
+    expect(english.vaultNotOnDiskText()).toBe(en.vaultNotOnDisk());
+    expect(english.refreshCommandName).toBe(en.refreshCommandName);
   });
 });
 

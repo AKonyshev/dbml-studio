@@ -19,7 +19,10 @@ import { type JSONTableSchema } from "shared/types/tableSchema";
 
 import { loadSchemaText } from "../catalog/loadSchemaText";
 import { parseDbmlText } from "../document/parseDbmlText";
-import { resolveBrowserLocale } from "../i18n/resolveBrowserLocale";
+import {
+  frameLanguages,
+  resolveBrowserLocale,
+} from "../i18n/resolveBrowserLocale";
 
 import { embedErrorText } from "./embedError";
 import { parseEmbedParams, themeFromName } from "./embedParams";
@@ -46,9 +49,15 @@ import { useHostExpand } from "./useHostExpand";
 // is a frame.
 import "json-table-schema-visualizer/src/styles/index.css";
 
-// `languages` rather than `language`: the first choice may be one we do not
-// have, and the reader's second choice is a better answer than English.
-initI18n(resolveBrowserLocale(navigator.languages));
+// The host's `lang` when it names one: a plugin knows the language its
+// application speaks, which need not be the system's. Otherwise `languages`
+// rather than `language`: the first choice may be one we do not have, and the
+// reader's second choice is a better answer than English.
+initI18n(
+  resolveBrowserLocale(
+    frameLanguages(window.location.search, navigator.languages),
+  ),
+);
 
 /**
  * This document's entry in every per-document store, dropped from storage.

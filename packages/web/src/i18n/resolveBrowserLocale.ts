@@ -30,3 +30,17 @@ export const resolveBrowserLocale = (
 
   return "en";
 };
+
+/**
+ * The languages a frame should try, in order: the host's `lang` alone when
+ * the URL names one, since a host that knows its reader's language outranks
+ * the system, and falling through to the system's list would put a second
+ * language beside the host's own interface. Without one, the browser's list.
+ */
+export const frameLanguages = (
+  search: string,
+  browserLanguages: readonly string[] | undefined,
+): readonly string[] | undefined => {
+  const lang = new URLSearchParams(search).get("lang")?.trim() ?? "";
+  return lang === "" ? browserLanguages : [lang];
+};

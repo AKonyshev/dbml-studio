@@ -194,10 +194,17 @@ writeFileSync(path.join(out, "embed.html"), frame);
 
 let buildId = "unknown";
 try {
-  buildId = execFileSync("git", ["describe", "--always", "--dirty", "--tags"], {
-    cwd: packageRoot,
-    encoding: "utf8",
-  }).trim();
+  // `--match "v*"`: the frame is the site's, named after the repository's own
+  // tags — not the nearest plugin tag (`mkdocs-dbml-v…`, or the Obsidian
+  // plugin's bare `0.2.0`), which would read as the frame's version.
+  buildId = execFileSync(
+    "git",
+    ["describe", "--always", "--dirty", "--tags", "--match", "v*"],
+    {
+      cwd: packageRoot,
+      encoding: "utf8",
+    },
+  ).trim();
 } catch {
   // Not a checkout: the frame is still right, only unnamed.
 }

@@ -1,4 +1,18 @@
-import { withTheme } from "../frameSrc";
+import { withLanguage, withTheme } from "../frameSrc";
+
+describe("withLanguage", () => {
+  it("makes the language the query when there is none", () => {
+    expect(withLanguage("app://local/frame/embed.html", "ru")).toBe(
+      "app://local/frame/embed.html?lang=ru",
+    );
+  });
+
+  it("appends the language to a query that is already there", () => {
+    expect(
+      withLanguage("app://local/frame/embed.html?1727000000000", "pt-BR"),
+    ).toBe("app://local/frame/embed.html?1727000000000&lang=pt-BR");
+  });
+});
 
 describe("withTheme", () => {
   it("makes the theme the query when there is none", () => {

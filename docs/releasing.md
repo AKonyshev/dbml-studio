@@ -134,8 +134,9 @@ Each plugin is released on its own, by the steps above with three differences:
   `chore(release): <plugin> <version>`. Two plugins released together share one
   commit and one pull request.
 - **The tag** names the plugin, so it cannot be mistaken for an extension
-  version: `mkdocs-dbml-v<version>` and `obsidian-plugin-v<version>`, on the
-  merge commit, annotated like the extension's.
+  version: `mkdocs-dbml-v<version>`, on the merge commit, annotated like the
+  extension's. The Obsidian plugin is the exception: its tag is the bare
+  version, because Obsidian's Community plugins directory requires it (below).
 - **The GitHub release** is the plugin's own, titled
   `<plugin> <version> — <the short name>`, with its package attached in place of
   the `.vsix`. Mark it `--latest=false`: "latest" on the repository's page is
@@ -192,29 +193,61 @@ API tokens). The script is `publish:pypi`, not `publish`, because
 
 ## The Obsidian plugin
 
-The plugin is versioned on its own, in `packages/obsidian-plugin/manifest.json`,
+The plugin is listed in Obsidian's Community plugins directory, and the
+directory sets the rules this section follows. It reads the repository root's
+`manifest.json` from the default branch; for a version it installs a GitHub
+release whose tag is exactly that version, and from that release it takes
+three files and nothing else: `main.js`, `manifest.json`, `styles.css`.
+
+The plugin is versioned on its own, in the repository root's `manifest.json`,
 by the same rule: what would a user of the previous version notice? The entry
-goes in `packages/obsidian-plugin/CHANGELOG.md`.
+goes in `packages/obsidian-plugin/CHANGELOG.md`. The release commit also adds
+the version to the root `versions.json`, mapped to the manifest's
+`minAppVersion` — the Obsidian version the plugin is checked on, raised only
+after checking on the newer one. Obsidian uses it to offer an older Obsidian
+the last release that still runs there.
 
-It carries a copy of the diagram frame taken from the site's build, so the
-order matters and is enforced — the plugin's build refuses a `dist` that is
-missing anything the frame needs:
+**The tag is the bare version** — `0.2.0`, not `obsidian-plugin-v0.2.0` —
+because the directory looks the release up by the manifest's version. The
+first release, `obsidian-plugin-v0.1.0`, keeps its tag as history; it was
+never in the directory.
+
+The diagram frame travels inside `main.js` (the plugin writes it into its
+folder on first start; `packages/obsidian-plugin/README.md`), so the three
+files are the whole plugin. The release also carries
+`dbml-studio-obsidian-<version>.zip`, the same plugin as a folder, for
+installing by hand.
+
+All of it is one script, run on `main` once the release commit is merged:
 
 ```bash
-yarn build:web
-yarn package:obsidian
+yarn workspace obsidian-plugin release:github <version> --check   # checks and build only
+yarn workspace obsidian-plugin release:github <version>
 ```
 
-The zip lands in the root `dist/`, beside the `.vsix` archive. Check the frame
-is in it, as one file of about 11.6 MB with no `assets/` folder beside it:
+The script (`packages/obsidian-plugin/scripts/release-github.sh`) refuses
+unless the tree is clean, on `main`, and the same commit as `origin/main`;
+unless the root manifest is at `<version>`, `versions.json` lists it with the
+manifest's `minAppVersion`, and the changelog has its entry; and when the tag
+exists already. It then builds the site, the plugin and the zip (`yarn
+build:web`, `yarn package:obsidian`) and checks `main.js` carries the frame it
+just vendored — by the frame's `BUILD` string — and is not too small to. With
+`--check` it stops there. Otherwise it asks for the version to be typed back,
+creates the annotated tag `<version>` on `HEAD`, pushes it, and creates the
+GitHub release with `main.js`, `manifest.json`, `styles.css` and the zip
+attached, its notes the changelog entry, and `--latest=false`: "latest" on
+the repository's page is the extension's. The tag goes on `HEAD`, which is
+the merge commit, as for every other release. Should `gh release create` fail
+after the tag is pushed, a rerun refuses the existing tag; the script prints
+the `gh release create` command that finishes the release from the files the
+build left in place.
 
-```bash
-unzip -l dist/dbml-studio-obsidian-<version>.zip | grep -E 'dbml-studio/frame/'
-```
-
-Attach it to the GitHub release as step 6 attaches the extension. There is no
-registry step: the plugin is installed by unzipping it into a vault's
-`.obsidian/plugins/`.
+**Submitting to the directory is a one-time step done by the maintainer at
+community.obsidian.md**: sign in with an Obsidian account, link the GitHub
+account, and submit the repository. An automated review follows; what it asks
+to change is fixed in a new release with a new version. After the plugin is
+listed, every release made by the script reaches Obsidian users with no
+further step.
 
 ## What has gone wrong before
 

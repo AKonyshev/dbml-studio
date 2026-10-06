@@ -1,9 +1,12 @@
+/* global DBML_FRAME_BUILD, DBML_FRAME_GZIP -- put in by esbuild's `define` (src/globals.d.ts) */
 import { readFile } from "node:fs/promises";
 
 import {
   FileSystemAdapter,
+  getLanguage,
   MarkdownRenderChild,
   Notice,
+  normalizePath,
   Plugin,
   type MarkdownPostProcessorContext,
 } from "obsidian";
@@ -12,15 +15,13 @@ import { followAppTheme, themeOf } from "./appTheme";
 import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { ExpandHosts, type ExpandHost } from "./expandHost";
+import { ensureFrame, unpackFrame } from "./frameArchive";
+import { withLanguage } from "./frameSrc";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
-import { ru } from "./i18n/locales/ru";
-import {
-  blockErrorText,
-  modelUnreadableText,
-  readFailureReason,
-  vaultNotOnDiskText,
-} from "./messages";
+import { catalogFor } from "./i18n/language";
+import { en } from "./i18n/locales/en";
+import { messagesFor, type Messages } from "./messages";
 import { moveDiagram } from "./moveDiagram";
 import { resolveModelPath } from "./resolveModelPath";
 
@@ -80,7 +81,31 @@ export default class DbmlStudioPlugin extends Plugin {
    */
   private unloaded = false;
 
+  /**
+   * Settles once the frame this `main.js` carries is in the plugin folder:
+   * with `null`, or with what stopped it being written. Never rejects, so a
+   * failure is told in each block rather than lost as an unhandled rejection.
+   */
+  private frameReady: Promise<unknown> = Promise.resolve(null);
+
+  /**
+   * Every sentence a reader sees, in Obsidian's language: Russian when the
+   * application is in Russian, English otherwise. Read once, on load — Obsidian
+   * restarts to change its language, and a plugin loads afresh with it.
+   */
+  private text: Messages = messagesFor(en);
+
   onload(): void {
+    this.text = messagesFor(catalogFor(getLanguage()));
+
+    this.frameReady = ensureFrame(this.app.vault.adapter, this.frameFolder(), {
+      build: DBML_FRAME_BUILD,
+      html: async () => await unpackFrame(DBML_FRAME_GZIP),
+    }).then(
+      () => null,
+      (error: unknown) => error ?? new Error("unknown"),
+    );
+
     this.registerMarkdownCodeBlockProcessor(
       "dbml",
       async (source, element, context) => {
@@ -99,12 +124,25 @@ export default class DbmlStudioPlugin extends Plugin {
 
     this.addCommand({
       id: "refresh-diagrams",
-      name: ru.refreshCommandName,
+      name: this.text.refreshCommandName,
       // Returned, not awaited: Obsidian ignores it, and a test can wait on it.
       callback: async () => {
         await this.refreshAll();
       },
     });
+  }
+
+  /**
+   * `frame/` in the plugin's own folder, addressed from the vault root as the
+   * adapter addresses everything. Obsidian always gives a plugin its `dir`;
+   * the fallback is where it would be.
+   */
+  private frameFolder(): string {
+    const dir =
+      this.manifest.dir ??
+      `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
+
+    return normalizePath(`${dir}/frame`);
   }
 
   onunload(): void {
@@ -189,7 +227,12 @@ export default class DbmlStudioPlugin extends Plugin {
       // error into — the diagram is already on screen. A command the reader
       // just invoked gets a toast instead, in the same words.
       if (live().length > 0) {
-        void new Notice(modelUnreadableText(path, readFailureReason(error)));
+        void new Notice(
+          this.text.modelUnreadableText(
+            path,
+            this.text.readFailureReason(error),
+          ),
+        );
       }
 
       return;
@@ -225,14 +268,14 @@ export default class DbmlStudioPlugin extends Plugin {
     }
 
     if (!parsed.ok) {
-      renderBlockError(element, blockErrorText(parsed.error));
+      renderBlockError(element, this.text.blockErrorText(parsed.error));
       return;
     }
 
     const adapter = this.app.vault.adapter;
 
     if (!(adapter instanceof FileSystemAdapter)) {
-      renderBlockError(element, vaultNotOnDiskText());
+      renderBlockError(element, this.text.vaultNotOnDiskText());
       return;
     }
 
@@ -254,7 +297,10 @@ export default class DbmlStudioPlugin extends Plugin {
       if (!child.gone && !this.unloaded) {
         renderBlockError(
           element,
-          modelUnreadableText(path, readFailureReason(error)),
+          this.text.modelUnreadableText(
+            path,
+            this.text.readFailureReason(error),
+          ),
         );
       }
 
@@ -262,6 +308,19 @@ export default class DbmlStudioPlugin extends Plugin {
     }
 
     if (child.gone || this.unloaded) {
+      return;
+    }
+
+    // A frame element made before its document is written would load an
+    // error page, and only a reload would bring it back.
+    const frameFailure = await this.frameReady;
+
+    if (child.gone || this.unloaded) {
+      return;
+    }
+
+    if (frameFailure !== null) {
+      renderBlockError(element, this.text.frameUnavailableText(frameFailure));
       return;
     }
 
@@ -282,7 +341,9 @@ export default class DbmlStudioPlugin extends Plugin {
       // paints before the handshake, and a light frame in a dark note reads as
       // a second thing having gone wrong. FrameView puts it in the URL when
       // the frame actually loads, in whichever theme is current by then.
-      url: frameUrl(this, "frame/embed.html"),
+      // The language rides there too, so that the frame's toolbar and errors
+      // speak Obsidian's language rather than the system's.
+      url: withLanguage(frameUrl(this, "frame/embed.html"), getLanguage()),
       theme,
       height,
       title: model,

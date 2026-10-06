@@ -1,9 +1,7 @@
 /**
- * Every string a reader of a note sees, in one place.
- *
- * The vault this plugin draws into is Russian (see the repository's global
- * constraints), so there is no catalog to switch between — this is the only
- * locale file here, not a scaffold for others. It lives under
+ * Every string a reader of a note sees, in Russian — what the plugin speaks
+ * when Obsidian itself is in Russian (`../language.ts`); `./en.ts` is the
+ * English twin, and both have the shape `../catalog.ts` names. It lives under
  * `src/i18n/locales/` because that is the one path the repo-wide guard
  * (`packages/json-table-schema-visualizer/src/i18n/__tests__/
  * sourceLanguage.test.ts`) excludes from its "no Cyrillic outside a locale
@@ -48,6 +46,13 @@ export const ru = {
 
   vaultNotOnDisk: (): string =>
     "Хранилище открыто не с диска — модель читать неоткуда.",
+
+  /**
+   * The plugin could not write the diagram frame it carries into its own
+   * folder (`frameArchive.ts`), so no diagram can load.
+   */
+  frameUnavailable: (reason: string): string =>
+    `Не удалось подготовить диаграмму: кадр не записан в папку плагина (${reason}).`,
 
   /** The command palette entry that re-reads every live diagram's model. */
   refreshCommandName: "Обновить диаграммы",

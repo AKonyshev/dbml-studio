@@ -6,6 +6,47 @@ the documentation sites embed, fed by the plugin instead of by a web server.
 Desktop only: the plugin reads the model from disk with Node's `fs`, and the
 models it is written for live outside the vault.
 
+## Install
+
+In Obsidian: **Settings → Community plugins → Browse**, search for
+"DBML Studio", install it and turn it on. Obsidian keeps it up to date from
+there.
+
+By hand, for a version not in the directory yet: every release on GitHub
+(tags `0.2.0` and later) carries `dbml-studio-obsidian-<version>.zip`; unzip it
+into `<vault>/.obsidian/plugins/`, so that the folder
+`<vault>/.obsidian/plugins/dbml-studio/` holds `main.js`, and turn the plugin
+on in **Settings → Community plugins**.
+
+## What it does outside the note
+
+The Community plugins directory asks a plugin to say these, and they are worth
+knowing anyway.
+
+- **Files outside the vault.** A block's `model:` is a path, resolved from the
+  vault's root or from the note's folder, and `..` may take it out of the
+  vault — that is what it is for. The models a documentation vault draws
+  usually live beside the documentation they describe (an Antora or MkDocs
+  site's `models/`), not inside the vault, and copying them in would leave two
+  versions to drift apart. The plugin reads only the files blocks name, only
+  when a note with the block is drawn or **Refresh diagrams** runs, and never
+  writes them.
+- **No network.** The plugin downloads nothing and sends nothing anywhere:
+  the model is read from disk and handed to the diagram frame inside
+  Obsidian's own window. The frame is the documentation sites' one, which on
+  a site can fetch a model by URL; hosted by the plugin, it is given the
+  model in a message instead and requests nothing.
+- **Its own frame, unpacked into its own folder.** The diagram is drawn by a
+  page — `frame/embed.html`, about 11.6 MB — that ships inside `main.js`,
+  gzipped. On the first start, and after every update, the plugin compares
+  `frame/BUILD` in its plugin folder with the build it carries and, when it is
+  missing or different, writes `frame/embed.html` and then `frame/BUILD`
+  there. The page has to be a file in the plugin folder because an `<iframe>`
+  needs a URL of its own to load it from (see "How it works"). This is not
+  self-updating: nothing is fetched, and the file written is the one the
+  installed version came with. A start with an up-to-date `frame/` writes
+  nothing. When the write fails, each block says so.
+
 ## A block
 
 ````markdown
@@ -53,12 +94,13 @@ loads again — about a second.
 
 ## Commands
 
-- **Обновить диаграммы** — re-reads every model on screen and sends it to its
-  diagram again. Tables keep their places; new ones are laid out. The plugin
-  does not watch the files. Each file is read once, and one that cannot be
-  read is one notice, however many blocks draw it.
+- **Refresh diagrams** (**Обновить диаграммы** in Russian) — re-reads every
+  model on screen and sends it to its diagram again. Tables keep their
+  places; new ones are laid out. The plugin does not watch the files. Each
+  file is read once, and one that cannot be read is one notice, however many
+  blocks draw it.
 
-## Build and install
+## Build from source
 
 From the repository root:
 
@@ -74,9 +116,17 @@ after every later install.
 
 `build:web` comes first and is not run for you: the plugin's build copies the
 frame out of `packages/web/dist` and fails, naming what is missing, when that
-build is absent or partial. `install:obsidian` likewise refuses, naming the
-file, when `main.js` or `frame/embed.html` is not built, rather than install a
-plugin that turns on and draws nothing.
+build is absent or partial. `build:obsidian` vendors the frame into `frame/`
+and then bundles `main.js` with the frame inside it; `build:plugin` alone
+refuses, naming the file, when `frame/` is not there. `install:obsidian`
+refuses when `main.js` is not built, copies `main.js`, `manifest.json` and
+`styles.css` — what the Community plugins directory installs — and removes
+the vault's `frame/`, so the plugin unpacks the one it carries on the next
+start.
+
+The plugin's manifest is the repository root's `manifest.json`, not one in
+this package: the Community plugins directory reads it from there, and
+`versions.json` beside it maps each version to the Obsidian it needs.
 
 A release package — a zip with a `dbml-studio/` folder inside, to unzip into
 `<vault>/.obsidian/plugins/`:
@@ -84,6 +134,10 @@ A release package — a zip with a `dbml-studio/` folder inside, to unzip into
 ```bash
 yarn build:web && yarn package:obsidian
 ```
+
+Releasing — the tag, the GitHub release and its files — is
+`yarn workspace obsidian-plugin release:github <version>`; see
+`docs/releasing.md`, "The Obsidian plugin".
 
 ## How it works
 
@@ -94,6 +148,18 @@ walks `packages/web/dist/.vite/manifest.json` by the rule in
 the frame's chunks into one inline module script with esbuild, and puts the
 stylesheet inline too. The result is about 11.6 MB of HTML and names no other
 file. `frame/BUILD` names the commit it was built from.
+
+`scripts/build-plugin.mjs` then puts both into `main.js` with esbuild's
+`define` — the document gzipped and base64-encoded (about 2.4 MB of
+`main.js`), `BUILD` as it is — and refuses to build when `frame/` is not
+there. The directory installs `main.js`, `manifest.json` and `styles.css` and
+nothing else, so the frame travels the only way it can. On load,
+`src/frameArchive.ts` compares the plugin folder's `frame/BUILD` with the
+carried one and, when it is missing or different, unpacks the document with
+the browser's own `DecompressionStream` and writes it through the vault
+adapter (the plugin folder is not a vault file, so `Vault` does not address
+it), `BUILD` last: a write cut short leaves no `BUILD` claiming a whole frame.
+Blocks wait for this before they create a frame element.
 
 One file because it has to be. Obsidian serves the plugin folder through
 `getResourcePath`, and a document loaded that way runs inline scripts but has
@@ -161,8 +227,11 @@ Obsidian's main window never stalls (worst 1 ms), because the frames run out
 of process; each loaded frame costs about 70 MB.
 
 All the text a reader of a note sees — block errors, the read failure, the
-command name — is Russian and lives in `src/i18n/locales/ru.ts`, the one path
-the repository's Cyrillic guard
+command name — is English, or Russian when Obsidian's own language is
+Russian. The plugin asks Obsidian with `getLanguage()` on load (Obsidian
+restarts to change language). The two catalogs are `src/i18n/locales/en.ts`
+and `ru.ts`, one shape (`src/i18n/catalog.ts`); `src/i18n/locales/` is the one
+path the repository's Cyrillic guard
 (`packages/json-table-schema-visualizer/src/i18n/__tests__/sourceLanguage.test.ts`)
 excludes from its "no Cyrillic outside a locale file" rule. Everywhere else
 in this package's source stays English.
