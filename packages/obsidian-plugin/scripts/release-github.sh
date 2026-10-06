@@ -142,7 +142,10 @@ node -e '
   console.log(`main.js carries frame ${build.trim()} (${code.length} bytes)`);
 ' "$MAIN_JS" "$PACKAGE/frame/BUILD"
 
-if ! unzip -l "$ZIP" | grep -q "dbml-studio/main.js"; then
+# The listing is read whole first: `grep -q` stops at the first match, and
+# under pipefail the SIGPIPE that leaves `unzip` with would fail the check.
+ZIP_LIST="$(unzip -l "$ZIP")"
+if ! grep -q "dbml-studio/main.js" <<< "$ZIP_LIST"; then
   fail "$ZIP does not hold dbml-studio/main.js"
 fi
 
