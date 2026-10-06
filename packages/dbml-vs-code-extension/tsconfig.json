@@ -6,9 +6,9 @@
     "lib": ["ES2022", "DOM"],
     "sourceMap": true,
     "rootDir": "./",
-    "baseUrl": "./",
     "strict": true,
     "jsx": "react-jsx",
+    "types": ["jest", "mocha", "node"],
     "paths": {
       "@/*": ["./*", "../json-table-schema-visualizer/src/*"]
     },

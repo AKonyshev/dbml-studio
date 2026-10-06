@@ -8,8 +8,8 @@
     "rootDir": "./",
     "strict": true,
     "jsx": "react-jsx",
+    "types": ["jest", "node"],
     "skipLibCheck": true,
-    "baseUrl": "./",
     "paths": {
       "@/*": ["../json-table-schema-visualizer/src/*"]
     }

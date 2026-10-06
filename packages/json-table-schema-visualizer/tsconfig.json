@@ -3,9 +3,9 @@
   "compilerOptions": {
     "target": "es2016",
     "module": "commonjs",
-    "baseUrl": "./src",
+    "types": ["jest", "node"],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
   "exclude": ["node_modules", "vite.config.js"],

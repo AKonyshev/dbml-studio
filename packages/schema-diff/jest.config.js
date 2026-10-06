@@ -13,7 +13,7 @@ module.exports = {
     // so map it to the TypeScript entry directly.
     "^db-to-dbml$": "<rootDir>/../db-to-dbml/src/index.ts",
     ...pathsToModuleNameMapper(compilerOptions.paths, {
-      prefix: "<rootDir>/src",
+      prefix: "<rootDir>/",
     }),
   },
 };
