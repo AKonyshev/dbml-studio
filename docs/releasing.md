@@ -237,7 +237,10 @@ creates the annotated tag `<version>` on `HEAD`, pushes it, and creates the
 GitHub release with `main.js`, `manifest.json`, `styles.css` and the zip
 attached, its notes the changelog entry, and `--latest=false`: "latest" on
 the repository's page is the extension's. The tag goes on `HEAD`, which is
-the merge commit, as for every other release.
+the merge commit, as for every other release. Should `gh release create` fail
+after the tag is pushed, a rerun refuses the existing tag; the script prints
+the `gh release create` command that finishes the release from the files the
+build left in place.
 
 **Submitting to the directory is a one-time step done by the maintainer at
 community.obsidian.md**: sign in with an Obsidian account, link the GitHub

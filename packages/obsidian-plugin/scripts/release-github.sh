@@ -166,12 +166,22 @@ NOTES_FILE="$(mktemp)"
 trap 'rm -f "$NOTES_FILE"' EXIT
 printf '%s\n' "$NOTES" > "$NOTES_FILE"
 
-gh release create "$VERSION" \
+# The tag is pushed by now, so a rerun refuses it. Should the release fail,
+# say how to finish it by hand from the files the build left in place, rather
+# than leave a tag the directory finds no assets under.
+if ! gh release create "$VERSION" \
   --repo "$REPO" \
   --verify-tag \
   --latest=false \
   --title "DBML Studio for Obsidian $VERSION" \
   --notes-file "$NOTES_FILE" \
-  "$MAIN_JS" "$ROOT/manifest.json" "$PACKAGE/styles.css" "$ZIP"
+  "$MAIN_JS" "$ROOT/manifest.json" "$PACKAGE/styles.css" "$ZIP"; then
+  fail "the tag $VERSION is pushed, but the release was not created. Finish it from the repository root:
+  gh release create $VERSION --repo $REPO --verify-tag --latest=false \\
+    --title \"DBML Studio for Obsidian $VERSION\" \\
+    --notes-file <the $VERSION section of packages/obsidian-plugin/CHANGELOG.md> \\
+    packages/obsidian-plugin/main.js manifest.json packages/obsidian-plugin/styles.css \\
+    dist/dbml-studio-obsidian-$VERSION.zip"
+fi
 
 echo "released: https://github.com/$REPO/releases/tag/$VERSION"

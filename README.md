@@ -6,8 +6,9 @@ Draws a DBML model as an ER diagram inside a note: a `dbml` code block names a
 `.dbml` file, and the plugin draws the whole model or the tables the block
 lists, in Obsidian's light or dark theme.
 
-Install it from Obsidian: **Settings → Community plugins → Browse**, search for
-"DBML Studio". Desktop only. How to write a block, and everything else:
+Install it from Obsidian, once the plugin is listed there: **Settings →
+Community plugins → Browse**, search for "DBML Studio". Until then, and for
+any version, the zip on its GitHub release installs by hand. Desktop only. How to write a block, and everything else:
 [packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md).
 
 What the plugin does beyond the note:
@@ -21,6 +22,11 @@ What the plugin does beyond the note:
   ships inside the plugin's `main.js`. On the first start, and after each
   update, the plugin writes that page to `frame/` in its own plugin folder,
   because a diagram page has to be a file there to load. Nothing is fetched.
+  That page sits in `main.js` gzipped and base64-encoded, to keep the file
+  small, not to hide it: it is the build of [`packages/web`](./packages/web)
+  in this repository (`embed.html`, its scripts and styles inlined), and
+  `yarn build:web && yarn package:obsidian` rebuilds it, with `main.js`
+  around it, from source.
 
 ---
 
