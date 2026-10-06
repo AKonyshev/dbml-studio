@@ -173,11 +173,22 @@ Copy it to the root `dist/`, beside the `.vsix` archive, and attach it to the
 GitHub release as step 6 attaches the extension.
 
 Publishing to PyPI is separate, last, and only when somebody decides to — like
-the Marketplace, it cannot be taken back:
+the Marketplace, it cannot be taken back: a version uploaded once can never be
+uploaded again, not even after deleting it. It comes after the GitHub release,
+because it publishes the wheel attached there rather than a fresh build:
 
 ```bash
-packages/mkdocs-dbml/.venv/bin/python -m twine upload packages/mkdocs-dbml/dist/mkdocs_dbml-<version>-py3-none-any.whl
+yarn workspace mkdocs-dbml publish:pypi <version> --check   # fetch and check only
+yarn workspace mkdocs-dbml publish:pypi <version>
 ```
+
+The script (`packages/mkdocs-dbml/scripts/publish-pypi.sh`) fetches the
+wheel from the release `mkdocs-dbml-v<version>`, refuses one that does not
+carry the frame and the license, runs `twine check --strict`, and asks for the
+version to be typed back before uploading. twine then asks for credentials:
+username `__token__`, password a PyPI API token (pypi.org → Account settings →
+API tokens). The script is `publish:pypi`, not `publish`, because
+`yarn workspace … publish` is yarn's own command for npm.
 
 ## The Obsidian plugin
 
