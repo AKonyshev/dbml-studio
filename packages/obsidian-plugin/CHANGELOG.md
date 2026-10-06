@@ -3,6 +3,20 @@
 The Obsidian plugin's own history. The version is the root `manifest.json`'s;
 the format is [Keep a Changelog](http://keepachangelog.com/).
 
+## [0.2.1] - 2026-10-06
+
+The directory's automated review flagged code in the repository; this release
+carries the fixes, so the review reads them.
+
+### Fixed
+
+- Dragging the diagram kept its grabbing hand only until the pointer crossed
+  a relation's button: leaving the button set the cursor back to the arrow
+  mid-drag. It now stays the hand until the drag ends.
+- After the first drag of the diagram, or the first visit to a relation's
+  button, the frame's cursor stayed an arrow everywhere, over text too. It
+  now goes back to the ordinary one.
+
 ## [0.2.0] - 2026-10-06
 
 Made for Obsidian's Community plugins directory.
