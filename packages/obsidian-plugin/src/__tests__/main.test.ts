@@ -207,11 +207,28 @@ beforeEach(async () => {
   jest.mocked(getLanguage).mockReturnValue("en");
 });
 
+/**
+ * Every plugin a test loaded. Each starts writing its frame into the vault on
+ * load, whether or not the test goes on to wait for it, and removing the vault
+ * while that write runs fails with ENOTEMPTY — in whichever later test the
+ * timing happens to land on.
+ */
+const loaded: DbmlStudioPlugin[] = [];
+
 afterEach(async () => {
   document.body.innerHTML = "";
   document.body.className = "";
   Adapter.beforeWrite = null;
   jest.restoreAllMocks();
+  await Promise.all(
+    loaded
+      .splice(0)
+      .map(
+        async (plugin) =>
+          await (plugin as unknown as { frameReady: Promise<unknown> })
+            .frameReady,
+      ),
+  );
   await rm(vault, { recursive: true, force: true });
 });
 
@@ -228,6 +245,7 @@ const loadPlugin = (): DbmlStudioPlugin => {
   const plugin = new DbmlStudioPlugin(app as never, manifest as PluginManifest);
 
   plugin.onload();
+  loaded.push(plugin);
 
   return plugin;
 };
