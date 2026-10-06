@@ -53,7 +53,8 @@ loads again — about a second.
 
 ## Commands
 
-- **Обновить диаграммы** — re-reads every model on screen and sends it to its
+- **Refresh diagrams** (**Обновить диаграммы** in Russian) — re-reads every
+  model on screen and sends it to its
   diagram again. Tables keep their places; new ones are laid out. The plugin
   does not watch the files. Each file is read once, and one that cannot be
   read is one notice, however many blocks draw it.
@@ -165,8 +166,11 @@ Obsidian's main window never stalls (worst 1 ms), because the frames run out
 of process; each loaded frame costs about 70 MB.
 
 All the text a reader of a note sees — block errors, the read failure, the
-command name — is Russian and lives in `src/i18n/locales/ru.ts`, the one path
-the repository's Cyrillic guard
+command name — is English, or Russian when Obsidian's own language is
+Russian. The plugin asks Obsidian with `getLanguage()` on load (Obsidian
+restarts to change language). The two catalogs are `src/i18n/locales/en.ts`
+and `ru.ts`, one shape (`src/i18n/catalog.ts`); `src/i18n/locales/` is the one
+path the repository's Cyrillic guard
 (`packages/json-table-schema-visualizer/src/i18n/__tests__/sourceLanguage.test.ts`)
 excludes from its "no Cyrillic outside a locale file" rule. Everywhere else
 in this package's source stays English.

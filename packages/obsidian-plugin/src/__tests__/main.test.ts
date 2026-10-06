@@ -15,6 +15,7 @@ import { gunzipSync } from "node:zlib";
 
 import {
   FileSystemAdapter,
+  getLanguage,
   Notice,
   type MarkdownRenderChild,
   type PluginManifest,
@@ -22,7 +23,9 @@ import {
 
 import { FrameView } from "../frameView";
 import DbmlStudioPlugin from "../main";
-import { frameUnavailableText } from "../messages";
+import { en } from "../i18n/locales/en";
+import { ru } from "../i18n/locales/ru";
+import { messagesFor } from "../messages";
 
 import type * as PathModule from "node:path";
 import type * as FsPromisesModule from "node:fs/promises";
@@ -112,6 +115,8 @@ jest.mock(
       FileSystemAdapter,
       Notice: jest.fn(),
       normalizePath: (path: string) => path,
+      // Obsidian's own default when no language is set.
+      getLanguage: jest.fn(() => "en"),
     };
   },
   { virtual: true },
@@ -199,6 +204,7 @@ beforeEach(async () => {
   await mkdir(join(vault, "plugin"));
   await writeFile(join(vault, "a.dbml"), "Table a { id int }");
   jest.mocked(Notice).mockClear();
+  jest.mocked(getLanguage).mockReturnValue("en");
 });
 
 afterEach(async () => {
@@ -336,7 +342,57 @@ describe("the frame the plugin carries", () => {
 
     expect(element.querySelector("iframe")).toBeNull();
     expect(element.querySelector(".dbml-diagram-error")?.textContent).toBe(
-      frameUnavailableText(failure),
+      messagesFor(en).frameUnavailableText(failure),
+    );
+  });
+});
+
+describe("the language a reader is spoken to in", () => {
+  const commandName = (plugin: DbmlStudioPlugin): unknown =>
+    (
+      plugin as unknown as { commands: Array<{ id: string; name: string }> }
+    ).commands.find((command) => command.id === "refresh-diagrams")?.name;
+
+  const blockError = async (plugin: DbmlStudioPlugin): Promise<unknown> => {
+    const { element } = await render(plugin, "model: /a.dbml\ntabels: a");
+
+    return element.querySelector(".dbml-diagram-error")?.textContent;
+  };
+
+  it("is English by default", async () => {
+    jest.mocked(getLanguage).mockReturnValue("en");
+    const plugin = loadPlugin();
+
+    expect(commandName(plugin)).toBe(en.refreshCommandName);
+    expect(await blockError(plugin)).toBe(en.blockError.unknownKey("tabels"));
+  });
+
+  it("is Russian when Obsidian is", async () => {
+    jest.mocked(getLanguage).mockReturnValue("ru");
+    const plugin = loadPlugin();
+
+    expect(commandName(plugin)).toBe(ru.refreshCommandName);
+    expect(await blockError(plugin)).toBe(ru.blockError.unknownKey("tabels"));
+  });
+
+  it("is English in a language it has no catalog for", async () => {
+    jest.mocked(getLanguage).mockReturnValue("de");
+    const plugin = loadPlugin();
+
+    expect(commandName(plugin)).toBe(en.refreshCommandName);
+  });
+
+  // Read from the plugin's own notice as well as from blocks.
+  it("is the notice's too", async () => {
+    jest.mocked(getLanguage).mockReturnValue("ru");
+    const plugin = loadPlugin();
+
+    await render(plugin, "model: /a.dbml");
+    await unlink(join(vault, "a.dbml"));
+    await runCommand(plugin, "refresh-diagrams");
+
+    expect(jest.mocked(Notice).mock.calls[0]?.[0]).toBe(
+      ru.modelUnreadable(join(vault, "a.dbml"), ru.readFailureReasons.ENOENT),
     );
   });
 });
