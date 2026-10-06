@@ -1,0 +1,48 @@
+{
+  "name": "antora-dbml",
+  "version": "0.1.0",
+  "description": "DBML entity-relationship diagrams in an Antora site: a dbml:: block draws an interactive diagram of a .dbml model, checked at build time.",
+  "license": "MIT",
+  "author": "AKonyshev",
+  "homepage": "https://github.com/AKonyshev/dbml-studio/tree/main/packages/antora-dbml#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AKonyshev/dbml-studio.git",
+    "directory": "packages/antora-dbml"
+  },
+  "bugs": "https://github.com/AKonyshev/dbml-studio/issues",
+  "keywords": [
+    "antora",
+    "antora-extension",
+    "asciidoctor",
+    "dbml",
+    "erd",
+    "diagram"
+  ],
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "vendor",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@antora/site-generator": "^3.0.0"
+  },
+  "devDependencies": {
+    "@antora/cli": "^3.2.1",
+    "@antora/site-generator": "^3.2.1",
+    "@types/node": "^20.12.12"
+  },
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "test": "jest",
+    "pack:release": "bash scripts/pack.sh",
+    "publish:npm": "bash scripts/publish-npm.sh",
+    "prepack": "cp ../../LICENSE LICENSE"
+  }
+}
