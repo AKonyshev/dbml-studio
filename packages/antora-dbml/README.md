@@ -5,6 +5,10 @@ diagram. The diagram frame from [DBML
 Studio](https://github.com/AKonyshev/dbml-studio) ships inside the package, so
 neither building nor reading the site needs the network.
 
+## Requirements
+
+Antora 3 and Node 18 or later.
+
 ## Install
 
 ```bash
@@ -20,6 +24,10 @@ antora:
 ```
 
 `models` is the folder of `.dbml` files, relative to the playbook.
+
+The extension registers the `dbml` block macro, so when another extension that
+registers one (asciidoctor-kroki has a `dbml::` macro) is installed beside it,
+this one replaces that macro.
 
 ## A block
 
@@ -85,10 +93,12 @@ block, `<page id>, block <n>: …`, where the page id is Antora's own
   how many problems there were.
 - With `validate: false` nothing is checked.
 
-`validate: error` does not stop on a block whose model is missing or outside
-the folder: that is logged as an error, and Antora's default failure level is
-`fatal`, so the build goes on and the page shows the error in place of the
-diagram. `antora --log-failure-level=error` makes those fail the build too, and
+`validate: error` also stops the build when a block names a model that is
+missing, is not a file, or lies outside the folder: each is logged as an error,
+the page shows it in place of the diagram, and the build then fails with the
+number of such blocks. With `validate: true` or `false` those blocks are only
+logged, and Antora's default failure level is `fatal`, so the build goes on.
+`antora --log-failure-level=error` makes them fail the build too, and
 `--log-failure-level=warn` fails it on any finding, including the warnings about
 a bad `height` or `theme`.
 

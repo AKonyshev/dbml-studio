@@ -50,7 +50,8 @@ export const runValidator = (
   });
 
   if (result.error !== undefined || result.status !== 0) {
-    const said = result.stderr.trim();
+    // stderr is null when the spawn itself failed.
+    const said = result.error === undefined ? result.stderr?.trim() ?? "" : "";
     const reason =
       result.error?.message ??
       (said === "" ? `exit code ${String(result.status)}` : said);

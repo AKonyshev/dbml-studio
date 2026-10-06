@@ -213,6 +213,12 @@ Check what is inside before anything else:
 tar -tzf dist/antora-dbml-<version>.tgz
 ```
 
+It must list `package/lib/index.js`, `package/vendor/frame/embed.html`,
+`package/vendor/validate.mjs`, `package/vendor/frame-host.js`,
+`package/vendor/frame-host.css` and `package/LICENSE`, and nothing under
+`package/src/`. `yarn package:antora` already refuses a tarball without the
+required files; the sources check is by eye.
+
 Tag it on the merge commit, annotated, as `antora-dbml-v<version>`, and attach
 the tarball to the GitHub release:
 

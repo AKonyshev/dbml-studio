@@ -132,8 +132,7 @@ describe("hostAssetsHtml", () => {
 describe("errorHtml", () => {
   it("escapes the message", () => {
     expect(errorHtml("no <model>")).toBe(
-      '<div class="dbml-diagram-error"><p class="dbml-diagram-error__title">DBML diagram</p>' +
-        "<p>no &lt;model&gt;</p></div>",
+      '<div class="admonitionblock caution dbml-diagram-error"><table><tr><td class="icon"><div class="title">Caution</div></td><td class="content"><div class="title">DBML diagram</div><div class="paragraph"><p>no &lt;model&gt;</p></div></td></tr></table></div>',
     );
   });
 });

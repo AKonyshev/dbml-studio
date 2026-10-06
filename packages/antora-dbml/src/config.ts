@@ -18,7 +18,16 @@ export class ConfigError extends Error {}
 
 export const DEFAULT_HEIGHT = 500;
 
-const KNOWN_KEYS = new Set(["models", "height", "theme", "validate"]);
+// `id` and `enabled` are Antora's own entries; 3.2.1 strips them before the
+// extension sees its config, older 3.x passes them through. Neither is used.
+const KNOWN_KEYS = new Set([
+  "models",
+  "height",
+  "theme",
+  "validate",
+  "id",
+  "enabled",
+]);
 
 const fail = (message: string): never => {
   throw new ConfigError(`antora-dbml: ${message}`);

@@ -15,7 +15,8 @@ TARBALL="$(cd "$PACKAGE" && npm pack --pack-destination "$ROOT/dist" --silent)"
 # What a site installs has to carry the frame, the validator and the license.
 LISTING="$(tar -tzf "$ROOT/dist/$TARBALL")"
 for inside in package/lib/index.js package/vendor/frame/embed.html \
-  package/vendor/validate.mjs package/vendor/frame-host.js package/LICENSE; do
+  package/vendor/validate.mjs package/vendor/frame-host.js \
+  package/vendor/frame-host.css package/LICENSE; do
   if ! grep -qx "$inside" <<< "$LISTING"; then
     echo "$TARBALL does not carry $inside" >&2
     exit 1

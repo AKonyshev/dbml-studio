@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -96,6 +96,19 @@ export const createExtension = (vendorDir: string) =>
     const blocks = new Map<string, CollectedBlock>();
     // Path inside the models folder → absolute file.
     const models = new Map<string, string>();
+    // Path inside the models folder → its text, so a model named on many pages
+    // is read once.
+    const texts = new Map<string, string>();
+    // Blocks that ended as an in-page error; `validate: error` counts them.
+    let unresolved = 0;
+
+    const isFile = (file: string): boolean => {
+      try {
+        return statSync(file).isFile();
+      } catch {
+        return false;
+      }
+    };
 
     const drawBlock = (
       file: PageFile,
@@ -111,12 +124,14 @@ export const createExtension = (vendorDir: string) =>
 
       const resolved = resolveModel(target);
       if (!resolved.ok) {
+        unresolved += 1;
         logger.error(`${where}: ${resolved.problem}`);
         return errorHtml(resolved.problem);
       }
       const modelFile = path.join(current.modelsDir, resolved.relative);
-      if (!existsSync(modelFile)) {
+      if (!isFile(modelFile)) {
         const problem = `no model ${resolved.relative} in the models folder`;
+        unresolved += 1;
         logger.error(`${where}: ${problem}`);
         return errorHtml(problem);
       }
@@ -145,13 +160,18 @@ export const createExtension = (vendorDir: string) =>
       const tables = parseTables(attrs.tables);
 
       models.set(resolved.relative, modelFile);
+      let text = texts.get(resolved.relative);
+      if (text === undefined) {
+        text = readFileSync(modelFile, "utf8");
+        texts.set(resolved.relative, text);
+      }
       const id = `${page}#${index}`;
       blocks.set(id, {
         id,
         page,
         index,
         model: resolved.relative,
-        text: readFileSync(modelFile, "utf8"),
+        text,
         tables,
       });
 
@@ -198,9 +218,9 @@ export const createExtension = (vendorDir: string) =>
 
     this.on("documentsConverted", ({ siteCatalog }) => {
       const current = loaded();
-      if (blocks.size === 0) return;
+      let problems = 0;
 
-      if (current.validate !== "off") {
+      if (current.validate !== "off" && blocks.size > 0) {
         const all = [...blocks.values()];
         const findings = runValidator(
           path.join(vendorDir, "validate.mjs"),
@@ -213,14 +233,23 @@ export const createExtension = (vendorDir: string) =>
           if (current.validate === "error") logger.error(message);
           else logger.warn(message);
         }
-        if (current.validate === "error" && findings.length > 0) {
-          // Antora's default failure level is `fatal`: a logged error alone
-          // would not fail the build that asked for exactly that.
-          throw new Error(
-            `antora-dbml: ${findings.length} problem(s) in DBML models (validate: error)`,
-          );
-        }
+        problems = findings.length;
       }
+
+      // Checked before the early return below: a site whose only blocks are
+      // broken must fail too. Antora's default failure level is `fatal`, so a
+      // logged error alone would not fail the build that asked for exactly that.
+      if (current.validate === "error" && problems + unresolved > 0) {
+        const parts: string[] = [];
+        if (problems > 0) parts.push(`${problems} problem(s) in DBML models`);
+        if (unresolved > 0)
+          parts.push(`${unresolved} block(s) without a model`);
+        throw new Error(
+          `antora-dbml: ${parts.join(" and ")} (validate: error)`,
+        );
+      }
+
+      if (blocks.size === 0) return;
 
       const add = (outPath: string, file: string): void => {
         siteCatalog.addFile({

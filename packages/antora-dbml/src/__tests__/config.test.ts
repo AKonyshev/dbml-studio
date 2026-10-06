@@ -34,6 +34,12 @@ describe("readConfig", () => {
     ).toMatchObject({ height: 700, theme: "dark", validate: "error" });
   });
 
+  it("tolerates id and enabled, which older Antora passes through", () => {
+    expect(
+      readConfig({ models: "models", id: "dbml", enabled: true }, dir),
+    ).toMatchObject({ height: 500 });
+  });
+
   it("reads a height written as a string", () => {
     expect(readConfig({ models: "models", height: "640" }, dir).height).toBe(
       640,

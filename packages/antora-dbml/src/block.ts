@@ -93,10 +93,16 @@ export const hostAssetsHtml = (rootPath: string): string =>
   `<link rel="stylesheet" href="${escapeHtml(`${rootPath}/${FRAME_DIR}/frame-host.css`)}">` +
   `<script src="${escapeHtml(`${rootPath}/${FRAME_DIR}/frame-host.js`)}" defer></script>`;
 
-/** In place of a diagram that cannot be drawn, so the reader sees why. */
+/**
+ * In place of a diagram that cannot be drawn, so the reader sees why. It is
+ * Asciidoctor's own admonition markup, which the default Antora UI styles.
+ */
 export const errorHtml = (message: string): string =>
-  '<div class="dbml-diagram-error"><p class="dbml-diagram-error__title">DBML diagram</p>' +
-  `<p>${escapeHtml(message)}</p></div>`;
+  '<div class="admonitionblock caution dbml-diagram-error"><table><tr>' +
+  '<td class="icon"><div class="title">Caution</div></td>' +
+  '<td class="content"><div class="title">DBML diagram</div>' +
+  `<div class="paragraph"><p>${escapeHtml(message)}</p></div></td>` +
+  "</tr></table></div>";
 
 /** Antora's resource id for a page: `version@component:module:relative`. */
 export const pageId = (src: {

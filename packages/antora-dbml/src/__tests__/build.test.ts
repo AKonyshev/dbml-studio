@@ -154,6 +154,13 @@ const build = (site: Site): BuildResult => {
   };
 };
 
+/** The JSON log lines of a build, parsed; Antora logs one object per line. */
+const logLines = (site: BuildResult): Array<{ level: string; msg: string }> =>
+  (site.result.stdout + site.result.stderr)
+    .split("\n")
+    .filter((line) => line.startsWith("{"))
+    .map((line) => JSON.parse(line) as { level: string; msg: string });
+
 const MODEL = "Table a {\n  id int\n}\n";
 
 // Built from code points because the repo keeps Cyrillic out of sources
@@ -238,9 +245,10 @@ describe("a site with dbml:: blocks", () => {
     });
 
     expect(site.result.status).toBe(0);
-    expect(site.result.stdout + site.result.stderr).toContain(
-      "docs:ROOT:a.adoc, block 2: the model is BROKEN",
+    const line = logLines(site).find((entry) =>
+      entry.msg.includes("docs:ROOT:a.adoc, block 2: the model is BROKEN"),
     );
+    expect(line?.level).toBe("warn");
   });
 
   it("stops the build on a finding with validate: error", () => {
@@ -251,9 +259,10 @@ describe("a site with dbml:: blocks", () => {
     });
 
     expect(site.result.status).not.toBe(0);
-    expect(site.result.stdout + site.result.stderr).toContain(
-      "the model is BROKEN",
+    const line = logLines(site).find((entry) =>
+      entry.msg.includes("the model is BROKEN"),
     );
+    expect(line?.level).toBe("error");
   });
 
   it("checks nothing with validate: false", () => {
@@ -273,10 +282,50 @@ describe("a site with dbml:: blocks", () => {
       models: {},
     });
 
-    expect(site.read("docs/a.html")).toContain('class="dbml-diagram-error"');
+    expect(site.result.status).toBe(0);
+    expect(site.read("docs/a.html")).toContain("dbml-diagram-error");
     expect(site.read("docs/a.html")).not.toContain("<iframe");
+    const line = logLines(site).find((entry) =>
+      entry.msg.includes(
+        "docs:ROOT:a.adoc, block 1: no model nope.dbml in the models folder",
+      ),
+    );
+    expect(line?.level).toBe("error");
+  });
+
+  it("stops the build on a missing model with validate: error", () => {
+    const site = build({
+      pages: { "a.adoc": "= A\n\ndbml::ok[]\n\ndbml::nope[]\n" },
+      models: { "ok.dbml": MODEL },
+      settings: { validate: "error" },
+    });
+
+    expect(site.result.status).not.toBe(0);
     expect(site.result.stdout + site.result.stderr).toContain(
-      "docs:ROOT:a.adoc, block 1: no model nope.dbml in the models folder",
+      "1 block(s) without a model",
+    );
+  });
+
+  it("stops the build when the only block is missing, with validate: error", () => {
+    const site = build({
+      pages: { "a.adoc": "= A\n\ndbml::nope[]\n" },
+      models: {},
+      settings: { validate: "error" },
+    });
+
+    expect(site.result.status).not.toBe(0);
+  });
+
+  it("treats a folder named like a model as no model", () => {
+    const site = build({
+      pages: { "a.adoc": "= A\n\ndbml::dir[]\n" },
+      models: { "dir.dbml/keep.txt": "x" },
+    });
+
+    expect(site.result.status).toBe(0);
+    expect(site.read("docs/a.html")).toContain("dbml-diagram-error");
+    expect(site.result.stdout + site.result.stderr).toContain(
+      "no model dir.dbml in the models folder",
     );
   });
 

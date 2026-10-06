@@ -61,7 +61,8 @@ fi
 
 LISTING="$(tar -tzf "$WORK/$TARBALL")"
 for inside in package/lib/index.js package/vendor/frame/embed.html \
-  package/vendor/validate.mjs package/LICENSE; do
+  package/vendor/validate.mjs package/vendor/frame-host.js \
+  package/vendor/frame-host.css package/LICENSE; do
   if ! grep -qx "$inside" <<< "$LISTING"; then
     echo "$TARBALL does not carry $inside — not publishing it" >&2
     exit 1
