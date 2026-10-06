@@ -419,7 +419,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce": "^4.0.0",
     "eslint": "^8.57.1",
     "playwright": "1.63.0",
     "ts-loader": "^9.6.2",

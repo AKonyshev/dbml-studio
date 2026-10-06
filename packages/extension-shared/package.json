@@ -14,12 +14,12 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "@tomjs/vscode-extension-webview": "^1.3.3",
     "@types/node": "^20.19.43",
     "@types/vscode": "^1.89.0",
-    "@vscode/test-cli": "^0.0.8",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
