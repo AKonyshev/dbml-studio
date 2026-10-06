@@ -9,11 +9,15 @@
 # Release first (docs/releasing.md, "antora-dbml"), publish after.
 #
 # A version published to npm can never be published again, so the script asks
-# for the version to be typed back. npm asks to log in (`npm login`) if needed,
-# and for a one-time code when the account has two-factor authentication.
+# for the version to be typed back. It needs a login to registry.npmjs.org
+# (`npm login --registry https://registry.npmjs.org/`, once), and npm asks for a
+# one-time code when the account has two-factor authentication.
 set -euo pipefail
 
 REPO="AKonyshev/dbml-studio"
+# Named on every npm call: run through `yarn workspace`, npm inherits yarn's
+# registry setting and would publish to registry.yarnpkg.com, a mirror, instead.
+REGISTRY="https://registry.npmjs.org/"
 PACKAGE="$(cd "$(dirname "$0")/.." && pwd)"
 
 VERSION=""
@@ -22,7 +26,7 @@ for arg in "$@"; do
   case "$arg" in
     --check) CHECK_ONLY=1 ;;
     -h | --help)
-      sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -*)
@@ -74,12 +78,19 @@ if [ "$PACKED_VERSION" != "$VERSION" ]; then
   exit 1
 fi
 
-npm publish --dry-run "$WORK/$TARBALL"
+npm publish --dry-run --registry "$REGISTRY" "$WORK/$TARBALL"
 
 if [ "$CHECK_ONLY" -eq 1 ]; then
   echo "$TARBALL is ready; not published (--check)"
   exit 0
 fi
+
+if ! NPM_USER="$(npm whoami --registry "$REGISTRY" 2> /dev/null)"; then
+  echo "not logged in to $REGISTRY. Log in once with:" >&2
+  echo "  npm login --registry $REGISTRY" >&2
+  exit 1
+fi
+echo "logged in to npm as $NPM_USER"
 
 printf 'Publish antora-dbml %s to npm? It cannot be undone. Type the version to confirm: ' "$VERSION"
 read -r answer
@@ -88,5 +99,5 @@ if [ "$answer" != "$VERSION" ]; then
   exit 1
 fi
 
-npm publish --access public "$WORK/$TARBALL"
+npm publish --access public --registry "$REGISTRY" "$WORK/$TARBALL"
 echo "published: https://www.npmjs.com/package/antora-dbml/v/$VERSION"

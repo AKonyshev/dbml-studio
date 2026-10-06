@@ -244,7 +244,11 @@ from the release `antora-dbml-v<version>`, refuses one that does not carry the
 frame, the validator and the license or whose `package.json` says another
 version, runs `npm publish --dry-run`, and asks for the version to be typed
 back before publishing. The last step is the maintainer's: it needs an npm
-account that may publish `antora-dbml`, and its two-factor code. The script is
+account that may publish `antora-dbml`, logged in once with
+`npm login --registry https://registry.npmjs.org/`, and its two-factor code.
+Every npm call in the script names that registry: run through
+`yarn workspace`, npm would otherwise inherit yarn's and publish to
+registry.yarnpkg.com, a mirror. The script is
 `publish:npm`, not `publish`, because `yarn workspace … publish` is yarn's own
 command.
 
