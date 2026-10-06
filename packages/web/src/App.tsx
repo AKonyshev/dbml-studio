@@ -291,7 +291,7 @@ const App = ({
 
         const name =
           id.kind === "local"
-            ? localFileById(current, id.id)?.name ?? ""
+            ? (localFileById(current, id.id)?.name ?? "")
             : id.path;
 
         downloadTextFile(toDbmlFilename(name), contents ?? "");

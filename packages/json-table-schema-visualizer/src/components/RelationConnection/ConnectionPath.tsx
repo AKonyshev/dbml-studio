@@ -165,7 +165,7 @@ const ConnectionPath = ({
   const highlight = alwaysHover || isEitherEndHovered || isHovered;
 
   const strokeColor = highlight
-    ? sourceTableColors?.regular ?? themeColors.connection.active
+    ? (sourceTableColors?.regular ?? themeColors.connection.active)
     : themeColors.connection.default;
 
   const isAnimated = animateRelations && isEitherEndHovered;

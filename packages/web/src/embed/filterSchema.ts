@@ -3,8 +3,7 @@ import { type JSONTableSchema } from "shared/types/tableSchema";
 import { type EmbedError } from "./embedError";
 
 export type FilterResult =
-  | { ok: true; schema: JSONTableSchema }
-  | { ok: false; error: EmbedError };
+  { ok: true; schema: JSONTableSchema } | { ok: false; error: EmbedError };
 
 /**
  * Short name to full name, for the names where that mapping is a function.

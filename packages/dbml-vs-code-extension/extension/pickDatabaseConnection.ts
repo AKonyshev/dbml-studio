@@ -21,13 +21,11 @@ export async function pickDatabaseConnection(
 ): Promise<PickedConnection | undefined> {
   const saved = await listConnections(context.secrets);
   const items: ConnectionPickItem[] = [
-    ...saved.map(
-      (name): ConnectionPickItem => ({
-        label: name,
-        pickKind: "saved",
-        connectionName: name,
-      }),
-    ),
+    ...saved.map((name): ConnectionPickItem => ({
+      label: name,
+      pickKind: "saved",
+      connectionName: name,
+    })),
     { label: newConnectionLabel(), pickKind: "new" },
   ];
   const choice = await window.showQuickPick(items, {

@@ -40,8 +40,7 @@ export function databaseSchemaToModel(
     const fieldList = (schema.fields[key] as DbField[] | undefined) ?? [];
     const pkMap =
       (schema.tableConstraints[key] as
-        | Record<string, { pk?: boolean }>
-        | undefined) ?? {};
+        Record<string, { pk?: boolean }> | undefined) ?? {};
 
     const columns = new Map<string, CanonColumn>();
     for (const f of fieldList) {

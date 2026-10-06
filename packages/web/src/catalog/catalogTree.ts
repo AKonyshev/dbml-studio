@@ -63,14 +63,12 @@ const emptyBuilder = (path: string): FolderBuilder => ({
 // The builder's mutable maps as the immutable, ordered nodes a reader sees.
 const toNodes = (builder: FolderBuilder): CatalogNode[] =>
   sortNodes([
-    ...[...builder.folders.values()].map(
-      (child): CatalogFolderNode => ({
-        kind: "folder",
-        name: fileNameOf(child.path),
-        path: child.path,
-        children: toNodes(child),
-      }),
-    ),
+    ...[...builder.folders.values()].map((child): CatalogFolderNode => ({
+      kind: "folder",
+      name: fileNameOf(child.path),
+      path: child.path,
+      children: toNodes(child),
+    })),
     ...builder.files,
   ]);
 

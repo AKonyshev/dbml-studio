@@ -218,9 +218,9 @@ afterEach(async () => {
 const loadPlugin = (): DbmlStudioPlugin => {
   const app = {
     vault: {
-      adapter: new (FileSystemAdapter as unknown as new (
-        base: string,
-      ) => FileSystemAdapter)(vault),
+      adapter: new (
+        FileSystemAdapter as unknown as new (base: string) => FileSystemAdapter
+      )(vault),
     },
     workspace: { on: () => ({}) },
   };
