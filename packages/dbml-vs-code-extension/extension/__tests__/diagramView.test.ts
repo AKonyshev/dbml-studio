@@ -57,12 +57,6 @@ const makeDocument = (uri: string, text: string) => ({
   getText: () => text,
 });
 
-beforeAll(() => {
-  // The real one is injected by the webview build; only its return value matters.
-  (globalThis as Record<string, unknown>).__getWebviewHtml__ = () =>
-    "<html></html>";
-});
-
 /** What the context key was set to, in order. */
 const setContextCalls = (): unknown[] =>
   (commands.executeCommand as jest.Mock).mock.calls

@@ -8,6 +8,7 @@ import {
   workspace,
   WorkspaceEdit,
 } from "vscode";
+import { getWebviewHtml } from "virtual:vscode";
 import { type Theme } from "json-table-schema-visualizer/src/types/theme";
 
 import {
@@ -55,11 +56,13 @@ export class WebviewHelper {
     context: ExtensionContext,
     defaultConfig: DefaultPageConfig,
   ): string {
-    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
-    const html: string =
-      devServerUrl !== undefined && devServerUrl !== ""
-        ? __getWebviewHtml__(devServerUrl)
-        : __getWebviewHtml__(webview, context);
+    // Under `vite serve` the page comes from the dev server; in a build, from
+    // the bundled assets. The extension build picks which.
+    const html = getWebviewHtml({
+      serverUrl: process.env.VITE_DEV_SERVER_URL,
+      webview,
+      context,
+    });
 
     return WebviewHelper.injectScripts(html, defaultConfig);
   }

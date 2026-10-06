@@ -14,7 +14,8 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@tomjs/vscode-extension-webview": "^1.3.3",
+    "@tomjs/vite-plugin-vscode": "^8.0.0",
+    "@tomjs/vscode-extension-webview": "^2.0.0",
     "@types/node": "^20.19.43",
     "@types/vscode": "^1.89.0",
     "@vscode/test-cli": "^0.0.15",

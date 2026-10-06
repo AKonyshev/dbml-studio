@@ -408,7 +408,7 @@
     "generate:css": "cd ../json-table-schema-visualizer && npx tailwindcss -i ./src/styles/index.css >  ../dbml-vs-code-extension/dist/webview/assets/index.css --minify"
   },
   "devDependencies": {
-    "@tomjs/vite-plugin-vscode": "^2.6.0",
+    "@tomjs/vite-plugin-vscode": "^8.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "18.x",
     "@types/react": "^18.3.31",

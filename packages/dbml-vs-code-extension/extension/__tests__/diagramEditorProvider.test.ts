@@ -48,11 +48,6 @@ const deps = (): DiagramViewDeps => ({
   supportsDbmlFileSync: true,
 });
 
-beforeAll(() => {
-  (globalThis as Record<string, unknown>).__getWebviewHtml__ = () =>
-    "<html></html>";
-});
-
 describe("DiagramEditorProvider", () => {
   test("registers with retained context and one editor per document", () => {
     DiagramEditorProvider.register("dbml-studio-diagram", deps());
