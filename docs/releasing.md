@@ -191,6 +191,57 @@ username `__token__`, password a PyPI API token (pypi.org → Account settings �
 API tokens). The script is `publish:pypi`, not `publish`, because
 `yarn workspace … publish` is yarn's own command for npm.
 
+## antora-dbml
+
+The Antora extension is an npm package, versioned on its own, in
+`packages/antora-dbml/package.json`, by the same rule: what would a user of
+the previous version notice? The entry goes in
+`packages/antora-dbml/CHANGELOG.md`, and the release commit fills in its date.
+
+It carries a built copy of the diagram frame, so one command builds the site,
+the package and the tarball, and refuses a tarball that is missing the frame,
+the validator or the license:
+
+```bash
+yarn package:antora
+```
+
+The tarball is `dist/antora-dbml-<version>.tgz`, beside the `.vsix` archive.
+Check what is inside before anything else:
+
+```bash
+tar -tzf dist/antora-dbml-<version>.tgz
+```
+
+Tag it on the merge commit, annotated, as `antora-dbml-v<version>`, and attach
+the tarball to the GitHub release:
+
+```bash
+git tag -a antora-dbml-v<version> -m "antora-dbml-v<version> — <the short name>"
+git push origin antora-dbml-v<version>
+gh release create antora-dbml-v<version> --latest=false --title "antora-dbml <version> — <the short name>" --notes "..."
+gh release upload antora-dbml-v<version> dist/antora-dbml-<version>.tgz
+```
+
+Publishing to npm is separate, last, and only when somebody decides to — a
+version published once can never be published again. It comes after the GitHub
+release, because it publishes the tarball attached there rather than a fresh
+build:
+
+```bash
+yarn workspace antora-dbml publish:npm <version> --check   # fetch and check only
+yarn workspace antora-dbml publish:npm <version>
+```
+
+The script (`packages/antora-dbml/scripts/publish-npm.sh`) fetches the tarball
+from the release `antora-dbml-v<version>`, refuses one that does not carry the
+frame, the validator and the license or whose `package.json` says another
+version, runs `npm publish --dry-run`, and asks for the version to be typed
+back before publishing. The last step is the maintainer's: it needs an npm
+account that may publish `antora-dbml`, and its two-factor code. The script is
+`publish:npm`, not `publish`, because `yarn workspace … publish` is yarn's own
+command.
+
 ## The Obsidian plugin
 
 The plugin is listed in Obsidian's Community plugins directory, and the

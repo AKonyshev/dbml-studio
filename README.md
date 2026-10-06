@@ -92,6 +92,15 @@ instead of shipping an error message.
 
 See [packages/mkdocs-dbml/README.md](./packages/mkdocs-dbml/README.md).
 
+## In an Antora site
+
+The same diagram as a `dbml::` block in an Antora page. An extension puts the
+frame into the site and checks every model against the rules the frame draws
+by, so a page that names a table the model does not have is reported at build
+time instead of shipping an error message.
+
+See [packages/antora-dbml/README.md](./packages/antora-dbml/README.md).
+
 ## In an Obsidian vault
 
 The same diagram in a note: a `dbml` block names a model on disk, and a
@@ -107,6 +116,7 @@ See [packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md).
 - [DBML extension](./packages/dbml-vs-code-extension/README.md)
 - [The site](./packages/web/README.md)
 - [MkDocs plugin](./packages/mkdocs-dbml/README.md)
+- [Antora extension](./packages/antora-dbml/README.md)
 - [Obsidian plugin](./packages/obsidian-plugin/README.md)
 
 ## Attribution & license
