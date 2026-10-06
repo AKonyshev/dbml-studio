@@ -3,6 +3,14 @@
 The Obsidian plugin's own history. The version is the root `manifest.json`'s;
 the format is [Keep a Changelog](http://keepachangelog.com/).
 
+## [0.2.2] - 2026-10-06
+
+Nothing changes in the plugin: `main.js`, the frame it carries and the styles
+behave as in 0.2.1. The release exists so the directory's review reads the
+repository again. Its last report could not install the repository's
+dependencies, and the root `.yarnrc` now lets that install finish on an older
+Node.
+
 ## [0.2.1] - 2026-10-06
 
 The directory's automated review flagged code in the repository; this release
