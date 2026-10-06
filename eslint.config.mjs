@@ -136,6 +136,7 @@ export default tseslint.config(
       "**/out/**",
       "**/*.d.ts",
       "**/*.config.js",
+      "**/*.config.mjs",
       ".lintstagedrc.js",
       "**/export/svg/svgcanvas.esm.js",
       // ESLint 8 skipped dotfiles and dot-folders (`.storybook/`, ...) unless

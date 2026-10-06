@@ -4,7 +4,7 @@ import { darkThemeConfig } from "../src/constants/theme";
 import ThemeProvider from "../src/providers/ThemeProvider";
 import "../src/styles/index.css";
 
-/** @type { import('@storybook/react').Preview } */
+/** @type { import('@storybook/react-vite').Preview } */
 const preview = {
   parameters: {
     controls: {

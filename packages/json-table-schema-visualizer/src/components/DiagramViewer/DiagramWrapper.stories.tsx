@@ -2,7 +2,7 @@ import { Text } from "react-konva";
 
 import DiagramWrapper from "./DiagramWrapper";
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import TablesPositionsProvider from "@/providers/TablesPositionsProvider";
 

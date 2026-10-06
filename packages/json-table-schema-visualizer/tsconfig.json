@@ -8,6 +8,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "exclude": ["node_modules", "vite.config.js"],
+  "exclude": ["node_modules", "vite.config.mjs"],
   "include": ["**/*.ts", "**/*.tsx"]
 }
