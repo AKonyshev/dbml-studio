@@ -1,7 +1,27 @@
 # Changelog
 
-The Obsidian plugin's own history. The version is the root `manifest.json`'s; the format
-is [Keep a Changelog](http://keepachangelog.com/).
+The Obsidian plugin's own history. The version is the root `manifest.json`'s;
+the format is [Keep a Changelog](http://keepachangelog.com/).
+
+## [0.2.0] - 2026-10-06
+
+Made for Obsidian's Community plugins directory.
+
+### Added
+
+- An English interface. Block errors, notices and the command name are in
+  English, and in Russian when Obsidian's own language is Russian. The
+  command is "Refresh diagrams" ("Обновить диаграммы" in Russian).
+
+### Changed
+
+- Installed from Obsidian's Community plugins: Settings → Community plugins
+  → Browse, "DBML Studio". The zip on the GitHub release still installs by
+  hand.
+- The diagram frame travels inside `main.js`. On the first start, and after
+  each update, the plugin writes it into `frame/` in its own folder; a start
+  with an up-to-date frame writes nothing. Nothing is downloaded.
+- Needs Obsidian 1.13.7 or later, the version it is checked on.
 
 ## [0.1.0] - 2026-09-29
 

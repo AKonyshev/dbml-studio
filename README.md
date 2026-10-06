@@ -1,5 +1,29 @@
 # DBML Studio
 
+## DBML Studio for Obsidian
+
+Draws a DBML model as an ER diagram inside a note: a `dbml` code block names a
+`.dbml` file, and the plugin draws the whole model or the tables the block
+lists, in Obsidian's light or dark theme.
+
+Install it from Obsidian: **Settings → Community plugins → Browse**, search for
+"DBML Studio". Desktop only. How to write a block, and everything else:
+[packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md).
+
+What the plugin does beyond the note:
+
+- **It reads files outside the vault.** A block names a model file by path,
+  and that path may lead out of the vault (`model: /../models/rd.dbml`): the
+  models usually live beside the documentation they describe, not in the
+  vault. The plugin reads only the files blocks name, and writes none of them.
+- **It uses no network.** Nothing is downloaded or sent anywhere.
+- **It unpacks its own diagram frame.** The diagram is drawn by a page that
+  ships inside the plugin's `main.js`. On the first start, and after each
+  update, the plugin writes that page to `frame/` in its own plugin folder,
+  because a diagram page has to be a file there to load. Nothing is fetched.
+
+---
+
 A DBML workbench for VS Code — ERD diagrams, PostgreSQL import, and live database comparison — plus the same diagram as a website you can host yourself and embed in documentation.
 
 ![DBML Studio](./assets/demo.gif)
@@ -69,6 +93,7 @@ desktop plugin reads it and hands it to the frame. Theme, table filter,
 height and expanding to the whole window work as they do on a documentation
 page.
 
+It is installed from Obsidian's Community plugins (see the top of this page).
 See [packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md).
 
 ## Extension packages
