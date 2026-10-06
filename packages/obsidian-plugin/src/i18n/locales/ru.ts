@@ -49,6 +49,13 @@ export const ru = {
   vaultNotOnDisk: (): string =>
     "Хранилище открыто не с диска — модель читать неоткуда.",
 
+  /**
+   * The plugin could not write the diagram frame it carries into its own
+   * folder (`frameArchive.ts`), so no diagram can load.
+   */
+  frameUnavailable: (reason: string): string =>
+    `Не удалось подготовить диаграмму: кадр не записан в папку плагина (${reason}).`,
+
   /** The command palette entry that re-reads every live diagram's model. */
   refreshCommandName: "Обновить диаграммы",
 } as const;

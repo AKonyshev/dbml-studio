@@ -1,6 +1,17 @@
-import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DecompressionStream } from "node:stream/web";
+import { TextDecoder } from "node:util";
+import { gunzipSync } from "node:zlib";
 
 import {
   FileSystemAdapter,
@@ -11,6 +22,11 @@ import {
 
 import { FrameView } from "../frameView";
 import DbmlStudioPlugin from "../main";
+import { frameUnavailableText } from "../messages";
+
+import type * as PathModule from "node:path";
+import type * as FsPromisesModule from "node:fs/promises";
+import type * as FsModule from "node:fs";
 
 // The `obsidian` package ships types only; the application provides the module
 // at run time. This stands in for the little of it the plugin touches, and
@@ -47,11 +63,42 @@ jest.mock(
       constructor(readonly containerEl: HTMLElement) {}
     }
 
+    const nodePath = jest.requireActual<typeof PathModule>("node:path");
+    const nodeFs = jest.requireActual<typeof FsModule>("node:fs");
+    const nodeFsPromises =
+      jest.requireActual<typeof FsPromisesModule>("node:fs/promises");
+
+    // The adapter's file calls address the vault folder, which is where the
+    // plugin folder lives; this one does it on a real temporary folder.
+    // `beforeWrite` lets a test hold a write back, or fail it.
     class FileSystemAdapter {
+      static beforeWrite: ((path: string) => Promise<void>) | null = null;
+
       constructor(private readonly base: string) {}
 
       getBasePath(): string {
         return this.base;
+      }
+
+      private full(path: string): string {
+        return nodePath.join(this.base, path);
+      }
+
+      async exists(path: string): Promise<boolean> {
+        return nodeFs.existsSync(this.full(path));
+      }
+
+      async read(path: string): Promise<string> {
+        return await nodeFsPromises.readFile(this.full(path), "utf8");
+      }
+
+      async write(path: string, data: string): Promise<void> {
+        await FileSystemAdapter.beforeWrite?.(path);
+        await nodeFsPromises.writeFile(this.full(path), data);
+      }
+
+      async mkdir(path: string): Promise<void> {
+        await nodeFsPromises.mkdir(this.full(path), { recursive: true });
       }
 
       getResourcePath(path: string): string {
@@ -135,12 +182,21 @@ const popout = (): Window => {
 
 let vault: string;
 
+/** The stand-in adapter's class, with the hook its writes go through. */
+const Adapter = FileSystemAdapter as unknown as {
+  beforeWrite: ((path: string) => Promise<void>) | null;
+};
+
 beforeAll(() => {
   giveNodeHelpers(window);
+  // jsdom has neither; Obsidian's Chromium has both. These are Node's own
+  // implementations of the same web APIs, not stand-ins.
+  Object.assign(globalThis, { DecompressionStream, TextDecoder });
 });
 
 beforeEach(async () => {
   vault = await mkdtemp(join(tmpdir(), "dbml-obsidian-"));
+  await mkdir(join(vault, "plugin"));
   await writeFile(join(vault, "a.dbml"), "Table a { id int }");
   jest.mocked(Notice).mockClear();
 });
@@ -148,6 +204,7 @@ beforeEach(async () => {
 afterEach(async () => {
   document.body.innerHTML = "";
   document.body.className = "";
+  Adapter.beforeWrite = null;
   jest.restoreAllMocks();
   await rm(vault, { recursive: true, force: true });
 });
@@ -221,6 +278,68 @@ const runCommand = async (
 
   await command.callback();
 };
+
+/** Lets every promise already settled run its callbacks, and timers fire. */
+const settle = async (): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 20));
+};
+
+describe("the frame the plugin carries", () => {
+  // Installed from the Community plugins directory, the plugin folder holds
+  // main.js, manifest.json and styles.css, and nothing else.
+  it("is written into the plugin folder of a fresh install", async () => {
+    const plugin = loadPlugin();
+
+    await render(plugin, "model: /a.dbml");
+
+    expect(existsSync(join(vault, "plugin/frame/embed.html"))).toBe(true);
+    expect(await readFile(join(vault, "plugin/frame/embed.html"), "utf8")).toBe(
+      gunzipSync(Buffer.from(DBML_FRAME_GZIP, "base64")).toString("utf8"),
+    );
+    expect(await readFile(join(vault, "plugin/frame/BUILD"), "utf8")).toBe(
+      DBML_FRAME_BUILD,
+    );
+  });
+
+  it("is in place before a block makes a frame element", async () => {
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    Adapter.beforeWrite = async () => {
+      await held;
+    };
+
+    const plugin = loadPlugin();
+    const rendering = render(plugin, "model: /a.dbml");
+
+    await settle();
+    expect(document.querySelector("iframe")).toBeNull();
+
+    release();
+    const { element } = await rendering;
+
+    expect(element.querySelector("iframe")).not.toBeNull();
+    expect(existsSync(join(vault, "plugin/frame/BUILD"))).toBe(true);
+  });
+
+  it("that cannot be written is an error in the block, not an empty frame", async () => {
+    const failure = new Error("EROFS: read-only file system");
+
+    Adapter.beforeWrite = async () => {
+      throw failure;
+    };
+
+    const plugin = loadPlugin();
+    const { element } = await render(plugin, "model: /a.dbml");
+
+    expect(element.querySelector("iframe")).toBeNull();
+    expect(element.querySelector(".dbml-diagram-error")?.textContent).toBe(
+      frameUnavailableText(failure),
+    );
+  });
+});
 
 describe("refreshing the diagrams", () => {
   // Obsidian renders every block twice while a note is open — in reading view

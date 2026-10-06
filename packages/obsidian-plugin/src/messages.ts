@@ -61,3 +61,7 @@ export const modelUnreadableText = (path: string, reason: string): string =>
   ru.modelUnreadable(path, reason);
 
 export const vaultNotOnDiskText = (): string => ru.vaultNotOnDisk();
+
+/** The frame could not be put into the plugin folder; no diagram can load. */
+export const frameUnavailableText = (error: unknown): string =>
+  ru.frameUnavailable(error instanceof Error ? error.message : String(error));

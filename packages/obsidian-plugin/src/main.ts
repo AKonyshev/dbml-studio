@@ -4,6 +4,7 @@ import {
   FileSystemAdapter,
   MarkdownRenderChild,
   Notice,
+  normalizePath,
   Plugin,
   type MarkdownPostProcessorContext,
 } from "obsidian";
@@ -12,11 +13,13 @@ import { followAppTheme, themeOf } from "./appTheme";
 import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { ExpandHosts, type ExpandHost } from "./expandHost";
+import { ensureFrame, unpackFrame } from "./frameArchive";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
 import { ru } from "./i18n/locales/ru";
 import {
   blockErrorText,
+  frameUnavailableText,
   modelUnreadableText,
   readFailureReason,
   vaultNotOnDiskText,
@@ -80,7 +83,22 @@ export default class DbmlStudioPlugin extends Plugin {
    */
   private unloaded = false;
 
+  /**
+   * Settles once the frame this `main.js` carries is in the plugin folder:
+   * with `null`, or with what stopped it being written. Never rejects, so a
+   * failure is told in each block rather than lost as an unhandled rejection.
+   */
+  private frameReady: Promise<unknown> = Promise.resolve(null);
+
   onload(): void {
+    this.frameReady = ensureFrame(this.app.vault.adapter, this.frameFolder(), {
+      build: DBML_FRAME_BUILD,
+      html: async () => await unpackFrame(DBML_FRAME_GZIP),
+    }).then(
+      () => null,
+      (error: unknown) => error ?? new Error("unknown"),
+    );
+
     this.registerMarkdownCodeBlockProcessor(
       "dbml",
       async (source, element, context) => {
@@ -105,6 +123,19 @@ export default class DbmlStudioPlugin extends Plugin {
         await this.refreshAll();
       },
     });
+  }
+
+  /**
+   * `frame/` in the plugin's own folder, addressed from the vault root as the
+   * adapter addresses everything. Obsidian always gives a plugin its `dir`;
+   * the fallback is where it would be.
+   */
+  private frameFolder(): string {
+    const dir =
+      this.manifest.dir ??
+      `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
+
+    return normalizePath(`${dir}/frame`);
   }
 
   onunload(): void {
@@ -262,6 +293,19 @@ export default class DbmlStudioPlugin extends Plugin {
     }
 
     if (child.gone || this.unloaded) {
+      return;
+    }
+
+    // A frame element made before its document is written would load an
+    // error page, and only a reload would bring it back.
+    const frameFailure = await this.frameReady;
+
+    if (child.gone || this.unloaded) {
+      return;
+    }
+
+    if (frameFailure !== null) {
+      renderBlockError(element, frameUnavailableText(frameFailure));
       return;
     }
 

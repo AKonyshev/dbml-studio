@@ -2,6 +2,7 @@ import { type BlockError } from "../blockParams";
 import { ru } from "../i18n/locales/ru";
 import {
   blockErrorText,
+  frameUnavailableText,
   modelUnreadableText,
   readFailureReason,
   vaultNotOnDiskText,
@@ -137,6 +138,21 @@ describe("modelUnreadableText", () => {
   it("passes the path and reason through to the catalog", () => {
     expect(modelUnreadableText("/models/", ru.readFailureReasons.EISDIR)).toBe(
       ru.modelUnreadable("/models/", ru.readFailureReasons.EISDIR),
+    );
+  });
+});
+
+describe("frameUnavailableText", () => {
+  // Dispatch only — the wording itself is pinned in the catalog's own test.
+  it("passes the error's message to the catalog", () => {
+    expect(frameUnavailableText(new Error("EROFS: read-only"))).toBe(
+      ru.frameUnavailable("EROFS: read-only"),
+    );
+  });
+
+  it("still gives a reason for something thrown that is not an Error", () => {
+    expect(frameUnavailableText("disk full")).toBe(
+      ru.frameUnavailable("disk full"),
     );
   });
 });

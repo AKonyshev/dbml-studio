@@ -74,9 +74,13 @@ after every later install.
 
 `build:web` comes first and is not run for you: the plugin's build copies the
 frame out of `packages/web/dist` and fails, naming what is missing, when that
-build is absent or partial. `install:obsidian` likewise refuses, naming the
-file, when `main.js` or `frame/embed.html` is not built, rather than install a
-plugin that turns on and draws nothing.
+build is absent or partial. `build:obsidian` vendors the frame into `frame/`
+and then bundles `main.js` with the frame inside it; `build:plugin` alone
+refuses, naming the file, when `frame/` is not there. `install:obsidian`
+refuses when `main.js` is not built, copies `main.js`, `manifest.json` and
+`styles.css` — what the Community plugins directory installs — and removes
+the vault's `frame/`, so the plugin unpacks the one it carries on the next
+start.
 
 A release package — a zip with a `dbml-studio/` folder inside, to unzip into
 `<vault>/.obsidian/plugins/`:

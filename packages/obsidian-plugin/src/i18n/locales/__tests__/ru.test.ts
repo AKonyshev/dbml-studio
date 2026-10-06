@@ -97,6 +97,14 @@ describe("ru.vaultNotOnDisk", () => {
   });
 });
 
+describe("ru.frameUnavailable", () => {
+  it("says the frame could not be written, and why", () => {
+    expect(ru.frameUnavailable("EROFS")).toBe(
+      "Не удалось подготовить диаграмму: кадр не записан в папку плагина (EROFS).",
+    );
+  });
+});
+
 describe("ru.refreshCommandName", () => {
   it("is the command palette entry for re-reading every model", () => {
     expect(ru.refreshCommandName).toBe("Обновить диаграммы");
