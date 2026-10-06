@@ -19,7 +19,7 @@ export const dbmlFieldToJSONTableField = ({
     note,
     dbdefault,
     increment,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- the dbml parser's own field name
     not_null,
     type,
   },

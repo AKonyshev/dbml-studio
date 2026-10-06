@@ -366,7 +366,7 @@ export default class DbmlStudioPlugin extends Plugin {
       stopFollowingWindow: element.onWindowMigrated((win) => {
         moveDiagram(
           diagram,
-          win as Window & typeof globalThis,
+          win as typeof window,
           this.expandHosts,
           document.body,
         );
