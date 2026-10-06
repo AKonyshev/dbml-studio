@@ -1,27 +1,22 @@
 import { drawnBoxes } from "../drawnBoxes";
 import { selectionFromMarquee } from "../selectionFromMarquee";
 
-import type { JSONTableField, JSONTableTable } from "shared/types/tableSchema";
+import type { JSONTableTable } from "shared/types/tableSchema";
 import type { XYWHPosition } from "@/types/positions";
 
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 
-const tableWith = (name: string, columns: number): JSONTableTable =>
-  ({
-    name,
-    fields: Array.from(
-      { length: columns },
-      (_, i) =>
-        ({
-          name: `c${i}`,
-          type: { type_name: "int", is_enum: false },
-          is_relation: false,
-        }) as unknown as JSONTableField,
-    ),
-    indexes: [],
-    x: 0,
-    y: 0,
-  }) as unknown as JSONTableTable;
+const tableWith = (name: string, columns: number): JSONTableTable => ({
+  name,
+  fields: Array.from({ length: columns }, (_, i) => ({
+    name: `c${i}`,
+    type: { type_name: "int", is_enum: false },
+    is_relation: false,
+  })),
+  indexes: [],
+  x: 0,
+  y: 0,
+});
 // What the layout stored: a ten-column table is 36 + 10 * 30 = 336 tall.
 const coords = (
   entries: Array<[string, XYWHPosition]>,

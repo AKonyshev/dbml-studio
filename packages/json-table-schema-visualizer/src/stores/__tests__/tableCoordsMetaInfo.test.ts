@@ -1,7 +1,7 @@
 import { detailLevelStore } from "../detailLevelStore";
 import { tableCoordsStore } from "../tableCoords";
 
-import type { JSONTableField, JSONTableTable } from "shared/types/tableSchema";
+import type { JSONTableTable } from "shared/types/tableSchema";
 
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 
@@ -30,34 +30,29 @@ const fakeStorage = (): Storage => {
     get length() {
       return items.size;
     },
-  } as unknown as Storage;
+  };
 };
 
 const tableFrom = (
   name: string,
   columns: number,
   fromFile?: { x: number; y: number; detailLevel: string },
-): JSONTableTable =>
-  ({
-    name,
-    fields: Array.from(
-      { length: columns },
-      (_, i) =>
-        ({
-          name: `c${i}`,
-          type: { type_name: "integer", is_enum: false },
-          is_relation: false,
-        }) as unknown as JSONTableField,
-    ),
-    indexes: [],
-    x: fromFile?.x ?? 0,
-    y: fromFile?.y ?? 0,
-    fromMetaInfo: fromFile !== undefined,
-    metaInfoPositions:
-      fromFile === undefined
-        ? undefined
-        : { [fromFile.detailLevel]: { x: fromFile.x, y: fromFile.y } },
-  }) as unknown as JSONTableTable;
+): JSONTableTable => ({
+  name,
+  fields: Array.from({ length: columns }, (_, i) => ({
+    name: `c${i}`,
+    type: { type_name: "integer", is_enum: false },
+    is_relation: false,
+  })),
+  indexes: [],
+  x: fromFile?.x ?? 0,
+  y: fromFile?.y ?? 0,
+  fromMetaInfo: fromFile !== undefined,
+  metaInfoPositions:
+    fromFile === undefined
+      ? undefined
+      : { [fromFile.detailLevel]: { x: fromFile.x, y: fromFile.y } },
+});
 
 describe("the layout a file is given, and the one it is read back from", () => {
   // A document key per case. The store is a singleton and carries the previous

@@ -417,7 +417,7 @@ describe("refreshing the diagrams", () => {
     // Sorted: the two reads finish in whichever order the disk answers.
     const said = jest
       .mocked(Notice)
-      .mock.calls.map(([message]) => String(message))
+      .mock.calls.map(([message]) => message as string)
       .sort();
 
     expect(said).toHaveLength(2);

@@ -29,6 +29,14 @@ const KNOWN_KEYS = new Set([
   "enabled",
 ]);
 
+/**
+ * A value from the playbook or a block, as an error message quotes it. Strings
+ * read as written; anything else as JSON, so a mapping where a number belongs
+ * is shown rather than reported as `[object Object]`.
+ */
+export const describeValue = (value: unknown): string =>
+  typeof value === "string" ? value : JSON.stringify(value);
+
 const fail = (message: string): never => {
   throw new ConfigError(`antora-dbml: ${message}`);
 };
@@ -64,7 +72,7 @@ export const readConfig = (
     const value = Number(raw.height);
     if (!Number.isInteger(value) || value <= 0) {
       fail(
-        `height must be a positive whole number of pixels, not ${String(raw.height)}`,
+        `height must be a positive whole number of pixels, not ${describeValue(raw.height)}`,
       );
     }
     height = value;
@@ -73,7 +81,7 @@ export const readConfig = (
   let theme: Theme | null = null;
   if (raw.theme !== undefined && raw.theme !== null) {
     if (raw.theme !== "light" && raw.theme !== "dark") {
-      fail(`theme must be light or dark, not ${String(raw.theme)}`);
+      fail(`theme must be light or dark, not ${describeValue(raw.theme)}`);
     }
     theme = raw.theme as Theme;
   }
@@ -82,7 +90,9 @@ export const readConfig = (
   if (raw.validate === false) validate = "off";
   else if (raw.validate === "error") validate = "error";
   else if (raw.validate !== undefined && raw.validate !== true) {
-    fail(`validate must be true, false or error, not ${String(raw.validate)}`);
+    fail(
+      `validate must be true, false or error, not ${describeValue(raw.validate)}`,
+    );
   }
 
   return { modelsDir, height, theme, validate };

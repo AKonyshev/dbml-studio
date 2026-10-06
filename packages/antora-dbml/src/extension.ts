@@ -14,7 +14,12 @@ import {
   parseTheme,
   resolveModel,
 } from "./block";
-import { readConfig, type DbmlConfig, type Theme } from "./config";
+import {
+  describeValue,
+  readConfig,
+  type DbmlConfig,
+  type Theme,
+} from "./config";
 import {
   findingMessage,
   runValidator,
@@ -141,7 +146,7 @@ export const createExtension = (vendorDir: string) =>
         const parsed = parseHeight(attrs.height);
         if (parsed === null) {
           logger.warn(
-            `${where}: height must be a positive whole number, not ${String(attrs.height)}`,
+            `${where}: height must be a positive whole number, not ${describeValue(attrs.height)}`,
           );
         } else {
           height = parsed;
@@ -152,7 +157,7 @@ export const createExtension = (vendorDir: string) =>
         blockTheme = parseTheme(attrs.theme);
         if (blockTheme === null) {
           logger.warn(
-            `${where}: theme must be light or dark, not ${String(attrs.theme)}`,
+            `${where}: theme must be light or dark, not ${describeValue(attrs.theme)}`,
           );
         }
       }

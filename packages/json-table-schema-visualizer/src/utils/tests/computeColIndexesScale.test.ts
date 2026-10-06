@@ -16,7 +16,7 @@ const schemaOf = (tables: number, columns: number): JSONTableTable[] =>
     indexes: [],
     x: 0,
     y: 0,
-  })) as unknown as JSONTableTable[];
+  }));
 
 const timeOf = (tables: JSONTableTable[]): number => {
   const runs: number[] = [];

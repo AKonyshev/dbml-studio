@@ -1,10 +1,6 @@
 import computeTablesPositions from "../computeTablesPositions";
 
-import type {
-  JSONTableField,
-  JSONTableRef,
-  JSONTableTable,
-} from "shared/types/tableSchema";
+import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 
@@ -18,30 +14,24 @@ jest.mock("../../computeTextSize", () => ({
   })),
 }));
 
-const tableWith = (name: string, columns: number): JSONTableTable =>
-  ({
-    name,
-    fields: Array.from(
-      { length: columns },
-      (_, i) =>
-        ({
-          name: `column_number_${i}`,
-          type: { type_name: "integer", is_enum: false },
-          is_relation: false,
-        }) as unknown as JSONTableField,
-    ),
-    indexes: [],
-    x: 0,
-    y: 0,
-  }) as unknown as JSONTableTable;
+const tableWith = (name: string, columns: number): JSONTableTable => ({
+  name,
+  fields: Array.from({ length: columns }, (_, i) => ({
+    name: `column_number_${i}`,
+    type: { type_name: "integer", is_enum: false },
+    is_relation: false,
+  })),
+  indexes: [],
+  x: 0,
+  y: 0,
+});
 
-const refBetween = (from: string, to: string): JSONTableRef =>
-  ({
-    endpoints: [
-      { relation: "1", tableName: from, fieldNames: ["column_number_0"] },
-      { relation: "*", tableName: to, fieldNames: ["column_number_0"] },
-    ],
-  }) as unknown as JSONTableRef;
+const refBetween = (from: string, to: string): JSONTableRef => ({
+  endpoints: [
+    { relation: "1", tableName: from, fieldNames: ["column_number_0"] },
+    { relation: "*", tableName: to, fieldNames: ["column_number_0"] },
+  ],
+});
 
 const spanOf = (
   positions: Map<string, { x: number; y: number; w: number; h: number }>,

@@ -35,7 +35,7 @@ function dbFixture(): DatabaseSchema {
       ],
     },
     checks: {},
-  } as unknown as DatabaseSchema;
+  };
 }
 
 describe("databaseSchemaToModel", () => {

@@ -3,7 +3,7 @@ import { detailLevelStore } from "../detailLevelStore";
 import { tableCoordsStore } from "../tableCoords";
 import { tableDetailLevelStore } from "../tableDetailLevelStore";
 
-import type { JSONTableField, JSONTableTable } from "shared/types/tableSchema";
+import type { JSONTableTable } from "shared/types/tableSchema";
 
 import { TableDetailLevel } from "@/types/tableDetailLevel";
 
@@ -14,22 +14,17 @@ jest.mock("@/utils/computeTextSize", () => ({
   })),
 }));
 
-const tableWith = (name: string, columns: number): JSONTableTable =>
-  ({
-    name,
-    fields: Array.from(
-      { length: columns },
-      (_, i) =>
-        ({
-          name: `c${i}`,
-          type: { type_name: "integer", is_enum: false },
-          is_relation: false,
-        }) as unknown as JSONTableField,
-    ),
-    indexes: [],
-    x: 0,
-    y: 0,
-  }) as unknown as JSONTableTable;
+const tableWith = (name: string, columns: number): JSONTableTable => ({
+  name,
+  fields: Array.from({ length: columns }, (_, i) => ({
+    name: `c${i}`,
+    type: { type_name: "integer", is_enum: false },
+    is_relation: false,
+  })),
+  indexes: [],
+  x: 0,
+  y: 0,
+});
 
 // The stores reach for `localStorage` the moment they are asked to do
 // anything, and this suite runs under Node. A map standing in for it keeps the
@@ -54,7 +49,7 @@ const fakeLocalStorage = (): Storage => {
     get length() {
       return items.size;
     },
-  } as unknown as Storage;
+  };
 };
 
 describe("switchDocument", () => {

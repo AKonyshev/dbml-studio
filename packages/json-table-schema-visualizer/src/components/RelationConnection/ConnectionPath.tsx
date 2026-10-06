@@ -267,9 +267,7 @@ const ConnectionPath = ({
       localY = py + DIAGRAM_PADDING;
       btnStagePosRef.current = { x: px, y: py };
     }
-    if (btnStagePosRef.current == null) {
-      btnStagePosRef.current = { x: px, y: py };
-    }
+    btnStagePosRef.current ??= { x: px, y: py };
     const buttonPoint: XYPosition = { x: localX, y: localY };
     setBtnPos(buttonPoint);
     const edgeTarget = resolveTargetByEdgeDistance(

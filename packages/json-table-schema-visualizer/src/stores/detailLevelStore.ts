@@ -36,8 +36,10 @@ class DetailLevelStore extends PersistableStore<TableDetailLevel> {
     if (recoveredStore === null) {
       this.detailLevel = fallback;
     }
+    // `retrieve` is typed `object`, but what `persist` stored is the level
+    // itself, a string.
     for (const val of Object.values(TableDetailLevel)) {
-      if (val.toString() === String(recoveredStore)) {
+      if (val === (recoveredStore as unknown)) {
         this.detailLevel = val;
       }
     }

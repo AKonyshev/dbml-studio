@@ -12,7 +12,7 @@ const normalizeField = (
     return {
       ...field,
       relational_tables: new Set(field.relational_tables),
-    } as any;
+    };
   }
 
   return field;

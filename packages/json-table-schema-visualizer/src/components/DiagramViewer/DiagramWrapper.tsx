@@ -349,9 +349,7 @@ const DiagramWrapper = ({
       pending.pointerY = pointer.y;
     }
 
-    if (wheelFrameRef.current === null) {
-      wheelFrameRef.current = requestAnimationFrame(applyPendingWheelZoom);
-    }
+    wheelFrameRef.current ??= requestAnimationFrame(applyPendingWheelZoom);
   };
 
   const nodeBelongsToTable = (node: any): boolean => {

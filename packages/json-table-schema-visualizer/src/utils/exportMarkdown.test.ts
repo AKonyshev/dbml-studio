@@ -29,7 +29,7 @@ const refs = [
 
 describe("generateMarkdown", () => {
   test("generates table and relation sections", () => {
-    const result = generateMarkdown(tables as never, refs as never);
+    const result = generateMarkdown(tables, refs);
 
     expect(result).toContain("## Table reference");
     expect(result).toContain("### users");
@@ -42,7 +42,7 @@ describe("generateMarkdown", () => {
   test("emits the header separator that makes a Markdown table render", () => {
     // Without this row the columns render as plain text, not a table — the one
     // structural difference from the AsciiDoc export.
-    const result = generateMarkdown(tables as never, refs as never);
+    const result = generateMarkdown(tables, refs);
     const lines = result.split("\n");
     const headerIndex = lines.findIndex((line) =>
       line.startsWith("| Name | Type | Description |"),
@@ -62,7 +62,7 @@ describe("generateMarkdown", () => {
   });
 
   test("omits the relations section for a table with no refs", () => {
-    const result = generateMarkdown(tables as never, [] as never);
+    const result = generateMarkdown(tables, [] as never);
 
     expect(result).not.toContain("#### Relations:");
   });
