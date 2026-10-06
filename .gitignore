@@ -43,3 +43,10 @@ packages/mkdocs-dbml/src/mkdocs_dbml/_vendor/
 # packages/web/dist (packages/obsidian-plugin/README.md).
 packages/obsidian-plugin/main.js
 packages/obsidian-plugin/frame/
+
+# The Antora package's compiled code, the frame it vendors from
+# packages/web/dist, and the license copied in for `npm pack`
+# (packages/antora-dbml/README.md).
+packages/antora-dbml/lib/
+packages/antora-dbml/vendor/
+packages/antora-dbml/LICENSE
