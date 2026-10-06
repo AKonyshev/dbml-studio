@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-import { workspaceReactResolve } from "../../vite.workspace-react.js";
+import { workspaceReactResolve } from "../../vite.workspace-react.mjs";
 
 // Note there is no equivalent of the extension's `generateWebviewCss` hook: that
 // exists only because its VS Code bundler plugin empties the output directory on

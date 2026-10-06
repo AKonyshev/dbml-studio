@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-import { workspaceReactResolve } from "../../vite.workspace-react.js";
+import { workspaceReactResolve } from "../../vite.workspace-react.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
