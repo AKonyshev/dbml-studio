@@ -192,7 +192,7 @@ API tokens). The script is `publish:pypi`, not `publish`, because
 
 ## The Obsidian plugin
 
-The plugin is versioned on its own, in `packages/obsidian-plugin/manifest.json`,
+The plugin is versioned on its own, in the repository root's `manifest.json`,
 by the same rule: what would a user of the previous version notice? The entry
 goes in `packages/obsidian-plugin/CHANGELOG.md`.
 

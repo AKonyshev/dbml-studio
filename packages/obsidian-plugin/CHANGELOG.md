@@ -1,6 +1,6 @@
 # Changelog
 
-The Obsidian plugin's own history. The version is `manifest.json`'s; the format
+The Obsidian plugin's own history. The version is the root `manifest.json`'s; the format
 is [Keep a Changelog](http://keepachangelog.com/).
 
 ## [0.1.0] - 2026-09-29

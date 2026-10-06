@@ -30,7 +30,7 @@ if [ ! -f "$SRC/main.js" ]; then
 fi
 
 mkdir -p "$DEST"
-cp "$SRC/manifest.json" "$SRC/main.js" "$SRC/styles.css" "$DEST/"
+cp "$ROOT/manifest.json" "$SRC/main.js" "$SRC/styles.css" "$DEST/"
 rm -rf "$DEST/frame"
 
 echo "installed to $DEST"
