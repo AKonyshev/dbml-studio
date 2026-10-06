@@ -39,6 +39,8 @@ import {
 import { useSessionPersistence } from "./session/useSessionPersistence";
 import { usePageTheme } from "./theme/usePageTheme";
 
+import type { JSX } from "react";
+
 export interface AppProps {
   /** Restored from storage by the entry point, which has already pointed the
    * diagram's stores at the selected document. */

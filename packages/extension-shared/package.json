@@ -10,8 +10,8 @@
     "dbml-to-json-table-schema": "0.0.0"
   },
   "peerDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tomjs/vite-plugin-vscode": "^8.0.0",
@@ -20,7 +20,7 @@
     "@types/vscode": "^1.89.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }

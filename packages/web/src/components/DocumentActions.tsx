@@ -1,5 +1,7 @@
 import { t } from "json-table-schema-visualizer/src/i18n/t";
 
+import type { JSX } from "react";
+
 export interface DocumentActionsProps {
   onDownload: () => void;
   onWriteLayout: () => void;

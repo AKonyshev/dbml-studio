@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type JSX,
 } from "react";
 
 const MIN_PERCENT = 15;
