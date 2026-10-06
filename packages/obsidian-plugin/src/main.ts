@@ -1,3 +1,4 @@
+/* global DBML_FRAME_BUILD, DBML_FRAME_GZIP -- put in by esbuild's `define` (src/globals.d.ts) */
 import { readFile } from "node:fs/promises";
 
 import {
