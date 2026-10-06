@@ -7,6 +7,6 @@
     "lib": ["ES2022"],
     "types": ["jest", "node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.mjs"],
   "exclude": ["node_modules", "lib", "vendor"]
 }
