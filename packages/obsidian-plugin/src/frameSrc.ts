@@ -9,3 +9,11 @@
  */
 export const withTheme = (url: string, theme: "light" | "dark"): string =>
   `${url}${url.includes("?") ? "&" : "?"}theme=${theme}`;
+
+/**
+ * The frame's URL with the language Obsidian speaks, so that the frame's
+ * toolbar and errors match the plugin's rather than the system's. Appended
+ * the way the theme is, for the same reason.
+ */
+export const withLanguage = (url: string, language: string): string =>
+  `${url}${url.includes("?") ? "&" : "?"}lang=${encodeURIComponent(language)}`;

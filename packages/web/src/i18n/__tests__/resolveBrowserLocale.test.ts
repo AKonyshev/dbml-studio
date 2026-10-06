@@ -1,4 +1,4 @@
-import { resolveBrowserLocale } from "../resolveBrowserLocale";
+import { frameLanguages, resolveBrowserLocale } from "../resolveBrowserLocale";
 
 describe("resolveBrowserLocale", () => {
   test("matches a plain tag", () => {
@@ -42,5 +42,30 @@ describe("resolveBrowserLocale", () => {
 
   test("falls back to English when the list is missing", () => {
     expect(resolveBrowserLocale(undefined)).toBe("en");
+  });
+});
+
+describe("frameLanguages", () => {
+  test("is the browser's list when the URL names no language", () => {
+    expect(frameLanguages("?theme=dark", ["ru-RU", "en"])).toEqual([
+      "ru-RU",
+      "en",
+    ]);
+  });
+
+  test("is the host's language alone when the URL names one", () => {
+    expect(frameLanguages("?lang=en&theme=dark", ["ru-RU"])).toEqual(["en"]);
+  });
+
+  // Obsidian in German on a Russian system: the frame follows Obsidian, and
+  // with no German catalog it is English, never the system's Russian.
+  test("does not fall through to the browser's list", () => {
+    expect(resolveBrowserLocale(frameLanguages("?lang=de", ["ru-RU"]))).toBe(
+      "en",
+    );
+  });
+
+  test("ignores an empty lang", () => {
+    expect(frameLanguages("?lang=", ["ru"])).toEqual(["ru"]);
   });
 });

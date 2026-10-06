@@ -16,6 +16,7 @@ import { renderBlockCode, renderBlockError } from "./blockFallback";
 import { parseBlockParams, type FrameTheme } from "./blockParams";
 import { ExpandHosts, type ExpandHost } from "./expandHost";
 import { ensureFrame, unpackFrame } from "./frameArchive";
+import { withLanguage } from "./frameSrc";
 import { frameUrl } from "./frameUrl";
 import { FrameView } from "./frameView";
 import { catalogFor } from "./i18n/language";
@@ -340,7 +341,9 @@ export default class DbmlStudioPlugin extends Plugin {
       // paints before the handshake, and a light frame in a dark note reads as
       // a second thing having gone wrong. FrameView puts it in the URL when
       // the frame actually loads, in whichever theme is current by then.
-      url: frameUrl(this, "frame/embed.html"),
+      // The language rides there too, so that the frame's toolbar and errors
+      // speak Obsidian's language rather than the system's.
+      url: withLanguage(frameUrl(this, "frame/embed.html"), getLanguage()),
       theme,
       height,
       title: model,

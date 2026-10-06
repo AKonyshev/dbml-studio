@@ -137,6 +137,11 @@ whole model. Standard output, one JSON object:
 
   A `theme` message from the host overrides any of the three.
 
+- `lang` — the language of the frame's own text, as the host's application
+  names it (`ru`, `en`, `zh-CN`). Absent, the frame takes the browser's list.
+  Present, it is the only one tried: a language with no catalog is English,
+  not the system's language beside the host's own.
+
 #### The host script's HTML contract
 
 - Each frame is an `<iframe>` inside `<div class="dbml-diagram">`.
