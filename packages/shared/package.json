@@ -7,6 +7,6 @@
     "test": "jest --collectCoverage"
   },
   "dependencies": {
-    "@dbml/core": "^3.14.1"
+    "@dbml/core": "^10.2.0"
   }
 }

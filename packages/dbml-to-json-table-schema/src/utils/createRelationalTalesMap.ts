@@ -1,6 +1,6 @@
 import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKey";
 
-import type Ref from "@dbml/core/types/model_structure/ref";
+import type { Ref } from "@dbml/core";
 
 export const createRelationalTalesMap = (
   refs: Ref[],

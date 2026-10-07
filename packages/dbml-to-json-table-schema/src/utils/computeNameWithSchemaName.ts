@@ -1,7 +1,6 @@
 import { DEFAULT_SCHEMA_NAME } from "../constants/schema";
 
-import type Enum from "@dbml/core/types/model_structure/enum";
-import type Table from "@dbml/core/types/model_structure/table";
+import type { Enum, Table } from "@dbml/core";
 
 export const computeNameWithSchemaName = (
   objectName: string,

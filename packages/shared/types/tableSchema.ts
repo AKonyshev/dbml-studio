@@ -1,9 +1,11 @@
-import type Endpoint from "@dbml/core/types/model_structure/endpoint";
-import type Enum from "@dbml/core/types/model_structure/enum";
-import type Field from "@dbml/core/types/model_structure/field";
-import type IndexColumn from "@dbml/core/types/model_structure/indexColumn";
-import type Index from "@dbml/core/types/model_structure/indexes";
-import type Table from "@dbml/core/types/model_structure/table";
+import type {
+  Endpoint,
+  Enum,
+  Field,
+  IndexColumn,
+  Index,
+  Table,
+} from "@dbml/core";
 import type { PartialRequired } from "./utils";
 
 export interface JSONTableSchema {

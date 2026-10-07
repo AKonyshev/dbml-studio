@@ -3,7 +3,7 @@ import { computeRelationalFieldKey } from "shared/utils/computeRelationalFieldKe
 
 import { computeNameWithSchemaName } from "../computeNameWithSchemaName";
 
-import type Field from "@dbml/core/types/model_structure/field";
+import type { Field } from "@dbml/core";
 
 interface DbmlToJSONTableFieldParams {
   field: Field;

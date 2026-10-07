@@ -1,6 +1,6 @@
 import { generateMarkdown } from "./exportMarkdown";
 
-const tables = [
+const tables: Parameters<typeof generateMarkdown>[0] = [
   {
     name: "users",
     note: "People",
@@ -18,7 +18,7 @@ const tables = [
   },
 ];
 
-const refs = [
+const refs: Parameters<typeof generateMarkdown>[1] = [
   {
     endpoints: [
       { relation: "1", tableName: "users", fieldNames: ["id"] },

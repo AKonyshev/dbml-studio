@@ -1,4 +1,4 @@
-import { type RawDatabase } from "@dbml/core/types/model_structure/database";
+import { type RawDatabase } from "@dbml/core";
 import { type JSONTableSchema } from "shared/types/tableSchema";
 
 import { createEnumsSet } from "../createEnumsSet";

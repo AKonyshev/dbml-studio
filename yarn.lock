@@ -1155,23 +1155,27 @@
     pg "^8.12.0"
     snowflake-sdk "^2.0.3"
 
-"@dbml/core@^3.14.1":
-  version "3.14.1"
-  resolved "https://registry.yarnpkg.com/@dbml/core/-/core-3.14.1.tgz#fae4d0c3780ff946ac77fc0a65988b5993ef691d"
-  integrity sha512-X7qQo+ILK8NZ7S6LGmAExm28kX+YkfhDIiO4kZE/4Gm5pwzBOCZM4XVYWCRO1PACTLvvvAjNNMsZjJ2DhlYWxg==
+"@dbml/core@^10.2.0":
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/@dbml/core/-/core-10.2.0.tgz#4763d4d4fddd13661961fdb6c4cb4b4965990d55"
+  integrity sha512-bixogYBr5QhkcVS09fKmQf2r0OBehdLyowMb4RMek9miUCi+ovTUAbl3y2Jgc2J+hQe/jwrmmjdH+9o8rGkwHQ==
   dependencies:
-    "@dbml/parse" "^3.14.1"
+    "@dbml/parse" "^10.2.0"
     antlr4 "^4.13.1"
-    lodash "^4.17.15"
+    lodash "^4.18.1"
+    lodash-es "^4.18.1"
+    luxon "^3.4.4"
     parsimmon "^1.13.0"
     pluralize "^8.0.0"
 
-"@dbml/parse@^3.14.1":
-  version "3.14.1"
-  resolved "https://registry.yarnpkg.com/@dbml/parse/-/parse-3.14.1.tgz#4bbde2b4f7d1f4bcdda184009a60d281cd9e7fa7"
-  integrity sha512-I906RBlLF04IWQlMUw10EIKimafZ4STb86BC8hGnezb+wJqtAtVLAX8hfbzMDnGpjthm4jg0oddxTLFTZrk80g==
+"@dbml/parse@^10.2.0":
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/@dbml/parse/-/parse-10.2.0.tgz#9e791b52e5317b97f35338767b91438972e8dfe7"
+  integrity sha512-jg8j93Wr7fahM5B1Uz0+HO79vdTYfsuJKRfeuHKCQRyE7JDhUrtEnBkdRbOehFmkiSbGJO2mqz6LKJNqlI3RfA==
   dependencies:
-    lodash-es "^4.17.21"
+    lodash-es "^4.18.1"
+    luxon "^3.7.2"
+    pathe "^2.0.3"
 
 "@emnapi/core@1.10.0":
   version "1.10.0"
@@ -8436,7 +8440,7 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-lodash-es@^4.17.21:
+lodash-es@^4.18.1:
   version "4.18.1"
   resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.18.1.tgz#b962eeb80d9d983a900bf342961fb7418ca10b1d"
   integrity sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==
@@ -8491,7 +8495,7 @@ lodash.once@^4.0.0:
   resolved "https://registry.yarnpkg.com/lodash.once/-/lodash.once-4.1.1.tgz#0dd3971213c7c56df880977d504c88fb471a97ac"
   integrity sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==
 
-lodash@^4.17.15, lodash@^4.17.21:
+lodash@^4.17.21, lodash@^4.18.1:
   version "4.18.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.18.1.tgz#ff2b66c1f6326d59513de2407bf881439812771c"
   integrity sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==
@@ -8585,6 +8589,11 @@ lucide-react@^1.52.0:
   version "1.52.0"
   resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-1.52.0.tgz#9945c4edc9550be7cc79808ec8a510c80512c727"
   integrity sha512-TUgPtl5ZI9WgxOcbu4ckaC5B3l1qxPQrCMgb6OfUB9owx/OvSJfcf93SMgUWAxRw5/1XDfh9uI5F5iNGXCcGDQ==
+
+luxon@^3.4.4, luxon@^3.7.2:
+  version "3.7.2"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.7.2.tgz#d697e48f478553cca187a0f8436aff468e3ba0ba"
+  integrity sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==
 
 lz-string@^1.5.0:
   version "1.5.0"
@@ -9869,6 +9878,11 @@ path-scurry@^2.0.0, path-scurry@^2.0.2:
   dependencies:
     lru-cache "^11.0.0"
     minipass "^7.1.2"
+
+pathe@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/pathe/-/pathe-2.0.3.tgz#3ecbec55421685b70a9da872b2cff3e1cbed1716"
+  integrity sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==
 
 pathval@^2.0.0:
   version "2.0.1"

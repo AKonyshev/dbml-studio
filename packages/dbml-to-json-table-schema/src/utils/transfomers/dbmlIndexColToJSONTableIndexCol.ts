@@ -1,6 +1,6 @@
 import { type JSONTableIndexColumn } from "shared/types/tableSchema";
 
-import type IndexColumn from "@dbml/core/types/model_structure/indexColumn";
+import type { IndexColumn } from "@dbml/core";
 
 export const dbmlIndexColToJSONTableIndexCol = ({
   type,

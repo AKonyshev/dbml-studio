@@ -13,7 +13,7 @@ export const createTablesColorMap = (
     // An explicit header colour wins; an absent or empty one falls back to the
     // colour derived from the table name.
     const tableColor =
-      table.headerColor != null && table.headerColor !== ""
+      table.headerColor != null && table.headerColor.length > 0
         ? {
             regular: table.headerColor,
             lighter: getContrastColor(table.headerColor),

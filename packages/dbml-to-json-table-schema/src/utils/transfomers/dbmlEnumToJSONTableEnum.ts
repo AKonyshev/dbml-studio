@@ -2,7 +2,7 @@ import { type JSONTableEnum } from "shared/types/tableSchema";
 
 import { getEnumFullName } from "../computeNameWithSchemaName";
 
-import type Enum from "@dbml/core/types/model_structure/enum";
+import type { Enum } from "@dbml/core";
 
 export const dbmlEnumToJSONTableEnum = (_enum: Enum): JSONTableEnum => {
   return {
