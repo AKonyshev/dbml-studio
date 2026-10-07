@@ -116,7 +116,7 @@ unzip -p dbml-studio-<version>.vsix extension/package.json | grep '"version"'
 ```
 
 The file is git-ignored. Move it to the repository root's `dist/`, which keeps
-every released package beside the plugins' — that is the copy step 7 publishes:
+every released package beside the others' — that is the copy step 7 publishes:
 
 ```bash
 mv dbml-studio-<version>.vsix ../../dist/
@@ -137,7 +137,7 @@ yarn workspace dbml-studio publish:marketplace --packagePath ../../dist/dbml-stu
 ```
 
 It publishes the `.vsix` attached to the GitHub release, not a fresh build, the
-way the plugins' scripts publish their released packages — compare it with the
+way the other packages' scripts publish their released ones — compare it with the
 release asset first if it has been sitting in `dist/`. `vsce` takes the access
 token stored by `npx vsce login konyshevav`, or `VSCE_PAT` from the environment.
 The script is `publish:marketplace`, not `publish`: `yarn workspace … publish`
@@ -153,11 +153,12 @@ release for anyone reading the repository.
 
 ## Releasing a plugin
 
-Each plugin is released on its own, by the steps above with three differences:
+The MkDocs plugin is released on its own, by the steps above with three
+differences (the Antora extension and `dbml-frame` have their own sections):
 
 - **The release commit** changes the plugin's version file and its
   `CHANGELOG.md` (below, per plugin), not the extension's, and is committed as
-  `chore(release): <plugin> <version>`. Two plugins released together share one
+  `chore(release): <plugin> <version>`. Two packages released together share one
   commit and one pull request.
 - **The tag** names the plugin, so it cannot be mistaken for an extension
   version: `mkdocs-dbml-v<version>`, on the merge commit, annotated like the
@@ -337,9 +338,10 @@ Every npm call in the script names that registry, for the reason given under
 The Obsidian plugin is not released from this repository: it lives in
 [AKonyshev/obsidian-dbml-studio](https://github.com/AKonyshev/obsidian-dbml-studio),
 with its own version, tags and Community plugins listing. Its steps are in that
-repository's `RELEASING.md`. It takes the diagram frame from the `dbml-frame`
-package (above), so a release of the extension is what makes a new frame
-available to it.
+repository's
+[`RELEASING.md`](https://github.com/AKonyshev/obsidian-dbml-studio/blob/main/RELEASING.md).
+It takes the diagram frame from the `dbml-frame` package (above), so a release
+of the extension is what makes a new frame available to it.
 
 ## What has gone wrong before
 

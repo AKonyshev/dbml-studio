@@ -325,7 +325,9 @@ this one.
 
 The Obsidian plugin has its own repository,
 [AKonyshev/obsidian-dbml-studio](https://github.com/AKonyshev/obsidian-dbml-studio),
-and its test cases are kept there. The frame it draws with is section 9's.
+and its test cases are in
+[`docs/test-cases.md`](https://github.com/AKonyshev/obsidian-dbml-studio/blob/main/docs/test-cases.md)
+there. The frame it draws with is section 9's.
 
 ---
 
