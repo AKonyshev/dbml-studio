@@ -61,12 +61,11 @@ It was checked through the real hook with a staged Cyrillic `.ts` outside
 without it. The old guard, in the same worktree, let that commit through.
 
 Anything else that spawns git from a suite has to do the same. Today that is
-two vendoring scripts, each recording `git describe --dirty` in a `BUILD` file:
-`packages/mkdocs-dbml/scripts/vendor.mjs`, which `test_vendor.py` runs, and
-`packages/obsidian-plugin/scripts/vendor-frame.mjs`, which `vendorFrame.test.ts`
-runs. Under a worktree hook that label can say `-dirty` when the tree is clean,
-since git sees every file outside the package as deleted. Neither test asserts
-the label, so both pass either way. `scripts/test.js`, `scripts/typecheck.js` and
+one vendoring script, which records `git describe --dirty` in a `BUILD` file:
+`packages/mkdocs-dbml/scripts/vendor.mjs`, which `test_vendor.py` runs. Under a
+worktree hook that label can say `-dirty` when the tree is clean, since git sees
+every file outside the package as deleted. The test does not assert the label,
+so it passes either way. `scripts/test.js`, `scripts/typecheck.js` and
 `scripts/workspace-packages.js` do not call git: they find the repository from
 `__dirname` and walk the file system.
 
@@ -296,16 +295,6 @@ real frame is checked separately, at release time — see
 
 ## The Obsidian plugin
 
-`packages/obsidian-plugin` runs jest in jsdom rather than Node: `FrameView`
-builds a real `<iframe>` and listens for real `message` events, and jsdom is
-what gives it a frame window to post to. The one test that spawns a script,
-`vendorFrame.test.ts`, asks for the Node environment in its own docblock.
-
-The package `obsidian` carries types and no code, so a module that imports it
-runs under jest only against a stand-in. `main.test.ts` mocks `obsidian` with
-the little `main.ts` touches — `Plugin` recording what is registered,
-`FileSystemAdapter`, `Notice`, `normalizePath` — and gives jsdom's nodes the
-`doc` and `win` Obsidian adds, so the block processor and the refresh command
-run as the application would call them. What the stand-in cannot be is the
-application: windows, views, scrolling and the theme are checked by hand in a
-real vault — `docs/test-cases.md`, section 14.
+The Obsidian plugin has its own repository,
+[AKonyshev/obsidian-dbml-studio](https://github.com/AKonyshev/obsidian-dbml-studio),
+and its tests run there.

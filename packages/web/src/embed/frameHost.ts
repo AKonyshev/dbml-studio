@@ -20,10 +20,8 @@
  * to know fewer messages than the frame does. Anything new is written against
  * `host/main.ts`.
  *
- * One more host speaks from outside a web page:
- * `packages/obsidian-plugin/src/hostProtocol.ts`. It imports this file's types
- * rather than restating them, so a message changed here breaks that package's
- * type check instead of its notes.
+ * One more host speaks from outside a web page: the Obsidian plugin,
+ * AKonyshev/obsidian-dbml-studio, through the dbml-frame package.
  */
 
 /** Marks a message as belonging to this protocol and not to some other frame's. */

@@ -8,8 +8,10 @@ A release is the extension's release. `packages/dbml-vs-code-extension/package.j
 carries the version everything else is named after; the root `package.json`
 version is unrelated and is not touched.
 
-The MkDocs plugin and the Obsidian plugin each have their own version and
-their own release, below.
+The MkDocs plugin has its own version and its own release, below. The Obsidian
+plugin lives in its own repository,
+[AKonyshev/obsidian-dbml-studio](https://github.com/AKonyshev/obsidian-dbml-studio),
+and is released there.
 
 ## Deciding the number
 
@@ -114,7 +116,7 @@ unzip -p dbml-studio-<version>.vsix extension/package.json | grep '"version"'
 ```
 
 The file is git-ignored. Move it to the repository root's `dist/`, which keeps
-every released package beside the plugins' — that is the copy step 7 publishes:
+every released package beside the others' — that is the copy step 7 publishes:
 
 ```bash
 mv dbml-studio-<version>.vsix ../../dist/
@@ -135,7 +137,7 @@ yarn workspace dbml-studio publish:marketplace --packagePath ../../dist/dbml-stu
 ```
 
 It publishes the `.vsix` attached to the GitHub release, not a fresh build, the
-way the plugins' scripts publish their released packages — compare it with the
+way the other packages' scripts publish their released ones — compare it with the
 release asset first if it has been sitting in `dist/`. `vsce` takes the access
 token stored by `npx vsce login konyshevav`, or `VSCE_PAT` from the environment.
 The script is `publish:marketplace`, not `publish`: `yarn workspace … publish`
@@ -151,16 +153,16 @@ release for anyone reading the repository.
 
 ## Releasing a plugin
 
-Each plugin is released on its own, by the steps above with three differences:
+The MkDocs plugin is released on its own, by the steps above with three
+differences (the Antora extension and `dbml-frame` have their own sections):
 
 - **The release commit** changes the plugin's version file and its
   `CHANGELOG.md` (below, per plugin), not the extension's, and is committed as
-  `chore(release): <plugin> <version>`. Two plugins released together share one
+  `chore(release): <plugin> <version>`. Two packages released together share one
   commit and one pull request.
 - **The tag** names the plugin, so it cannot be mistaken for an extension
   version: `mkdocs-dbml-v<version>`, on the merge commit, annotated like the
-  extension's. The Obsidian plugin is the exception: its tag is the bare
-  version, because Obsidian's Community plugins directory requires it (below).
+  extension's.
 - **The GitHub release** is the plugin's own, titled
   `<plugin> <version> — <the short name>`, with its package attached in place of
   the `.vsix`. Mark it `--latest=false`: "latest" on the repository's page is
@@ -280,9 +282,9 @@ command.
 
 `dbml-frame` is the diagram frame and the protocol a host speaks with it, as an
 npm package, for hosts that live outside this repository: the Obsidian plugin
-builds its frame from it. It carries the frame (`frame/`, with its
-`manifest.json`), the `BUILD` string that says which build the frame is, and the
-compiled `protocol/frameHost`.
+(`AKonyshev/obsidian-dbml-studio`) builds its frame from it. It carries the
+frame (`frame/`, with its `manifest.json`), the `BUILD` string that says which
+build the frame is, and the compiled `protocol/frameHost`.
 
 It has no tag and no release of its own. Its version is the extension's, set in
 the release commit (step 3), and its tarball is attached to the extension's
@@ -333,61 +335,13 @@ Every npm call in the script names that registry, for the reason given under
 
 ## The Obsidian plugin
 
-The plugin is listed in Obsidian's Community plugins directory, and the
-directory sets the rules this section follows. It reads the repository root's
-`manifest.json` from the default branch; for a version it installs a GitHub
-release whose tag is exactly that version, and from that release it takes
-three files and nothing else: `main.js`, `manifest.json`, `styles.css`.
-
-The plugin is versioned on its own, in the repository root's `manifest.json`,
-by the same rule: what would a user of the previous version notice? The entry
-goes in `packages/obsidian-plugin/CHANGELOG.md`. The release commit also adds
-the version to the root `versions.json`, mapped to the manifest's
-`minAppVersion` — the Obsidian version the plugin is checked on, raised only
-after checking on the newer one. Obsidian uses it to offer an older Obsidian
-the last release that still runs there.
-
-**The tag is the bare version** — `0.2.0`, not `obsidian-plugin-v0.2.0` —
-because the directory looks the release up by the manifest's version. The
-first release, `obsidian-plugin-v0.1.0`, keeps its tag as history; it was
-never in the directory.
-
-The diagram frame travels inside `main.js` (the plugin writes it into its
-folder on first start; `packages/obsidian-plugin/README.md`), so the three
-files are the whole plugin. The release also carries
-`dbml-studio-obsidian-<version>.zip`, the same plugin as a folder, for
-installing by hand.
-
-All of it is one script, run on `main` once the release commit is merged:
-
-```bash
-yarn workspace obsidian-plugin release:github <version> --check   # checks and build only
-yarn workspace obsidian-plugin release:github <version>
-```
-
-The script (`packages/obsidian-plugin/scripts/release-github.sh`) refuses
-unless the tree is clean, on `main`, and the same commit as `origin/main`;
-unless the root manifest is at `<version>`, `versions.json` lists it with the
-manifest's `minAppVersion`, and the changelog has its entry; and when the tag
-exists already. It then builds the site, the plugin and the zip (`yarn
-build:web`, `yarn package:obsidian`) and checks `main.js` carries the frame it
-just vendored — by the frame's `BUILD` string — and is not too small to. With
-`--check` it stops there. Otherwise it asks for the version to be typed back,
-creates the annotated tag `<version>` on `HEAD`, pushes it, and creates the
-GitHub release with `main.js`, `manifest.json`, `styles.css` and the zip
-attached, its notes the changelog entry, and `--latest=false`: "latest" on
-the repository's page is the extension's. The tag goes on `HEAD`, which is
-the merge commit, as for every other release. Should `gh release create` fail
-after the tag is pushed, a rerun refuses the existing tag; the script prints
-the `gh release create` command that finishes the release from the files the
-build left in place.
-
-**Submitting to the directory is a one-time step done by the maintainer at
-community.obsidian.md**: sign in with an Obsidian account, link the GitHub
-account, and submit the repository. An automated review follows; what it asks
-to change is fixed in a new release with a new version. After the plugin is
-listed, every release made by the script reaches Obsidian users with no
-further step.
+The Obsidian plugin is not released from this repository: it lives in
+[AKonyshev/obsidian-dbml-studio](https://github.com/AKonyshev/obsidian-dbml-studio),
+with its own version, tags and Community plugins listing. Its steps are in that
+repository's
+[`RELEASING.md`](https://github.com/AKonyshev/obsidian-dbml-studio/blob/main/RELEASING.md).
+It takes the diagram frame from the `dbml-frame` package (above), so a release
+of the extension is what makes a new frame available to it.
 
 ## What has gone wrong before
 
