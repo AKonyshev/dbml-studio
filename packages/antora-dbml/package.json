@@ -1,6 +1,6 @@
 {
   "name": "antora-dbml",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DBML entity-relationship diagrams in an Antora site: a dbml:: block draws an interactive diagram of a .dbml model, checked at build time.",
   "license": "MIT",
   "author": "AKonyshev",

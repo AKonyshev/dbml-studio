@@ -3,6 +3,14 @@
 The Obsidian plugin's own history. The version is the root `manifest.json`'s;
 the format is [Keep a Changelog](http://keepachangelog.com/).
 
+## [0.2.3] - 2026-10-07
+
+### Changed
+
+- The diagram frame inside `main.js` is built with current libraries, among
+  them version 10 of the DBML parser. Notes draw the same diagrams as in
+  0.2.2, but `main.js` is 3.9 MB in place of 2.5.
+
 ## [0.2.2] - 2026-10-06
 
 Nothing changes in the plugin: `main.js`, the frame it carries and the styles

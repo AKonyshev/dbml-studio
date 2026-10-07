@@ -1,7 +1,7 @@
 {
   "id": "dbml-studio",
   "name": "DBML Studio",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "minAppVersion": "1.13.7",
   "description": "Draws DBML database models as ER diagrams in notes, reading the .dbml files from disk, also outside the vault, with the tables, height and theme a block asks for.",
   "author": "AKonyshev",
