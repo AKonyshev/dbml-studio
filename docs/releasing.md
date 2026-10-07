@@ -58,7 +58,7 @@ Its own branch, because `main` takes changes through pull requests.
 git checkout -b chore/release-<version>
 ```
 
-Three files, and only three:
+Three files, and a fourth when the frame changed:
 
 - `packages/dbml-vs-code-extension/package.json` — the version;
 - `packages/dbml-vs-code-extension/CHANGELOG.md` — an entry under the new
@@ -340,8 +340,8 @@ The Obsidian plugin is not released from this repository: it lives in
 with its own version, tags and Community plugins listing. Its steps are in that
 repository's
 [`RELEASING.md`](https://github.com/AKonyshev/obsidian-dbml-studio/blob/main/RELEASING.md).
-It takes the diagram frame from the `dbml-frame` package (above), so a release
-of the extension is what makes a new frame available to it.
+It takes the diagram frame from the `dbml-frame` package (above), so a new
+frame reaches it once that release's `dbml-frame` is published to npm.
 
 ## What has gone wrong before
 

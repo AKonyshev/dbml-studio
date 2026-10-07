@@ -8,6 +8,16 @@ set -euo pipefail
 PACKAGE="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="$(cd "$PACKAGE/../.." && pwd)"
 
+# The package is released with the extension and carries its version. A bump
+# forgotten here would pack the previous version's name and overwrite that
+# release's archived tarball in dist/, unnoticed until the upload.
+VERSION="$(node -p "require('$PACKAGE/package.json').version")"
+EXTENSION="$(node -p "require('$ROOT/packages/dbml-vs-code-extension/package.json').version")"
+if [ "$VERSION" != "$EXTENSION" ]; then
+  echo "dbml-frame is at $VERSION, the extension at $EXTENSION: the release commit sets both" >&2
+  exit 1
+fi
+
 yarn --cwd "$ROOT" build:web
 bash "$PACKAGE/scripts/build.sh"
 mkdir -p "$ROOT/dist"

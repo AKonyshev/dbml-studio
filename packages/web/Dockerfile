@@ -19,7 +19,9 @@ WORKDIR /repo
 # unresolvable workspace dependency — loudly, which is the intent. A package
 # missing from BOTH is worse and is what this comment exists to prevent.
 COPY package.json yarn.lock ./
+COPY packages/antora-dbml/package.json packages/antora-dbml/
 COPY packages/db-to-dbml/package.json packages/db-to-dbml/
+COPY packages/dbml-frame/package.json packages/dbml-frame/
 COPY packages/dbml-to-json-table-schema/package.json packages/dbml-to-json-table-schema/
 COPY packages/dbml-vs-code-extension/package.json packages/dbml-vs-code-extension/
 COPY packages/extension-shared/package.json packages/extension-shared/
