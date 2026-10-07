@@ -64,6 +64,21 @@ checking were exactly the edits type checking never saw. `yarn typecheck` now
 runs from `.husky/pre-commit` on every commit regardless of what is staged,
 alongside `yarn test` and for the same reason: neither takes a file list.
 
+**6. A package gets no ambient `@types` it does not list.** TypeScript 6 made
+`types` default to `[]`; before, every `@types` package in `node_modules` was
+in every program. Each package tsconfig therefore names what its sources use —
+`jest` and `node` everywhere, `mocha` as well in `dbml-vs-code-extension` for
+its integration tests, `vite/client` in `web`. A package without the line sees
+no `describe`, `process` or `Buffer`, and says so in `yarn typecheck`. Module
+imports are not affected: `import … from "vscode"` still finds `@types/vscode`.
+
+**7. No `baseUrl`, no `moduleResolution: "node"`.** TypeScript 6 deprecates
+both and 7 removes them, so neither is silenced with `ignoreDeprecations` here.
+`paths` resolve against the tsconfig that declares them: where a package's
+modules live under `src/`, that is in the mapping (`"@/*": ["./src/*"]`), and
+the jest configs that build `moduleNameMapper` from it (point 3) prefix with
+`<rootDir>/`, not `<rootDir>/src`.
+
 ## What `@/` maps to
 
 In `json-table-schema-visualizer` the alias points at that package's own `src`.
