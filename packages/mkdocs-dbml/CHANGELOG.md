@@ -3,6 +3,24 @@
 The MkDocs plugin's own history. The version is `pyproject.toml`'s; the format
 is [Keep a Changelog](http://keepachangelog.com/).
 
+## [0.1.1] - 2026-10-07
+
+### Fixed
+
+- Dragging a diagram kept its grabbing hand only until the pointer crossed
+  a relation's button: leaving the button set the cursor back to the arrow
+  mid-drag. It now stays the hand until the drag ends.
+- After the first drag of a diagram, or the first visit to a relation's
+  button, the cursor stayed an arrow everywhere in the diagram, over text
+  too. It now goes back to the ordinary one.
+
+### Changed
+
+- The diagram frame is built with current libraries, among them version 10
+  of the DBML parser. Diagrams draw as before, but every page with one now
+  downloads about 2.8 MB of compressed script in place of 1.8, and the wheel
+  is 5.6 MB in place of 3.6.
+
 ## [0.1.0] - 2026-09-29
 
 The first release: a wheel attached to the GitHub release, installed with
