@@ -17,7 +17,7 @@ export type ResolvedModel =
 
 /**
  * A block's target as a path inside the models folder. `.dbml` is added
- * unless the target has it (devzone writes `dbml::acl[…]`). Nothing may lead
+ * unless the target has it (some sites write `dbml::shop[…]`). Nothing may lead
  * out of the folder: the frame serves the model from the site, and a path
  * that left `models` would leave `_dbml/models/` too.
  */

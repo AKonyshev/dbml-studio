@@ -6,22 +6,22 @@ const FRAME_URL = "https://docs.example/project/_dbml/embed.html";
 
 describe("resolveModelUrl", () => {
   it("resolves a path relative to the frame document", () => {
-    expect(resolveModelUrl("models/acl.dbml", FRAME_URL)).toBe(
-      "https://docs.example/project/_dbml/models/acl.dbml",
+    expect(resolveModelUrl("models/shop.dbml", FRAME_URL)).toBe(
+      "https://docs.example/project/_dbml/models/shop.dbml",
     );
   });
 
   // The ordinary case for a model the site serves beside its pages: the frame
   // is one directory deeper than the site root.
   it("resolves a path that climbs out of the frame's directory", () => {
-    expect(resolveModelUrl("../models/acl.dbml", FRAME_URL)).toBe(
-      "https://docs.example/project/models/acl.dbml",
+    expect(resolveModelUrl("../models/shop.dbml", FRAME_URL)).toBe(
+      "https://docs.example/project/models/shop.dbml",
     );
   });
 
   it("resolves a path from the root of the origin", () => {
-    expect(resolveModelUrl("/models/acl.dbml", FRAME_URL)).toBe(
-      "https://docs.example/models/acl.dbml",
+    expect(resolveModelUrl("/models/shop.dbml", FRAME_URL)).toBe(
+      "https://docs.example/models/shop.dbml",
     );
   });
 
@@ -37,11 +37,11 @@ describe("resolveModelUrl", () => {
   // appear silently.
   it("refuses another origin", () => {
     expect(
-      resolveModelUrl("https://example.com/acl.dbml", FRAME_URL),
+      resolveModelUrl("https://example.com/shop.dbml", FRAME_URL),
     ).toBeNull();
-    expect(resolveModelUrl("//example.com/acl.dbml", FRAME_URL)).toBeNull();
+    expect(resolveModelUrl("//example.com/shop.dbml", FRAME_URL)).toBeNull();
     expect(
-      resolveModelUrl("http://docs.example/acl.dbml", FRAME_URL),
+      resolveModelUrl("http://docs.example/shop.dbml", FRAME_URL),
     ).toBeNull();
   });
 

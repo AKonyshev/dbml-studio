@@ -73,12 +73,9 @@ describe("en.readFailureReasons", () => {
 describe("en.modelUnreadable", () => {
   it("names the path and the reason", () => {
     expect(
-      en.modelUnreadable(
-        "/Users/kav/devzone/antora/models/rd.dbml",
-        "no such file",
-      ),
+      en.modelUnreadable("/Users/me/models/library.dbml", "no such file"),
     ).toBe(
-      "Could not read the model (no such file): /Users/kav/devzone/antora/models/rd.dbml",
+      "Could not read the model (no such file): /Users/me/models/library.dbml",
     );
   });
 });

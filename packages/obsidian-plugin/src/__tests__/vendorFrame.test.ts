@@ -65,7 +65,7 @@ const FILES: Record<string, string> = {
   // Calls across the chunk boundary: the inlined script only works if
   // esbuild really brought the imported chunk in.
   "assets/embed-A.js":
-    'import { draw } from "./index-B.js";\nglobalThis.drawn = draw("rd.dbml");\n',
+    'import { draw } from "./index-B.js";\nglobalThis.drawn = draw("library.dbml");\n',
   "assets/index-B.js": 'export const draw = (name) => "drawn " + name;\n',
   "assets/index-C.css": "#app { color: rebeccapurple; }\n",
   "assets/main-F.js": "SITE_ENTRY_MARKER;\n",
@@ -172,7 +172,7 @@ describe("vendor-frame.mjs", () => {
 
     runInNewContext(script?.[1] ?? "", sandbox);
 
-    expect(sandbox.drawn).toBe("drawn rd.dbml");
+    expect(sandbox.drawn).toBe("drawn library.dbml");
   });
 
   it("inlines the stylesheet", () => {

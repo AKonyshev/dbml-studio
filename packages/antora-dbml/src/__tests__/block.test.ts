@@ -11,21 +11,21 @@ import {
 } from "../block";
 
 describe("resolveModel", () => {
-  it("adds .dbml to a bare name, as devzone writes it", () => {
-    expect(resolveModel("acl")).toEqual({ ok: true, relative: "acl.dbml" });
+  it("adds .dbml to a bare name, as some sites write it", () => {
+    expect(resolveModel("shop")).toEqual({ ok: true, relative: "shop.dbml" });
   });
 
   it("keeps a name that already ends in .dbml", () => {
-    expect(resolveModel("acl.dbml")).toEqual({
+    expect(resolveModel("shop.dbml")).toEqual({
       ok: true,
-      relative: "acl.dbml",
+      relative: "shop.dbml",
     });
   });
 
   it("takes sub-folders, spaces and non-ASCII names", () => {
     // Built from code points because the repo keeps Cyrillic out of sources
     // (the sourceLanguage test): two Russian words with a space between.
-    const name = `to-be/${String.fromCodePoint(
+    const name = `draft/${String.fromCodePoint(
       0x43c,
       0x43e,
       0x434,
@@ -56,7 +56,7 @@ describe("resolveModel", () => {
 
 describe("parseTables", () => {
   it("splits, trims and drops blanks", () => {
-    expect(parseTables(" acl.a , b,, ")).toEqual(["acl.a", "b"]);
+    expect(parseTables(" shop.a , b,, ")).toEqual(["shop.a", "b"]);
   });
 
   it("is null for absent or empty, which draws the whole model", () => {
@@ -86,20 +86,20 @@ describe("parseHeight and parseTheme", () => {
 
 describe("frameSrc", () => {
   it("points from the page to the frame, and from the frame to the model", () => {
-    expect(frameSrc("../../..", "acl.dbml", ["acl.a", "b"], "dark")).toBe(
-      "../../../_dbml/embed.html?model=models%2Facl.dbml&tables=acl.a%2Cb&theme=dark",
+    expect(frameSrc("../../..", "shop.dbml", ["shop.a", "b"], "dark")).toBe(
+      "../../../_dbml/embed.html?model=models%2Fshop.dbml&tables=shop.a%2Cb&theme=dark",
     );
   });
 
   it("leaves tables out when the whole model is drawn", () => {
-    expect(frameSrc(".", "acl.dbml", null, "light")).toBe(
-      "./_dbml/embed.html?model=models%2Facl.dbml&theme=light",
+    expect(frameSrc(".", "shop.dbml", null, "light")).toBe(
+      "./_dbml/embed.html?model=models%2Fshop.dbml&theme=light",
     );
   });
 
   it("encodes a model path once", () => {
-    expect(frameSrc(".", "to-be/a b.dbml", null, "light")).toContain(
-      "model=models%2Fto-be%2Fa+b.dbml",
+    expect(frameSrc(".", "draft/a b.dbml", null, "light")).toContain(
+      "model=models%2Fdraft%2Fa+b.dbml",
     );
   });
 });

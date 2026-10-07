@@ -107,7 +107,7 @@ describe("readFailureReason", () => {
     );
   });
 
-  // `model: /../antora/models/` — the folder, not a file in it.
+  // `model: /../models/` — the folder, not a file in it.
   it("says the path is a folder", () => {
     expect(readFailureReason(fsError("EISDIR"))).toBe(
       ru.readFailureReasons.EISDIR,
@@ -130,10 +130,10 @@ describe("modelUnreadableText", () => {
   it("shows the resolved path of a model it could not read", () => {
     expect(
       modelUnreadableText(
-        "/Users/kav/devzone/antora/models/rd.dbml",
+        "/Users/me/models/library.dbml",
         ru.readFailureReasons.ENOENT,
       ),
-    ).toContain("/Users/kav/devzone/antora/models/rd.dbml");
+    ).toContain("/Users/me/models/library.dbml");
   });
 
   // Dispatch only, like the `blockErrorText` tests above: this checks that

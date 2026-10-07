@@ -10,7 +10,7 @@ from mkdocs.exceptions import Abort
 
 from mkdocs_dbml import validate, vendor
 
-MODEL = 'Table "acl"."analysis" {\n  id integer [pk]\n}\n'
+MODEL = 'Table "shop"."order" {\n  id integer [pk]\n}\n'
 
 # Speaks validate.mjs's protocol and objects to one thing: a table called `nope`.
 FAKE_VALIDATOR = r"""
@@ -59,12 +59,12 @@ def site(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         # Home
 
         ```dbml
-        model: /models/acl.dbml
-        tables: analysis
+        model: /models/shop.dbml
+        tables: order
         ```
         """,
     )
-    write(project / "docs/models/acl.dbml", MODEL)
+    write(project / "docs/models/shop.dbml", MODEL)
     write(
         project / "docs/guide/deep.md",
         """
@@ -78,7 +78,7 @@ def site(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ```
 
         ```dbml
-        model: /models/acl.dbml
+        model: /models/shop.dbml
         tables: nope
         ```
         """,
@@ -98,8 +98,8 @@ def site(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         project / "docs/broken.md",
         """
         ```dbml
-        model: /models/acl.dbml
-        tabels: analysis
+        model: /models/shop.dbml
+        tabels: order
         ```
         """,
     )
@@ -136,7 +136,7 @@ def test_a_root_page_points_at_the_frame_and_its_model(site):
     html = (build_site(site) / "index.html").read_text()
     assert '<div class="dbml-diagram">' in html
     assert (
-        'src="_dbml/embed.html?model=..%2Fmodels%2Facl.dbml&amp;tables=analysis&amp;theme=light"'
+        'src="_dbml/embed.html?model=..%2Fmodels%2Fshop.dbml&amp;tables=order&amp;theme=light"'
         in html
     )
     assert '<script src="_dbml/frame-host.js"' in html
@@ -285,7 +285,7 @@ def test_a_palette_that_follows_the_system_opens_frames_in_the_system_theme(site
     )
     out = build_site(site)
     assert (
-        'src="_dbml/embed.html?model=..%2Fmodels%2Facl.dbml&amp;tables=analysis&amp;theme=auto"'
+        'src="_dbml/embed.html?model=..%2Fmodels%2Fshop.dbml&amp;tables=order&amp;theme=auto"'
         in (out / "index.html").read_text()
     )
     # The block that named a theme keeps it.
@@ -355,25 +355,25 @@ def test_an_unreadable_model_is_refused_without_the_build_machines_path(site, ca
 def test_a_model_in_an_excluded_docs_folder_is_copied_by_the_plugin(site):
     with open(site / "mkdocs.yml", "a", encoding="utf-8") as config:
         config.write("exclude_docs: |\n  /schemas/\n")
-    write(site / "docs/schemas/acl.dbml", MODEL)
-    write(site / "docs/excluded.md", "```dbml\nmodel: /schemas/acl.dbml\n```\n")
+    write(site / "docs/schemas/shop.dbml", MODEL)
+    write(site / "docs/excluded.md", "```dbml\nmodel: /schemas/shop.dbml\n```\n")
     out = build_site(site)
-    assert not (out / "schemas/acl.dbml").exists()
-    assert (out / "_dbml/models/docs/schemas/acl.dbml").read_text() == MODEL
+    assert not (out / "schemas/shop.dbml").exists()
+    assert (out / "_dbml/models/docs/schemas/shop.dbml").read_text() == MODEL
     assert (
-        'src="../_dbml/embed.html?model=models%2Fdocs%2Fschemas%2Facl.dbml&amp;'
+        'src="../_dbml/embed.html?model=models%2Fdocs%2Fschemas%2Fshop.dbml&amp;'
         in (out / "excluded/index.html").read_text()
     )
 
 
 def test_a_model_in_a_dot_folder_is_copied_by_the_plugin(site):
-    write(site / "docs/.models/acl.dbml", MODEL)
-    write(site / "docs/dotted.md", "```dbml\nmodel: /.models/acl.dbml\n```\n")
+    write(site / "docs/.models/shop.dbml", MODEL)
+    write(site / "docs/dotted.md", "```dbml\nmodel: /.models/shop.dbml\n```\n")
     out = build_site(site)
-    assert not (out / ".models/acl.dbml").exists()
-    assert (out / "_dbml/models/docs/.models/acl.dbml").read_text() == MODEL
+    assert not (out / ".models/shop.dbml").exists()
+    assert (out / "_dbml/models/docs/.models/shop.dbml").read_text() == MODEL
     assert (
-        'src="../_dbml/embed.html?model=models%2Fdocs%2F.models%2Facl.dbml&amp;'
+        'src="../_dbml/embed.html?model=models%2Fdocs%2F.models%2Fshop.dbml&amp;'
         in (out / "dotted/index.html").read_text()
     )
 
@@ -413,6 +413,6 @@ def test_a_block_rendered_after_its_page_is_done_stays_code(site, caplog):
     assert "<code" in excerpt
     # guide/deep.md's own finding, and nothing for the excerpt.
     assert [message for message in warnings(caplog) if "nope" in message] == [
-        "mkdocs_dbml: guide/deep.md, block 3: /models/acl.dbml: Table not found: nope"
+        "mkdocs_dbml: guide/deep.md, block 3: /models/shop.dbml: Table not found: nope"
     ]
     assert not (out / "_dbml/models/models/excerpt.dbml").exists()

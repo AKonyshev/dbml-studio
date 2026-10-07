@@ -5,9 +5,9 @@ describe("splitQualified", () => {
     expect(splitQualified("t", "s")).toEqual({ schema: "s", table: "t" });
   });
   test("splits combined name when schemaName is nullish", () => {
-    expect(splitQualified("well_design.well", null)).toEqual({
-      schema: "well_design",
-      table: "well",
+    expect(splitQualified("warehouse.shelf", null)).toEqual({
+      schema: "warehouse",
+      table: "shelf",
     });
   });
   test("no dot and no schema -> empty schema", () => {
@@ -18,8 +18,8 @@ describe("splitQualified", () => {
 describe("endpointsToRef", () => {
   test("builds a CanonRef splitting combined table names", () => {
     const r = endpointsToRef([
-      { tableName: "well_design.a", schemaName: null, fieldNames: ["x"] },
-      { tableName: "well_design.b", schemaName: null, fieldNames: ["y"] },
+      { tableName: "warehouse.a", schemaName: null, fieldNames: ["x"] },
+      { tableName: "warehouse.b", schemaName: null, fieldNames: ["y"] },
     ]);
     expect(r).toEqual({
       fromTable: "a",

@@ -79,12 +79,9 @@ describe("ru.readFailureReasons", () => {
 describe("ru.modelUnreadable", () => {
   it("names the path and the reason", () => {
     expect(
-      ru.modelUnreadable(
-        "/Users/kav/devzone/antora/models/rd.dbml",
-        "файла нет",
-      ),
+      ru.modelUnreadable("/Users/me/models/library.dbml", "файла нет"),
     ).toBe(
-      "Не удалось прочитать модель (файла нет): /Users/kav/devzone/antora/models/rd.dbml",
+      "Не удалось прочитать модель (файла нет): /Users/me/models/library.dbml",
     );
   });
 });

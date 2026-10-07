@@ -31,7 +31,7 @@ const setup = (overrides: Partial<FrameViewOptions> = {}): Rig => {
     url: "about:blank",
     theme: "light",
     height: 500,
-    title: "rd.dbml",
+    title: "library.dbml",
     messageTarget: window,
     ...overrides,
   });
@@ -66,7 +66,7 @@ describe("FrameView", () => {
       view.element,
     );
     expect(view.element.height).toBe("500");
-    expect(view.element.title).toBe("rd.dbml");
+    expect(view.element.title).toBe("library.dbml");
   });
 
   it("answers hello with ready, then the document it was already holding", () => {

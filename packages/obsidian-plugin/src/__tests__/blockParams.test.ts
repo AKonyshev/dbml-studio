@@ -5,19 +5,16 @@ describe("parseBlockParams", () => {
     expect(
       parseBlockParams(
         [
-          "model: /../antora/models/to-be/dbml/rd.dbml",
-          "tables: reference_dictionary.agent_group, reference_dictionary.agent",
+          "model: /../models/library.dbml",
+          "tables: library.author_group, library.author",
           "height: 600",
         ].join("\n"),
       ),
     ).toEqual({
       ok: true,
       params: {
-        model: "/../antora/models/to-be/dbml/rd.dbml",
-        tables: [
-          "reference_dictionary.agent_group",
-          "reference_dictionary.agent",
-        ],
+        model: "/../models/library.dbml",
+        tables: ["library.author_group", "library.author"],
         height: 600,
         theme: null,
       },
@@ -25,16 +22,21 @@ describe("parseBlockParams", () => {
   });
 
   it("defaults everything but the model", () => {
-    expect(parseBlockParams("model: rd.dbml")).toEqual({
+    expect(parseBlockParams("model: library.dbml")).toEqual({
       ok: true,
-      params: { model: "rd.dbml", tables: null, height: 500, theme: null },
+      params: { model: "library.dbml", tables: null, height: 500, theme: null },
     });
   });
 
   it("reads a theme", () => {
-    expect(parseBlockParams("model: rd.dbml\ntheme: dark")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntheme: dark")).toEqual({
       ok: true,
-      params: { model: "rd.dbml", tables: null, height: 500, theme: "dark" },
+      params: {
+        model: "library.dbml",
+        tables: null,
+        height: 500,
+        theme: "dark",
+      },
     });
   });
 
@@ -44,7 +46,7 @@ describe("parseBlockParams", () => {
     const source = [
       "",
       "# the agents",
-      "model: rd.dbml  ",
+      "model: library.dbml  ",
       "",
       "# only two",
       "tables: a, b",
@@ -54,7 +56,7 @@ describe("parseBlockParams", () => {
     expect(parseBlockParams(source)).toEqual({
       ok: true,
       params: {
-        model: "rd.dbml",
+        model: "library.dbml",
         tables: ["a", "b"],
         height: 500,
         theme: null,
@@ -65,20 +67,20 @@ describe("parseBlockParams", () => {
   // An empty list means the author filtered nothing, not that they filtered
   // everything away — the same rule the frame's own `parseTables` follows.
   it("treats an empty table list as no filter at all", () => {
-    expect(parseBlockParams("model: rd.dbml\ntables:  , ,")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntables:  , ,")).toEqual({
       ok: true,
-      params: { model: "rd.dbml", tables: null, height: 500, theme: null },
+      params: { model: "library.dbml", tables: null, height: 500, theme: null },
     });
   });
 
   it("reads a table list written as a YAML list", () => {
     expect(
-      parseBlockParams("model: rd.dbml\ntables: [agent, agent_group]"),
+      parseBlockParams("model: library.dbml\ntables: [author, author_group]"),
     ).toEqual({
       ok: true,
       params: {
-        model: "rd.dbml",
-        tables: ["agent", "agent_group"],
+        model: "library.dbml",
+        tables: ["author", "author_group"],
         height: 500,
         theme: null,
       },
@@ -86,9 +88,9 @@ describe("parseBlockParams", () => {
   });
 
   it("reads a note saved with Windows line endings", () => {
-    expect(parseBlockParams("model: rd.dbml\r\nheight: 600\r\n")).toEqual({
+    expect(parseBlockParams("model: library.dbml\r\nheight: 600\r\n")).toEqual({
       ok: true,
-      params: { model: "rd.dbml", tables: null, height: 600, theme: null },
+      params: { model: "library.dbml", tables: null, height: 600, theme: null },
     });
   });
 
@@ -115,12 +117,12 @@ describe("parseBlockParams", () => {
   });
 
   it("leaves a block with no model line alone", () => {
-    expect(parseBlockParams("tables: agent\nheight: 600")).toBeNull();
+    expect(parseBlockParams("tables: author\nheight: 600")).toBeNull();
   });
 
   it("reads keys in lower case only, as YAML does", () => {
-    expect(parseBlockParams("Model: rd.dbml")).toBeNull();
-    expect(parseBlockParams("model: rd.dbml\nHeight: 600")).toEqual({
+    expect(parseBlockParams("Model: library.dbml")).toBeNull();
+    expect(parseBlockParams("model: library.dbml\nHeight: 600")).toEqual({
       ok: false,
       error: { kind: "unknownKey", key: "Height" },
     });
@@ -136,7 +138,7 @@ describe("parseBlockParams", () => {
   // The whole point of failing here: a note is read by eye, and a typo that is
   // silently dropped sends its author looking for the fault in the model.
   it("refuses a key it does not know", () => {
-    expect(parseBlockParams("model: rd.dbml\ntabels: agent")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntabels: author")).toEqual({
       ok: false,
       error: { kind: "unknownKey", key: "tabels" },
     });
@@ -150,7 +152,7 @@ describe("parseBlockParams", () => {
   });
 
   it("refuses a line that is not a key and a value", () => {
-    expect(parseBlockParams("model: rd.dbml\njust some prose")).toEqual({
+    expect(parseBlockParams("model: library.dbml\njust some prose")).toEqual({
       ok: false,
       error: { kind: "malformedLine", line: "just some prose" },
     });
@@ -158,15 +160,17 @@ describe("parseBlockParams", () => {
 
   it("refuses a height that is not a whole number above zero", () => {
     for (const value of ["tall", "0", "12.5", "-5"]) {
-      expect(parseBlockParams(`model: rd.dbml\nheight: ${value}`)).toEqual({
-        ok: false,
-        error: { kind: "heightInvalid", value },
-      });
+      expect(parseBlockParams(`model: library.dbml\nheight: ${value}`)).toEqual(
+        {
+          ok: false,
+          error: { kind: "heightInvalid", value },
+        },
+      );
     }
   });
 
   it("refuses a theme that is neither light nor dark", () => {
-    expect(parseBlockParams("model: rd.dbml\ntheme: solarized")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntheme: solarized")).toEqual({
       ok: false,
       error: { kind: "themeInvalid", value: "solarized" },
     });
@@ -175,7 +179,7 @@ describe("parseBlockParams", () => {
   // YAML reads `[1, 2]` as numbers, and the MkDocs plugin refuses them — a
   // table name is text, never a bare number.
   it("refuses a table list with a bare number in it", () => {
-    expect(parseBlockParams("model: rd.dbml\ntables: [1, 2]")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntables: [1, 2]")).toEqual({
       ok: false,
       error: { kind: "tablesInvalid", value: "[1, 2]" },
     });
@@ -183,14 +187,14 @@ describe("parseBlockParams", () => {
 
   // A mapping is not a list of names.
   it("refuses a table value written as a mapping", () => {
-    expect(parseBlockParams("model: rd.dbml\ntables: {a: b}")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntables: {a: b}")).toEqual({
       ok: false,
       error: { kind: "tablesInvalid", value: "{a: b}" },
     });
   });
 
   it("refuses an unclosed table list", () => {
-    expect(parseBlockParams("model: rd.dbml\ntables: [x")).toEqual({
+    expect(parseBlockParams("model: library.dbml\ntables: [x")).toEqual({
       ok: false,
       error: { kind: "tablesInvalid", value: "[x" },
     });

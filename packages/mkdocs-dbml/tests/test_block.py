@@ -26,21 +26,18 @@ def test_ours_may_open_with_any_of_its_keys_or_a_comment():
 
 def test_reads_every_key():
     assert parse_block(
-        "model: /models/acl.dbml\n"
-        "tables: analysis, analysis_liquid\n"
-        "height: 600\n"
-        "theme: dark"
+        "model: /models/shop.dbml\ntables: order, order_item\nheight: 600\ntheme: dark"
     ) == Block(
-        model="/models/acl.dbml",
-        tables=("analysis", "analysis_liquid"),
+        model="/models/shop.dbml",
+        tables=("order", "order_item"),
         height=600,
         theme="dark",
     )
 
 
 def test_only_model_is_required():
-    assert parse_block("model: acl.dbml") == Block(
-        model="acl.dbml", tables=None, height=None, theme=None
+    assert parse_block("model: shop.dbml") == Block(
+        model="shop.dbml", tables=None, height=None, theme=None
     )
 
 
@@ -49,8 +46,8 @@ def test_tables_as_a_yaml_list():
 
 
 def test_tables_keep_dotted_and_spaced_names():
-    assert parse_block("model: a.dbml\ntables: acl.analysis, my table").tables == (
-        "acl.analysis",
+    assert parse_block("model: a.dbml\ntables: shop.order, my table").tables == (
+        "shop.order",
         "my table",
     )
 

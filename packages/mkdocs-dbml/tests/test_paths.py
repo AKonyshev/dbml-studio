@@ -16,9 +16,9 @@ MODEL = "Table a {\n  id integer\n}\n"
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     for path in (
-        "docs/models/acl.dbml",
+        "docs/models/shop.dbml",
         "docs/guide/local.dbml",
-        "models/to-be/ext.dbml",
+        "models/draft/ext.dbml",
         "models/a/dup.dbml",
         "models/b/dup.dbml",
     ):
@@ -34,37 +34,39 @@ def resolve(
 
 
 def test_a_leading_slash_starts_at_the_docs_root(project):
-    assert resolve(project, "/models/acl.dbml") == ResolvedModel(
-        (project / "docs/models/acl.dbml").resolve(), "models/acl.dbml", external=False
+    assert resolve(project, "/models/shop.dbml") == ResolvedModel(
+        (project / "docs/models/shop.dbml").resolve(),
+        "models/shop.dbml",
+        external=False,
     )
 
 
 def test_otherwise_the_path_starts_at_the_page_folder(project):
     assert resolve(project, "local.dbml").site_path == "guide/local.dbml"
-    assert resolve(project, "../models/acl.dbml").site_path == "models/acl.dbml"
+    assert resolve(project, "../models/shop.dbml").site_path == "models/shop.dbml"
 
 
 def test_a_page_at_the_docs_root(project):
     assert (
-        resolve(project, "models/acl.dbml", page="index.md").site_path
-        == "models/acl.dbml"
+        resolve(project, "models/shop.dbml", page="index.md").site_path
+        == "models/shop.dbml"
     )
 
 
 def test_a_model_outside_docs_lands_under_the_plugins_folder(project):
-    assert resolve(project, "/../models/to-be/ext.dbml") == ResolvedModel(
-        (project / "models/to-be/ext.dbml").resolve(),
-        EXTERNAL_PREFIX + "models/to-be/ext.dbml",
+    assert resolve(project, "/../models/draft/ext.dbml") == ResolvedModel(
+        (project / "models/draft/ext.dbml").resolve(),
+        EXTERNAL_PREFIX + "models/draft/ext.dbml",
         external=True,
     )
 
 
 def test_a_model_in_docs_the_site_leaves_out_is_copied_like_an_outside_one(project):
     assert resolve(
-        project, "/models/acl.dbml", served=lambda uri: uri != "models/acl.dbml"
+        project, "/models/shop.dbml", served=lambda uri: uri != "models/shop.dbml"
     ) == ResolvedModel(
-        (project / "docs/models/acl.dbml").resolve(),
-        EXTERNAL_PREFIX + "docs/models/acl.dbml",
+        (project / "docs/models/shop.dbml").resolve(),
+        EXTERNAL_PREFIX + "docs/models/shop.dbml",
         external=True,
     )
 
@@ -98,7 +100,7 @@ def test_a_symlink_that_leads_out_of_the_project_is_refused(project, tmp_path_fa
 
 def test_the_same_external_model_named_twice_is_one_copy(project):
     externals = ExternalModels(taken=set())
-    model = resolve(project, "/../models/to-be/ext.dbml")
+    model = resolve(project, "/../models/draft/ext.dbml")
     assert externals.add(model) is None
     assert externals.add(model) is None
     assert externals.items() == [(model.site_path, model.source)]
@@ -106,12 +108,12 @@ def test_the_same_external_model_named_twice_is_one_copy(project):
 
 def test_a_model_inside_docs_is_not_the_plugins_to_copy(project):
     externals = ExternalModels(taken=set())
-    assert externals.add(resolve(project, "/models/acl.dbml")) is None
+    assert externals.add(resolve(project, "/models/shop.dbml")) is None
     assert externals.items() == []
 
 
 def test_an_external_model_may_not_land_on_a_file_the_site_already_has(project):
-    model = resolve(project, "/../models/to-be/ext.dbml")
+    model = resolve(project, "/../models/draft/ext.dbml")
     error = ExternalModels(taken={model.site_path}).add(model)
     assert isinstance(error, PathError)
     assert model.site_path in error.message

@@ -44,7 +44,7 @@ const diagramIn = (
       url: "about:blank",
       theme: "light",
       height: 500,
-      title: "rd.dbml",
+      title: "library.dbml",
       messageTarget: window,
       onExpand: (expanded) => {
         diagram.expandHost.toggle(diagram.view, expanded);

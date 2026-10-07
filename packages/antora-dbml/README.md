@@ -32,16 +32,16 @@ this one replaces that macro.
 ## A block
 
 ```asciidoc
-dbml::acl[tables="analysis, analysis_liquid",height=600,theme=dark]
+dbml::shop[tables="order, order_item",height=600,theme=dark]
 ```
 
 - **target** — the model, as a path inside the `models` folder. `.dbml` is
-  added unless the target already ends in it, so `dbml::acl[]` and
-  `dbml::acl.dbml[]` are the same block, and `dbml::billing/invoices[]` reads
+  added unless the target already ends in it, so `dbml::shop[]` and
+  `dbml::shop.dbml[]` are the same block, and `dbml::billing/invoices[]` reads
   `billing/invoices.dbml`. A target that leaves the folder (a leading `/`, a
   drive letter, a backslash, a `..` segment) is refused.
 - **`tables`** — a slice of the schema, comma-separated. Both full
-  (`acl.analysis`) and short (`analysis`) names work, as long as a short name
+  (`shop.order`) and short (`order`) names work, as long as a short name
   is unambiguous in the file.
 - **`height`** — the frame's height in pixels.
 - **`theme`** — `light` or `dark`.

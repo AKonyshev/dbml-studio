@@ -105,23 +105,23 @@ describe("defaultDetailLevelFor", () => {
     // problem: framing it is what shrinks the other forty out of legibility.
     const mixed = [
       ...Array.from({ length: 40 }, (_, i) => tableWith(8, `small${i}`)),
-      tableWith(166, "history_gas_condensate_intercept"),
+      tableWith(166, "history_bulk_intercept"),
     ];
 
     expect(defaultDetailLevelFor(mixed)).toBe(TableDetailLevel.HeaderOnly);
   });
 
   test("drops to headers for a handful of very wide tables", () => {
-    // tech_mode.dbml, the three result tables a documentation page embeds:
+    // sales.dbml, the three result tables a documentation page embeds:
     // 458 columns between them, which is well inside the total budget, and
     // each one over six thousand pixels tall. Framing them fits the tallest
     // into the viewport and everything else goes with it — in a 500px frame,
     // three vertical hairlines with no readable character in them.
     expect(
       defaultDetailLevelFor([
-        tableWith(204, "oil_tech_mode_calc_result"),
-        tableWith(136, "gas_condensate_tech_mode_calc_result"),
-        tableWith(118, "injection_tech_mode_calc_result"),
+        tableWith(204, "retail_sales_calc_result"),
+        tableWith(136, "bulk_sales_calc_result"),
+        tableWith(118, "return_sales_calc_result"),
       ]),
     ).toBe(TableDetailLevel.HeaderOnly);
   });

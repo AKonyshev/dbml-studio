@@ -20,8 +20,8 @@ plugins:
 
 ````markdown
 ```dbml
-model: /models/acl.dbml
-tables: analysis, analysis_liquid
+model: /models/shop.dbml
+tables: order, order_item
 height: 600
 ```
 ````
@@ -31,7 +31,7 @@ height: 600
   `..` is allowed, for a model that lives beside the documentation rather than
   inside it.
 - **`tables`** — a slice of the schema, comma-separated or as a YAML list.
-  Both full (`acl.analysis`) and short (`analysis`) names work, as long as a
+  Both full (`shop.order`) and short (`order`) names work, as long as a
   short name is unambiguous in the file.
 - **`height`** — the frame's height in pixels. Default 500.
 - **`theme`** — `light` or `dark`.

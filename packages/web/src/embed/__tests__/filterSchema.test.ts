@@ -33,15 +33,15 @@ const ref = (from: string, to: string): JSONTableSchema["refs"][number] => ({
 
 const schema: JSONTableSchema = {
   tables: [
-    table("acl.analysis"),
-    table("acl.analysis_liquid"),
-    table("acl.gas_dynamic_research"),
+    table("shop.order"),
+    table("shop.order_item"),
+    table("shop.payment"),
   ],
   refs: [
-    ref("acl.analysis", "acl.analysis_liquid"),
-    ref("acl.analysis", "acl.gas_dynamic_research"),
+    ref("shop.order", "shop.order_item"),
+    ref("shop.order", "shop.payment"),
   ],
-  enums: [{ name: "acl.state", values: [{ name: "open" }] }],
+  enums: [{ name: "shop.state", values: [{ name: "open" }] }],
 };
 
 describe("filterSchema", () => {
@@ -50,28 +50,26 @@ describe("filterSchema", () => {
   });
 
   it("keeps the named tables and the relations wholly inside them", () => {
-    expect(
-      filterSchema(schema, ["acl.analysis", "acl.analysis_liquid"]),
-    ).toEqual({
+    expect(filterSchema(schema, ["shop.order", "shop.order_item"])).toEqual({
       ok: true,
       schema: {
-        tables: [table("acl.analysis"), table("acl.analysis_liquid")],
-        // The relation to gas_dynamic_research is gone: one of its ends is not
+        tables: [table("shop.order"), table("shop.order_item")],
+        // The relation to payment is gone: one of its ends is not
         // on the diagram, and an edge into nothing is worse than no edge.
-        refs: [ref("acl.analysis", "acl.analysis_liquid")],
+        refs: [ref("shop.order", "shop.order_item")],
         enums: schema.enums,
       },
     });
   });
 
-  // Every table in acl.dbml sits in the `acl` schema; making the author write
+  // Every table in shop.dbml sits in the `shop` schema; making the author write
   // the prefix eighteen times is the reason this exists.
   it("accepts a short name when it is unambiguous", () => {
-    expect(filterSchema(schema, ["analysis", "analysis_liquid"])).toEqual({
+    expect(filterSchema(schema, ["order", "order_item"])).toEqual({
       ok: true,
       schema: {
-        tables: [table("acl.analysis"), table("acl.analysis_liquid")],
-        refs: [ref("acl.analysis", "acl.analysis_liquid")],
+        tables: [table("shop.order"), table("shop.order_item")],
+        refs: [ref("shop.order", "shop.order_item")],
         enums: schema.enums,
       },
     });
@@ -79,36 +77,36 @@ describe("filterSchema", () => {
 
   it("refuses a short name that names two tables", () => {
     const ambiguous: JSONTableSchema = {
-      tables: [table("acl.analysis"), table("mer.analysis")],
+      tables: [table("shop.order"), table("crm.order")],
       refs: [],
       enums: [],
     };
 
-    expect(filterSchema(ambiguous, ["analysis"])).toEqual({
+    expect(filterSchema(ambiguous, ["order"])).toEqual({
       ok: false,
-      error: { kind: "tableAmbiguous", name: "analysis" },
+      error: { kind: "tableAmbiguous", name: "order" },
     });
   });
 
-  // A full name wins outright: `acl.analysis` is not ambiguous just because
-  // `mer.analysis` also exists.
+  // A full name wins outright: `shop.order` is not ambiguous just because
+  // `crm.order` also exists.
   it("prefers an exact full name over the short-name lookup", () => {
     const ambiguous: JSONTableSchema = {
-      tables: [table("acl.analysis"), table("mer.analysis")],
+      tables: [table("shop.order"), table("crm.order")],
       refs: [],
       enums: [],
     };
 
-    expect(filterSchema(ambiguous, ["acl.analysis"])).toEqual({
+    expect(filterSchema(ambiguous, ["shop.order"])).toEqual({
       ok: true,
-      schema: { tables: [table("acl.analysis")], refs: [], enums: [] },
+      schema: { tables: [table("shop.order")], refs: [], enums: [] },
     });
   });
 
   it("refuses a name that is in no table", () => {
-    expect(filterSchema(schema, ["acl.analisys"])).toEqual({
+    expect(filterSchema(schema, ["shop.ordre"])).toEqual({
       ok: false,
-      error: { kind: "tableMissing", name: "acl.analisys" },
+      error: { kind: "tableMissing", name: "shop.ordre" },
     });
   });
 
@@ -129,19 +127,19 @@ describe("filterSchema", () => {
     const arrangedSchema: JSONTableSchema = {
       ...schema,
       tables: [
-        arranged("acl.analysis", 0, 0),
-        arranged("acl.analysis_liquid", 4000, 9000),
-        arranged("acl.gas_dynamic_research", 12000, 300),
+        arranged("shop.order", 0, 0),
+        arranged("shop.order_item", 4000, 9000),
+        arranged("shop.payment", 12000, 300),
       ],
     };
 
-    const result = filterSchema(arrangedSchema, ["acl.analysis"]);
+    const result = filterSchema(arrangedSchema, ["shop.order"]);
 
     expect(result.ok).toBe(true);
 
     const kept = result.ok ? result.schema.tables : [];
 
-    expect(kept.map((t) => t.name)).toEqual(["acl.analysis"]);
+    expect(kept.map((t) => t.name)).toEqual(["shop.order"]);
     expect(kept[0]).not.toHaveProperty("fromMetaInfo");
     expect(kept[0]).not.toHaveProperty("metaInfoPositions");
   });
@@ -151,16 +149,16 @@ describe("filterSchema", () => {
     const arrangedSchema: JSONTableSchema = {
       ...schema,
       tables: [
-        arranged("acl.analysis", 10, 20),
-        arranged("acl.analysis_liquid", 30, 40),
-        arranged("acl.gas_dynamic_research", 50, 60),
+        arranged("shop.order", 10, 20),
+        arranged("shop.order_item", 30, 40),
+        arranged("shop.payment", 50, 60),
       ],
     };
 
     const result = filterSchema(arrangedSchema, [
-      "acl.analysis",
-      "acl.analysis_liquid",
-      "acl.gas_dynamic_research",
+      "shop.order",
+      "shop.order_item",
+      "shop.payment",
     ]);
 
     expect(result.ok && result.schema.tables[0]).toEqual(
