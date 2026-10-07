@@ -50,3 +50,9 @@ packages/obsidian-plugin/frame/
 packages/antora-dbml/lib/
 packages/antora-dbml/vendor/
 packages/antora-dbml/LICENSE
+
+# The dbml-frame package's built frame and protocol (packages/dbml-frame/README.md).
+packages/dbml-frame/frame/
+packages/dbml-frame/protocol/
+packages/dbml-frame/BUILD
+packages/dbml-frame/LICENSE

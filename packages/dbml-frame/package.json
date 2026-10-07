@@ -1,0 +1,41 @@
+{
+  "name": "dbml-frame",
+  "version": "1.2.2",
+  "description": "The DBML Studio diagram frame and the protocol a host speaks with it, for hosts that embed the frame outside the DBML Studio repository.",
+  "license": "MIT",
+  "author": "AKonyshev",
+  "homepage": "https://github.com/AKonyshev/dbml-studio/tree/main/packages/dbml-frame#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AKonyshev/dbml-studio.git",
+    "directory": "packages/dbml-frame"
+  },
+  "bugs": "https://github.com/AKonyshev/dbml-studio/issues",
+  "keywords": [
+    "dbml",
+    "erd",
+    "diagram",
+    "iframe"
+  ],
+  "exports": {
+    "./protocol": {
+      "types": "./protocol/frameHost.d.ts",
+      "default": "./protocol/frameHost.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "frame",
+    "BUILD",
+    "protocol",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "test": "jest",
+    "publish:npm": "bash scripts/publish-npm.sh",
+    "prepack": "cp ../../LICENSE LICENSE"
+  }
+}
