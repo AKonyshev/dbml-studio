@@ -36,9 +36,6 @@
     "package:dbml": "bash scripts/publish-extension.sh dbml --package",
     "build:web": "yarn workspace web build",
     "test:e2e": "yarn workspace web test:e2e",
-    "build:obsidian": "yarn workspace obsidian-plugin build",
-    "install:obsidian": "bash scripts/install-obsidian-plugin.sh",
-    "package:obsidian": "bash scripts/package-obsidian-plugin.sh",
     "package:antora": "bash packages/antora-dbml/scripts/pack.sh",
     "package:frame": "bash packages/dbml-frame/scripts/pack.sh"
   }
