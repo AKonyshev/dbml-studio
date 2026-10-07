@@ -7,6 +7,8 @@ import {
   DBML_LIGHT_THEME_ID,
 } from "../editor/dbmlLanguage";
 
+import type { JSX } from "react";
+
 export interface EditorPaneProps {
   value: string;
   onChange: (next: string) => void;

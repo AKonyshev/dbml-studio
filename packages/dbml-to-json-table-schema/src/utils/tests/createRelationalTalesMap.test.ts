@@ -1,6 +1,6 @@
 import { createRelationalTalesMap } from "../createRelationalTalesMap";
 
-import type Ref from "@dbml/core/types/model_structure/ref";
+import type { Ref } from "@dbml/core";
 
 import { dbmlTestCodeInJSONTableFormat } from "@/tests/data";
 

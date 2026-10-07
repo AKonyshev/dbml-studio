@@ -1,7 +1,7 @@
 import FieldDetailWrapper from "./FieldDetailWrapper";
 import FieldDetails from "./FieldDetails";
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import EnumsProvider from "@/providers/EnumsProvider";
 import { exampleData } from "@/fake/fakeJsonTables";

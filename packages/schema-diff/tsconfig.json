@@ -3,8 +3,8 @@
   "compilerOptions": {
     "target": "es2016",
     "module": "commonjs",
-    "baseUrl": "./src",
-    "paths": { "@/*": ["./*"] },
+    "types": ["jest", "node"],
+    "paths": { "@/*": ["./src/*"] },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

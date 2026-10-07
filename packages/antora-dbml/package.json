@@ -36,7 +36,7 @@
   "devDependencies": {
     "@antora/cli": "^3.2.1",
     "@antora/site-generator": "^3.2.1",
-    "@types/node": "^20.12.12"
+    "@types/node": "^20.19.43"
   },
   "scripts": {
     "build": "bash scripts/build.sh",

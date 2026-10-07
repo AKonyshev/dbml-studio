@@ -4,11 +4,18 @@ import { shouldHighLightCol } from "../shouldHighLightCol";
 // situation it describes rather than as six positional values.
 const highlight = ({
   hovered = false,
-  tableName = "users" as string | null,
-  hoveredTable = null as string | null,
-  highlightedColumns = [] as string[],
-  columnName = "id" as string | null,
-  relationalTables = undefined as string[] | null | undefined,
+  tableName = "users",
+  hoveredTable = null,
+  highlightedColumns = [],
+  columnName = "id",
+  relationalTables = undefined,
+}: {
+  hovered?: boolean;
+  tableName?: string | null;
+  hoveredTable?: string | null;
+  highlightedColumns?: string[];
+  columnName?: string | null;
+  relationalTables?: string[] | null;
 } = {}): boolean =>
   shouldHighLightCol(
     hovered,

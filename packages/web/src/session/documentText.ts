@@ -13,7 +13,7 @@ export const loadedOf = (
   loaded: LoadedTexts,
   id: DocumentId | null,
 ): string | null =>
-  id === null || id.kind === "local" ? null : loaded[id.path] ?? null;
+  id === null || id.kind === "local" ? null : (loaded[id.path] ?? null);
 
 /**
  * What to put in front of the reader for a document: their own version, else

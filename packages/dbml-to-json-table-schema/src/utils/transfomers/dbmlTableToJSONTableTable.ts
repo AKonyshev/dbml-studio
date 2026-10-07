@@ -5,7 +5,7 @@ import { getTableFullName } from "../computeNameWithSchemaName";
 import { dbmlFieldToJSONTableField } from "./dbmlFieldToJSONTableField";
 import { dbmlIndexToJSONTableIndex } from "./dbmlIndexToJSONTableIndex";
 
-import type Table from "@dbml/core/types/model_structure/table";
+import type { Table } from "@dbml/core";
 
 export const dbmlTableToJSONTableTable = (
   table: Table,

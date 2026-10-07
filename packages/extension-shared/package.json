@@ -10,16 +10,17 @@
     "dbml-to-json-table-schema": "0.0.0"
   },
   "peerDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@tomjs/vscode-extension-webview": "^1.2.0",
-    "@types/node": "^20.12.12",
+    "@tomjs/vite-plugin-vscode": "^8.0.0",
+    "@tomjs/vscode-extension-webview": "^2.0.0",
+    "@types/node": "^20.19.43",
     "@types/vscode": "^1.89.0",
-    "@vscode/test-cli": "^0.0.8",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }

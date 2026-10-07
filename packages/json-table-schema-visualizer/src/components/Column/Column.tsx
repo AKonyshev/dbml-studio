@@ -53,7 +53,7 @@ const Column = ({
   const typeTextColor = themeColors.text[700];
   const fontStyle = isPrimaryKey ? "bold" : "normal";
   const colNameBaseFill = isPrimaryKey
-    ? tableColors?.regular ?? colTextColor
+    ? (tableColors?.regular ?? colTextColor)
     : colTextColor;
 
   return (
@@ -73,7 +73,7 @@ const Column = ({
             text={colName}
             fill={
               highlighted
-                ? tableColors?.regular ?? colNameBaseFill
+                ? (tableColors?.regular ?? colNameBaseFill)
                 : colNameBaseFill
             }
             width={tablePreferredWidth}

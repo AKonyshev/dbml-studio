@@ -45,7 +45,9 @@ const TableHeader = ({ title }: TableHeaderProps) => {
     STORAGE_KEYS.SHORT_TABLE_NAME,
     false,
   );
-  const titleDisplay = isShortTableName ? title.split(".")[1] ?? title : title;
+  const titleDisplay = isShortTableName
+    ? (title.split(".")[1] ?? title)
+    : title;
   const themeColors = useThemeColors();
   const tableColors = useTableColor(title);
   const tablePreferredWidth = useTableWidth();

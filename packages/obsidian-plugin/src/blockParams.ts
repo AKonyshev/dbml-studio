@@ -35,8 +35,7 @@ export type BlockError =
   | { kind: "tablesInvalid"; value: string };
 
 export type BlockParamsResult =
-  | { ok: true; params: BlockParams }
-  | { ok: false; error: BlockError };
+  { ok: true; params: BlockParams } | { ok: false; error: BlockError };
 
 /** The same default Antora and the MkDocs plugin use, so a page and a note agree. */
 const DEFAULT_HEIGHT = 500;

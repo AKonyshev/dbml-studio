@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@dbml/connector": "^3.14.1",
-    "@dbml/core": "^3.14.1",
-    "pg": "^8.12.0"
+    "@dbml/core": "^10.2.0",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.0"
+    "@types/pg": "^8.23.1"
   }
 }

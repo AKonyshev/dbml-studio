@@ -6,14 +6,14 @@
     "lib": ["ES2022", "DOM"],
     "sourceMap": true,
     "rootDir": "./",
-    "baseUrl": "./",
     "strict": true,
     "jsx": "react-jsx",
+    "types": ["jest", "mocha", "node"],
     "paths": {
       "@/*": ["./*", "../json-table-schema-visualizer/src/*"]
     },
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "vite.config.js"],
+  "exclude": ["node_modules", "vite.config.mjs"],
   "include": ["**/*.ts", "**/*.tsx"]
 }

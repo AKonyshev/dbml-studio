@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { type ReactNode } from "react";
 import { KeyboardIcon } from "lucide-react";
 
@@ -101,10 +100,6 @@ const Toolbar = ({
       <ThemeToggler />
     </div>
   );
-};
-
-Toolbar.propTypes = {
-  onFitToView: PropTypes.func.isRequired,
 };
 
 export default Toolbar;

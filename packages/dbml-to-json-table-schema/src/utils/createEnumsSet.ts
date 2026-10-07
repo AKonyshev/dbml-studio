@@ -1,6 +1,6 @@
 import { getEnumFullName } from "./computeNameWithSchemaName";
 
-import type Enum from "@dbml/core/types/model_structure/enum";
+import type { Enum } from "@dbml/core";
 
 export const createEnumsSet = (enums: Enum[]): Set<string> => {
   const map = new Set<string>();

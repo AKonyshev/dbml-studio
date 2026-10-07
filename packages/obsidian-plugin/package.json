@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
-    "jest-environment-jsdom": "^29.7.0",
-    "obsidian": "^1.7.2"
+    "jest-environment-jsdom": "^30.5.2",
+    "obsidian": "^1.13.1"
   }
 }

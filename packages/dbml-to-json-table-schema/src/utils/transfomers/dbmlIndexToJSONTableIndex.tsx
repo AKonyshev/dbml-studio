@@ -2,7 +2,7 @@ import { type JSONTableIndex } from "shared/types/tableSchema";
 
 import { dbmlIndexColToJSONTableIndexCol } from "./dbmlIndexColToJSONTableIndexCol";
 
-import type Index from "@dbml/core/types/model_structure/indexes";
+import type { Index } from "@dbml/core";
 
 export const dbmlIndexToJSONTableIndex = ({
   pk,

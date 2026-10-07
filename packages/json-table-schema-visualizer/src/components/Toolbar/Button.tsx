@@ -6,8 +6,10 @@ import { composeTooltip } from "@/utils/composeTooltip";
 // accessible name is guarded by ordering instead, not by the type: TypeScript
 // does not check hyphenated JSX attributes at all, so omitting "aria-label"
 // here would look like protection while permitting every caller to pass it.
-interface ToolbarButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title"> {
+interface ToolbarButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "title"
+> {
   onClick: () => void;
   /** Human-readable name. Becomes the accessible name and the tooltip text. */
   label: string;

@@ -6,9 +6,7 @@ class FakeStorage<T> extends StorageBase<T> {
   private readonly items = new Map<string, T>();
 
   getItem(key: string): object | null {
-    const value = this.items.get(key);
-
-    return value === undefined ? null : (value as unknown as object);
+    return this.items.get(key) ?? null;
   }
 
   setItem(key: string, value: T): void {

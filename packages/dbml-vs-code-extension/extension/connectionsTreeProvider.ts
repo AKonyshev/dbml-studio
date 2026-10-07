@@ -15,9 +15,7 @@ import {
   type PanelNode,
 } from "./panelNodes";
 
-export class ConnectionsTreeProvider
-  implements vscode.TreeDataProvider<PanelNode>
-{
+export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNode> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 

@@ -8,6 +8,6 @@ module.exports = {
   roots: ["./"],
   testMatch: ["**/*.test.ts"],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: "<rootDir>/src",
+    prefix: "<rootDir>/",
   }),
 };

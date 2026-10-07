@@ -5,9 +5,7 @@ import {
   getTableFullName,
 } from "../utils/computeNameWithSchemaName";
 
-import type Endpoint from "@dbml/core/types/model_structure/endpoint";
-import type Ref from "@dbml/core/types/model_structure/ref";
-import type Table from "@dbml/core/types/model_structure/table";
+import type { Endpoint, Ref, Table } from "@dbml/core";
 
 export const validateRefs = (refs: Ref[], tables: Table[]): void => {
   const tableMap = new Map<string, Table>();

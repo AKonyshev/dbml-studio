@@ -1,6 +1,6 @@
 import DetailLevelToggle from "./DetailLevelToggle";
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import TableDetailLevelProvider from "@/providers/TableDetailLevelProvider";
 

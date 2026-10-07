@@ -12,7 +12,7 @@ const normalizeField = (field: FieldResult): unknown => {
     return {
       ...field,
       relational_tables: new Set(field.relational_tables),
-    } as any;
+    };
   }
 
   return field;
@@ -21,7 +21,7 @@ const normalizeField = (field: FieldResult): unknown => {
 const normalizeIndex = (index: IndexResult): unknown => {
   if (index.pk === undefined || (typeof index.pk === "boolean" && !index.pk)) {
     const { pk: _removed, ...rest } = index;
-    return rest as any;
+    return rest;
   }
 
   return index;

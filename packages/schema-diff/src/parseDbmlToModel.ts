@@ -53,7 +53,7 @@ interface ParsedDbml {
 export function parseDbmlToModel(dbmlText: string): CanonSchema {
   let parsed: ParsedDbml;
   try {
-    parsed = Parser.parseDBMLToJSON(dbmlText) as unknown as ParsedDbml;
+    parsed = Parser.parseDBMLToJSON(dbmlText);
   } catch (err) {
     const loc = (
       err as { location?: { start?: { line?: number; column?: number } } }

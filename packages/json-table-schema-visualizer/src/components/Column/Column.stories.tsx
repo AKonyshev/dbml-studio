@@ -1,6 +1,6 @@
 import Column from "./Column";
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import TablesInfoProvider from "@/providers/TablesInfoProvider";
 import { exampleData } from "@/fake/fakeJsonTables";

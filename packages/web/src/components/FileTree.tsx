@@ -27,6 +27,8 @@ import {
 
 import FileRow, { ICON_BUTTON_CLASS, ROW_CLASS } from "./FileRow";
 
+import type { JSX } from "react";
+
 export interface FileTreeProps {
   /** What the image was built with. Empty when it was built with nothing. */
   catalogFiles: CatalogFile[];

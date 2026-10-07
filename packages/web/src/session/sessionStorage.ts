@@ -21,9 +21,7 @@ const SESSION_KEY = "web:workspace";
  * it whose documents are not anyone's to throw away.
  */
 export type StoredSession =
-  | { kind: "found"; raw: string }
-  | { kind: "empty" }
-  | { kind: "unreadable" };
+  { kind: "found"; raw: string } | { kind: "empty" } | { kind: "unreadable" };
 
 /**
  * The stored session as it was written, unparsed.

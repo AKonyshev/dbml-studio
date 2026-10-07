@@ -1,4 +1,8 @@
-import { dirname, join } from "path";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+
+// Storybook 10 loads its config as ESM, where there is no `require`.
+const require = createRequire(import.meta.url);
 
 /**
  * This function is used to resolve the absolute path of a package.
@@ -14,16 +18,11 @@ const config = {
   addons: [
     getAbsolutePath("@storybook/addon-onboarding"),
     getAbsolutePath("@storybook/addon-links"),
-    getAbsolutePath("@storybook/addon-essentials"),
     getAbsolutePath("@chromatic-com/storybook"),
-    getAbsolutePath("@storybook/addon-interactions"),
   ],
   framework: {
     name: getAbsolutePath("@storybook/react-vite"),
     options: {},
-  },
-  docs: {
-    autodocs: "tag",
   },
 };
 export default config;

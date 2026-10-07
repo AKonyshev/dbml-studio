@@ -165,7 +165,7 @@ const ConnectionPath = ({
   const highlight = alwaysHover || isEitherEndHovered || isHovered;
 
   const strokeColor = highlight
-    ? sourceTableColors?.regular ?? themeColors.connection.active
+    ? (sourceTableColors?.regular ?? themeColors.connection.active)
     : themeColors.connection.default;
 
   const isAnimated = animateRelations && isEitherEndHovered;
@@ -267,9 +267,7 @@ const ConnectionPath = ({
       localY = py + DIAGRAM_PADDING;
       btnStagePosRef.current = { x: px, y: py };
     }
-    if (btnStagePosRef.current == null) {
-      btnStagePosRef.current = { x: px, y: py };
-    }
+    btnStagePosRef.current ??= { x: px, y: py };
     const buttonPoint: XYPosition = { x: localX, y: localY };
     setBtnPos(buttonPoint);
     const edgeTarget = resolveTargetByEdgeDistance(

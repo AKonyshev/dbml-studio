@@ -42,8 +42,7 @@ import { compareWithDatabase } from "../compareWithDatabase";
 
 type WindowMock = {
   activeTextEditor:
-    | { document: { languageId: string; getText: () => string } }
-    | undefined;
+    { document: { languageId: string; getText: () => string } } | undefined;
 };
 
 const windowMock = window as unknown as WindowMock;

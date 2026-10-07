@@ -13,8 +13,7 @@ const escapeHtml = (value: string): string =>
     .replace(/"/g, "&quot;");
 
 export type ResolvedModel =
-  | { ok: true; relative: string }
-  | { ok: false; problem: string };
+  { ok: true; relative: string } | { ok: false; problem: string };
 
 /**
  * A block's target as a path inside the models folder. `.dbml` is added

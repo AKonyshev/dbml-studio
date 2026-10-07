@@ -3,13 +3,12 @@ import { getLayoutEdges } from "../getLayoutEdges";
 import type { JSONTableRef, JSONTableTable } from "shared/types/tableSchema";
 
 const tables = [{ name: "a" }, { name: "b" }] as unknown as JSONTableTable[];
-const ref = (s: string, t: string): JSONTableRef =>
-  ({
-    endpoints: [
-      { tableName: s, fieldNames: ["id"], relation: "1" },
-      { tableName: t, fieldNames: ["id"], relation: "*" },
-    ],
-  }) as unknown as JSONTableRef;
+const ref = (s: string, t: string): JSONTableRef => ({
+  endpoints: [
+    { tableName: s, fieldNames: ["id"], relation: "1" },
+    { tableName: t, fieldNames: ["id"], relation: "*" },
+  ],
+});
 
 describe("getLayoutEdges", () => {
   test("keeps edges between two real tables", () => {

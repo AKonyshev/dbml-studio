@@ -27,8 +27,7 @@ Ref: orders.user_id > users.id
 const tabsFor = (uri: vscode.Uri, viewType?: string): vscode.Tab[] =>
   openTabs().filter((tab) => {
     const input = tab.input as
-      | { uri?: vscode.Uri; viewType?: string }
-      | undefined;
+      { uri?: vscode.Uri; viewType?: string } | undefined;
     if (input?.uri?.toString() !== uri.toString()) {
       return false;
     }

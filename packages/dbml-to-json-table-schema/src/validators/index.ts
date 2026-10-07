@@ -1,4 +1,4 @@
-import { type RawDatabase } from "@dbml/core/types/model_structure/database";
+import { type RawDatabase } from "@dbml/core";
 
 import { validateRefs } from "./validateRefs";
 

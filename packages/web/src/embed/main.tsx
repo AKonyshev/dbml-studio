@@ -48,6 +48,7 @@ import { useHostExpand } from "./useHostExpand";
 // Tailwind directives and the full-height rules do not change because the host
 // is a frame.
 import "json-table-schema-visualizer/src/styles/index.css";
+import type { JSX } from "react";
 
 // The host's `lang` when it names one: a plugin knows the language its
 // application speaks, which need not be the system's. Otherwise `languages`

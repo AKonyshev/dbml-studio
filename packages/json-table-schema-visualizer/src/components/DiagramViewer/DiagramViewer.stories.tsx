@@ -1,6 +1,6 @@
 import DiagramViewer from "./DiagramViewer";
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { createBookingsTableClone, exampleData } from "@/fake/fakeJsonTables";
 import { tableCoordsStore } from "@/stores/tableCoords";

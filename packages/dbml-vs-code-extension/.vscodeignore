@@ -9,14 +9,13 @@ webpack.config.js
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/tsconfig.*.json
-**/.eslintrc.json
 **/*.map
 **/*.ts
 **/.vscode-test.*
 *.vsix
 extension/**
 index.html
-vite.config.js
+vite.config.mjs
 
 # Test scaffolding: it is run from the repository, never from the package.
 jest.config.js

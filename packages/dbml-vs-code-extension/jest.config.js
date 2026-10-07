@@ -9,6 +9,7 @@ module.exports = {
   testMatch: ["**/__tests__/**/*.test.ts"],
   moduleNameMapper: {
     "^vscode$": "<rootDir>/extension/__mocks__/vscode.ts",
+    "^virtual:vscode$": "<rootDir>/extension/__mocks__/virtualVscode.ts",
     // db-to-dbml `main` points at src/index.js (only .ts exists); map to TS entry.
     "^db-to-dbml$": "<rootDir>/../db-to-dbml/src/index.ts",
     "^schema-diff$": "<rootDir>/../schema-diff/src/index.ts",

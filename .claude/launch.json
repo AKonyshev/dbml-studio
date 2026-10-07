@@ -25,6 +25,17 @@
         "5174"
       ],
       "port": 5174
+    },
+    {
+      "name": "storybook",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "workspace",
+        "json-table-schema-visualizer",
+        "sb",
+        "--ci"
+      ],
+      "port": 6006
     }
   ]
 }

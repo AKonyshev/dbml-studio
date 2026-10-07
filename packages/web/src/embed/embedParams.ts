@@ -32,8 +32,7 @@ export interface EmbedParams {
 }
 
 export type EmbedParamsResult =
-  | { ok: true; params: EmbedParams }
-  | { ok: false; error: EmbedError };
+  { ok: true; params: EmbedParams } | { ok: false; error: EmbedError };
 
 /**
  * A path is only ever joined to `/schemas/`, so it must not be able to aim

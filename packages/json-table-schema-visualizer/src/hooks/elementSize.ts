@@ -17,7 +17,9 @@ import { type Dimension } from "@/types/dimension";
 // The layout effect re-measures on every render as well. That is not the primary
 // path and does not catch the divider; it is there so a render that *does* reach
 // this component picks up a size the observer has not reported yet.
-export const useElementSize = (ref: RefObject<HTMLElement>): Dimension => {
+export const useElementSize = (
+  ref: RefObject<HTMLElement | null>,
+): Dimension => {
   const [size, setSize] = useState<Dimension>({ width: 0, height: 0 });
 
   // Only set state on an actual change, or measuring after every render would

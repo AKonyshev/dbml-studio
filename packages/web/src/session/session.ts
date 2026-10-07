@@ -14,8 +14,7 @@
  * open, rubbish restored from an older deployment — be tested as arithmetic.
  */
 export type DocumentId =
-  | { kind: "catalog"; path: string }
-  | { kind: "local"; id: number };
+  { kind: "catalog"; path: string } | { kind: "local"; id: number };
 
 export interface LocalFile {
   /**

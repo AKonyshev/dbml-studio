@@ -82,6 +82,14 @@ describe("readConfig", () => {
     ).toThrow(/validate/);
   });
 
+  // YAML hands over a mapping as readily as a scalar, and `String()` of one
+  // is `[object Object]`.
+  it("quotes a mapping where a value belongs as it was written", () => {
+    expect(() =>
+      readConfig({ models: "models", theme: { mode: "dark" } }, dir),
+    ).toThrow('theme must be light or dark, not {"mode":"dark"}');
+  });
+
   // A typo in a key would otherwise be a setting silently not applied.
   it("refuses a key it does not know, by name", () => {
     expect(() => readConfig({ models: "models", hieght: 600 }, dir)).toThrow(
