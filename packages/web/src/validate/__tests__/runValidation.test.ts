@@ -1,16 +1,16 @@
 import { runValidation } from "../runValidation";
 
 const ACL = `
-Table "acl"."analysis" {
+Table "shop"."order" {
   id integer [pk]
 }
 
-Table "acl"."analysis_liquid" {
+Table "shop"."order_item" {
   id integer [pk]
-  analysis_id integer
+  order_id integer
 }
 
-Ref: "acl"."analysis"."id" < "acl"."analysis_liquid"."analysis_id"
+Ref: "shop"."order"."id" < "shop"."order_item"."order_id"
 `;
 
 // Two schemas holding a table of the same name: the short form cannot answer
@@ -32,11 +32,11 @@ describe("runValidation", () => {
         blocks: [
           {
             id: "docs/a.md:1",
-            model: "acl.dbml",
+            model: "shop.dbml",
             text: ACL,
-            tables: ["analysis"],
+            tables: ["order"],
           },
-          { id: "docs/a.md:9", model: "acl.dbml", text: ACL, tables: null },
+          { id: "docs/a.md:9", model: "shop.dbml", text: ACL, tables: null },
         ],
       }),
     ).toEqual({ findings: [] });
@@ -48,9 +48,9 @@ describe("runValidation", () => {
         blocks: [
           {
             id: "docs/a.md:4",
-            model: "acl.dbml",
+            model: "shop.dbml",
             text: ACL,
-            tables: ["analisys"],
+            tables: ["ordre"],
           },
         ],
       }),
@@ -58,8 +58,8 @@ describe("runValidation", () => {
       findings: [
         {
           id: "docs/a.md:4",
-          model: "acl.dbml",
-          problem: "Table not found: analisys",
+          model: "shop.dbml",
+          problem: "Table not found: ordre",
         },
       ],
     });
@@ -102,7 +102,7 @@ describe("runValidation", () => {
       blocks: [
         {
           id: "docs/a.md:4",
-          model: "acl.dbml",
+          model: "shop.dbml",
           text: `${ACL}\n/*MetaInfo\n[oops]\nMetaInfo*/\n`,
           tables: null,
         },
@@ -126,7 +126,7 @@ describe("runValidation", () => {
           text: "Table {",
           tables: null,
         },
-        { id: "docs/a.md:2", model: "acl.dbml", text: ACL, tables: null },
+        { id: "docs/a.md:2", model: "shop.dbml", text: ACL, tables: null },
       ],
     });
 
@@ -138,10 +138,10 @@ describe("runValidation", () => {
   it("reports every block, not the first one that failed", () => {
     const { findings } = runValidation({
       blocks: [
-        { id: "docs/a.md:1", model: "acl.dbml", text: ACL, tables: ["nope"] },
+        { id: "docs/a.md:1", model: "shop.dbml", text: ACL, tables: ["nope"] },
         {
           id: "docs/b.md:1",
-          model: "acl.dbml",
+          model: "shop.dbml",
           text: ACL,
           tables: ["also_nope"],
         },

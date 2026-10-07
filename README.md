@@ -14,7 +14,7 @@ any version, the zip on its GitHub release installs by hand. Desktop only. How t
 What the plugin does beyond the note:
 
 - **It reads files outside the vault.** A block names a model file by path,
-  and that path may lead out of the vault (`model: /../models/rd.dbml`): the
+  and that path may lead out of the vault (`model: /../models/library.dbml`): the
   models usually live beside the documentation they describe, not in the
   vault. The plugin reads only the files blocks name, and writes none of them.
 - **It uses no network.** Nothing is downloaded or sent anywhere.

@@ -4,11 +4,11 @@ from mkdocs_dbml.html import error_html, frame_html
 def frame(**overrides):
     arguments = {
         "frame_url": "../_dbml/embed.html",
-        "model_url": "../models/acl.dbml",
+        "model_url": "../models/shop.dbml",
         "tables": None,
         "height": 500,
         "theme": "light",
-        "title": "acl.dbml",
+        "title": "shop.dbml",
         "fixed_theme": False,
         "dark_scheme": None,
     }
@@ -20,7 +20,7 @@ def test_the_wrapper_and_frame_the_host_script_expects():
     html = frame()
     assert html.startswith('<div class="dbml-diagram">')
     assert (
-        '<iframe src="../_dbml/embed.html?model=..%2Fmodels%2Facl.dbml&amp;theme=light"'
+        '<iframe src="../_dbml/embed.html?model=..%2Fmodels%2Fshop.dbml&amp;theme=light"'
         in html
     )
     assert 'width="100%"' in html
@@ -31,7 +31,7 @@ def test_the_wrapper_and_frame_the_host_script_expects():
 
 
 def test_tables_travel_in_the_query():
-    assert "tables=analysis%2Cacl.liquid" in frame(tables=("analysis", "acl.liquid"))
+    assert "tables=order%2Cshop.cart" in frame(tables=("order", "shop.cart"))
 
 
 def test_a_fixed_theme_marks_the_wrapper():

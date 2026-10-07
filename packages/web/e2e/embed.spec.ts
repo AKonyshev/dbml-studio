@@ -24,23 +24,23 @@ import { canvasOf } from "./diagram";
 // Three tables and two relations, so that a filter naming two of them has
 // something to leave out — both a table and the edge that reached it.
 const ACL = `
-Table "acl"."analysis" {
+Table "shop"."order" {
   id integer [pk]
   note varchar
 }
 
-Table "acl"."analysis_liquid" {
+Table "shop"."order_item" {
   id integer [pk]
-  analysis_id integer
+  order_id integer
 }
 
-Table "acl"."gas_dynamic_research" {
+Table "shop"."payment" {
   id integer [pk]
-  analysis_id integer
+  order_id integer
 }
 
-Ref: "acl"."analysis"."id" < "acl"."analysis_liquid"."analysis_id"
-Ref: "acl"."analysis"."id" < "acl"."gas_dynamic_research"."analysis_id"
+Ref: "shop"."order"."id" < "shop"."order_item"."order_id"
+Ref: "shop"."order"."id" < "shop"."payment"."order_id"
 `;
 
 // One table wide enough that its detail level decides the whole framing, and
@@ -126,7 +126,7 @@ const serveModel = async (page: Page): Promise<void> => {
     const path = new URL(route.request().url()).pathname;
 
     const model =
-      path === "/schemas/acl.dbml"
+      path === "/schemas/shop.dbml"
         ? ACL
         : path === "/schemas/wide.dbml"
           ? WIDE
@@ -148,7 +148,7 @@ const serveModel = async (page: Page): Promise<void> => {
 // which is what a documentation site does: it copies a `.dbml` file sitting
 // beside its pages into the built site, and the plugin points the frame at it.
 const servePlainModel = async (page: Page): Promise<void> => {
-  await page.route("**/models/acl.dbml", async (route) => {
+  await page.route("**/models/shop.dbml", async (route) => {
     await route.fulfill({ status: 200, contentType: "text/plain", body: ACL });
   });
 };
@@ -217,7 +217,7 @@ test("the frame draws the model named in its query, and asks for nothing else", 
   });
 
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
 
   const canvas = canvasOf(page);
   await expect(canvas).toBeVisible();
@@ -229,17 +229,17 @@ test("the frame draws the model named in its query, and asks for nothing else", 
   expect(offOrigin).toEqual([]);
   // One file, and only the one the query named: no manifest, no second model.
   // The frame is not the catalogue and must not go looking for one.
-  expect(schemaRequests).toEqual(["/schemas/acl.dbml"]);
+  expect(schemaRequests).toEqual(["/schemas/shop.dbml"]);
 });
 
 test("the filter reaches the drawing", async ({ page }) => {
   await serveModel(page);
 
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
   const whole = await canvasOf(page).screenshot();
 
-  await page.goto("/embed.html?src=acl.dbml&tables=analysis,analysis_liquid");
+  await page.goto("/embed.html?src=shop.dbml&tables=order,order_item");
   await expect(canvasOf(page)).toBeVisible();
   const filtered = await canvasOf(page).screenshot();
 
@@ -251,7 +251,7 @@ test("the filter reaches the drawing", async ({ page }) => {
 
 test("the diagram arrives already framed", async ({ page }) => {
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
   const onArrival = await canvasOf(page).screenshot();
@@ -374,7 +374,7 @@ test("the controls stay out of the diagram until the reader reaches for them", a
   page,
 }) => {
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
   // A frame is as tall as the page's author made it, and a toolbar sitting on
@@ -399,7 +399,7 @@ test("the controls stay out of the diagram until the reader reaches for them", a
 
 test("a hidden search leaves the reader's own find alone", async ({ page }) => {
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
   // Registered after the search's own listener, so by the time this runs the
@@ -447,7 +447,7 @@ test("the legend says what the marks on the diagram mean, and fits the frame", a
   // The shape the frame is really used in: a few hundred pixels of a page of
   // prose. The legend has two sections now and is taller than that.
   await page.setViewportSize({ width: 900, height: 420 });
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
 
   // Bound to the document, so it works while the toolbar is hidden.
@@ -477,9 +477,9 @@ test("the legend says what the marks on the diagram mean, and fits the frame", a
 
 test("a name that is in no table is said out loud", async ({ page }) => {
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml&tables=analisys");
+  await page.goto("/embed.html?src=shop.dbml&tables=ordre");
 
-  await expect(page.getByText("Table not found: analisys")).toBeVisible();
+  await expect(page.getByText("Table not found: ordre")).toBeVisible();
   await expect(page.locator(".konvajs-content")).toHaveCount(0);
 });
 
@@ -502,11 +502,11 @@ test("the frame draws a model addressed by URL, without touching the catalogue",
   });
 
   await servePlainModel(page);
-  await page.goto("/embed.html?model=models/acl.dbml");
+  await page.goto("/embed.html?model=models/shop.dbml");
 
   await expect(canvasOf(page)).toBeVisible();
 
-  expect(asked).toContain(`${origin}/models/acl.dbml`);
+  expect(asked).toContain(`${origin}/models/shop.dbml`);
   expect(asked.filter((url) => url.includes("/schemas/"))).toEqual([]);
 });
 
@@ -524,11 +524,11 @@ test("a model on another site is refused rather than fetched", async ({
     asked.push(request.url());
   });
 
-  await page.goto("/embed.html?model=https://example.com/acl.dbml");
+  await page.goto("/embed.html?model=https://example.com/shop.dbml");
 
   await expect(
     page.getByText(
-      "The model must be served from this site: https://example.com/acl.dbml",
+      "The model must be served from this site: https://example.com/shop.dbml",
     ),
   ).toBeVisible();
   // By host, not by substring: the frame's own navigation carries the refused
@@ -723,7 +723,7 @@ test("a document posted by a window that is not the host is ignored", async ({
   // first-come-first-served one.
   await expect
     .poll(async () => await embeddedTableNames(page))
-    .toContain("table-acl.analysis");
+    .toContain("table-shop.order");
   expect(await embeddedTableNames(page)).not.toContain(
     "table-impostor.malicious_table",
   );
@@ -999,7 +999,7 @@ test("a host that answers after the deadline still gets its diagram drawn", asyn
   });
   await expect
     .poll(async () => await embeddedTableNames(page))
-    .toContain("table-acl.analysis");
+    .toContain("table-shop.order");
 });
 
 test("a host that answers after the deadline still leaves no trace in storage", async ({
@@ -1032,12 +1032,12 @@ test("a host that answers after the deadline still leaves no trace in storage", 
 test("the frame leaves no trace in storage", async ({ page }) => {
   await serveModel(page);
 
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await page.evaluate(() => {
     window.localStorage.setItem("web:theme", "dark");
   });
 
-  await page.goto("/embed.html?src=acl.dbml&tables=analysis,analysis_liquid");
+  await page.goto("/embed.html?src=shop.dbml&tables=order,order_item");
   await expect(canvasOf(page)).toBeVisible();
 
   const state = await page.evaluate(() => ({
@@ -1119,7 +1119,7 @@ const serveHost = async (
   options: { diagrams?: HostedDiagram[]; withoutScript?: boolean } = {},
 ): Promise<void> => {
   const body = await hostPage(
-    options.diagrams ?? [{ id: "diagram", frameQuery: "src=acl.dbml" }],
+    options.diagrams ?? [{ id: "diagram", frameQuery: "src=shop.dbml" }],
     options,
   );
 
@@ -1152,7 +1152,7 @@ test("a frame nobody is listening to offers no way out of the page", async ({
   page,
 }) => {
   await serveModel(page);
-  await page.goto("/embed.html?src=acl.dbml");
+  await page.goto("/embed.html?src=shop.dbml");
   await expect(canvasOf(page)).toBeVisible();
   await reachForTheToolbar(page, canvasOf(page));
 
@@ -1263,8 +1263,12 @@ test("a diagram whose block named a theme is left alone", async ({ page }) => {
   // it yet.
   await serveHost(page, {
     diagrams: [
-      { id: "fixed", frameQuery: "src=acl.dbml&theme=light", themeFixed: true },
-      { id: "follows", frameQuery: "src=acl.dbml" },
+      {
+        id: "fixed",
+        frameQuery: "src=shop.dbml&theme=light",
+        themeFixed: true,
+      },
+      { id: "follows", frameQuery: "src=shop.dbml" },
     ],
   });
   await page.goto("/host.html");
@@ -1473,14 +1477,14 @@ test("the theme in the query reaches the canvas, not only the chrome", async ({
       return getComputedStyle(stage.container()).backgroundColor;
     });
 
-  await page.goto("/embed.html?src=acl.dbml&theme=light");
+  await page.goto("/embed.html?src=shop.dbml&theme=light");
   await expect(canvasOf(page)).toBeVisible();
   const light = {
     canvas: await background(),
     root: await page.evaluate(() => document.documentElement.className),
   };
 
-  await page.goto("/embed.html?src=acl.dbml&theme=dark");
+  await page.goto("/embed.html?src=shop.dbml&theme=dark");
   await expect(canvasOf(page)).toBeVisible();
   const dark = {
     canvas: await background(),
@@ -1511,7 +1515,7 @@ for (const colorScheme of ["dark", "light"] as const) {
       const opened = async (
         theme: string,
       ): Promise<{ canvas: string; root: string }> => {
-        await page.goto(`/embed.html?src=acl.dbml&theme=${theme}`);
+        await page.goto(`/embed.html?src=shop.dbml&theme=${theme}`);
         await expect(canvasOf(page)).toBeVisible();
 
         return await page.evaluate(() => {
@@ -1632,7 +1636,7 @@ test.describe("in a browser that asks for Russian", () => {
 
   test("the interface answers in Russian", async ({ page }) => {
     await serveModel(page);
-    await page.goto("/embed.html?src=acl.dbml");
+    await page.goto("/embed.html?src=shop.dbml");
     await expect(canvasOf(page)).toBeVisible();
 
     // The frame follows the browser rather than a setting: a documentation page
@@ -1648,7 +1652,7 @@ test.describe("in a browser that asks for a language nobody has", () => {
 
   test("the interface answers in English", async ({ page }) => {
     await serveModel(page);
-    await page.goto("/embed.html?src=acl.dbml");
+    await page.goto("/embed.html?src=shop.dbml");
     await expect(canvasOf(page)).toBeVisible();
 
     await expect(

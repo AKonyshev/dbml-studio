@@ -8,14 +8,14 @@ describe("parseEmbedParams", () => {
   it("reads a path, a table list and a theme", () => {
     expect(
       parseEmbedParams(
-        "?src=acl.dbml&tables=analysis,analysis_liquid&theme=dark",
+        "?src=shop.dbml&tables=order,order_item&theme=dark",
         FRAME_URL,
       ),
     ).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
-        tables: ["analysis", "analysis_liquid"],
+        source: { kind: "catalog", path: "shop.dbml" },
+        tables: ["order", "order_item"],
         theme: Theme.dark,
       },
     });
@@ -37,24 +37,24 @@ describe("parseEmbedParams", () => {
   it("trims the names and drops empty ones", () => {
     expect(
       parseEmbedParams(
-        "?src=acl.dbml&tables=%20analysis%20,,analysis_liquid",
+        "?src=shop.dbml&tables=%20order%20,,order_item",
         FRAME_URL,
       ),
     ).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
-        tables: ["analysis", "analysis_liquid"],
+        source: { kind: "catalog", path: "shop.dbml" },
+        tables: ["order", "order_item"],
         theme: Theme.light,
       },
     });
   });
 
   it("treats an empty table list as no filter at all", () => {
-    expect(parseEmbedParams("?src=acl.dbml&tables=", FRAME_URL)).toEqual({
+    expect(parseEmbedParams("?src=shop.dbml&tables=", FRAME_URL)).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
+        source: { kind: "catalog", path: "shop.dbml" },
         tables: null,
         theme: Theme.light,
       },
@@ -65,11 +65,11 @@ describe("parseEmbedParams", () => {
   // means, and there is nothing to gain from failing the block over it.
   it("falls back to light for a theme it does not know", () => {
     expect(
-      parseEmbedParams("?src=acl.dbml&theme=solarized", FRAME_URL),
+      parseEmbedParams("?src=shop.dbml&theme=solarized", FRAME_URL),
     ).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
+        source: { kind: "catalog", path: "shop.dbml" },
         tables: null,
         theme: Theme.light,
       },
@@ -80,9 +80,9 @@ describe("parseEmbedParams", () => {
   // `..` segment would aim it somewhere else, and a documentation page must not
   // be able to do that by accident.
   it("refuses a path that leaves the catalogue", () => {
-    expect(parseEmbedParams("?src=/acl.dbml", FRAME_URL)).toEqual({
+    expect(parseEmbedParams("?src=/shop.dbml", FRAME_URL)).toEqual({
       ok: false,
-      error: { kind: "srcInvalid", value: "/acl.dbml" },
+      error: { kind: "srcInvalid", value: "/shop.dbml" },
     });
     expect(parseEmbedParams("?src=../../etc/passwd", FRAME_URL)).toEqual({
       ok: false,
@@ -102,15 +102,15 @@ describe("parseEmbedParams", () => {
 
   it("reads a model addressed by URL", () => {
     expect(
-      parseEmbedParams("?model=../models/acl.dbml&tables=analysis", FRAME_URL),
+      parseEmbedParams("?model=../models/shop.dbml&tables=order", FRAME_URL),
     ).toEqual({
       ok: true,
       params: {
         source: {
           kind: "url",
-          url: "https://docs.example/project/models/acl.dbml",
+          url: "https://docs.example/project/models/shop.dbml",
         },
-        tables: ["analysis"],
+        tables: ["order"],
         theme: Theme.light,
       },
     });
@@ -140,10 +140,10 @@ describe("parseEmbedParams", () => {
 
   it("refuses a model that is not on this site", () => {
     expect(
-      parseEmbedParams("?model=https://example.com/acl.dbml", FRAME_URL),
+      parseEmbedParams("?model=https://example.com/shop.dbml", FRAME_URL),
     ).toEqual({
       ok: false,
-      error: { kind: "modelOffOrigin", value: "https://example.com/acl.dbml" },
+      error: { kind: "modelOffOrigin", value: "https://example.com/shop.dbml" },
     });
   });
 
@@ -151,12 +151,12 @@ describe("parseEmbedParams", () => {
   // this comes from. Picking one of the two silently is the answer that would
   // confuse.
   it("refuses both sources at once", () => {
-    expect(parseEmbedParams("?src=acl.dbml&model=acl.dbml", FRAME_URL)).toEqual(
-      {
-        ok: false,
-        error: { kind: "sourceConflict" },
-      },
-    );
+    expect(
+      parseEmbedParams("?src=shop.dbml&model=shop.dbml", FRAME_URL),
+    ).toEqual({
+      ok: false,
+      error: { kind: "sourceConflict" },
+    });
   });
 });
 
@@ -191,10 +191,10 @@ describe("parseEmbedParams with theme=auto", () => {
   it("opens dark on a dark system", () => {
     withSystem("dark");
 
-    expect(parseEmbedParams("?src=acl.dbml&theme=auto", FRAME_URL)).toEqual({
+    expect(parseEmbedParams("?src=shop.dbml&theme=auto", FRAME_URL)).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
+        source: { kind: "catalog", path: "shop.dbml" },
         tables: null,
         theme: Theme.dark,
       },
@@ -204,10 +204,10 @@ describe("parseEmbedParams with theme=auto", () => {
   it("opens light on a light system", () => {
     withSystem("light");
 
-    expect(parseEmbedParams("?src=acl.dbml&theme=auto", FRAME_URL)).toEqual({
+    expect(parseEmbedParams("?src=shop.dbml&theme=auto", FRAME_URL)).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
+        source: { kind: "catalog", path: "shop.dbml" },
         tables: null,
         theme: Theme.light,
       },
@@ -219,10 +219,10 @@ describe("parseEmbedParams with theme=auto", () => {
   it("opens dark when the browser will not say", () => {
     withSystem("silent");
 
-    expect(parseEmbedParams("?src=acl.dbml&theme=auto", FRAME_URL)).toEqual({
+    expect(parseEmbedParams("?src=shop.dbml&theme=auto", FRAME_URL)).toEqual({
       ok: true,
       params: {
-        source: { kind: "catalog", path: "acl.dbml" },
+        source: { kind: "catalog", path: "shop.dbml" },
         tables: null,
         theme: Theme.dark,
       },
@@ -247,7 +247,7 @@ describe("parseEmbedParams with theme=auto", () => {
 
     const themeOf = (value: string): Theme | null => {
       const result = parseEmbedParams(
-        `?src=acl.dbml&theme=${value}`,
+        `?src=shop.dbml&theme=${value}`,
         FRAME_URL,
       );
       return result.ok ? result.params.theme : null;

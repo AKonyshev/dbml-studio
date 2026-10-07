@@ -20,7 +20,7 @@ const BLOCK: CollectedBlock = {
   id: "docs:ROOT:a.adoc#1",
   page: "docs:ROOT:a.adoc",
   index: 1,
-  model: "acl.dbml",
+  model: "shop.dbml",
   text: "Table a { id int }",
   tables: ["a"],
 };
@@ -52,7 +52,7 @@ describe("runValidator", () => {
     expect(finding.id).toBe(BLOCK.id);
     expect(JSON.parse(finding.problem)).toEqual({
       id: BLOCK.id,
-      model: "acl.dbml",
+      model: "shop.dbml",
       text: BLOCK.text,
       tables: ["a"],
     });
@@ -87,7 +87,7 @@ describe("findingMessage", () => {
     expect(
       findingMessage(BLOCK, {
         id: BLOCK.id,
-        model: "acl.dbml",
+        model: "shop.dbml",
         problem: "no table x",
       }),
     ).toBe("docs:ROOT:a.adoc, block 1: no table x");

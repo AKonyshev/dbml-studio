@@ -66,14 +66,14 @@ def script(tmp_path: Path, body: str) -> Path:
 
 def block(id: str = "page.md, block 1", tables=None) -> ValidationBlock:
     return ValidationBlock(
-        id=id, model="acl.dbml", text="Table a {\n  id int\n}\n", tables=tables
+        id=id, model="shop.dbml", text="Table a {\n  id int\n}\n", tables=tables
     )
 
 
 def test_findings_come_back_with_the_id_untouched(node, tmp_path):
     blocks = [block("a.md, block 1", ("nope",)), block("b.md, block 2", ("fine",))]
     assert run_validator(node, script(tmp_path, FINDS_NOPE), blocks) == [
-        Finding(id="a.md, block 1", model="acl.dbml", problem="Table not found: nope")
+        Finding(id="a.md, block 1", model="shop.dbml", problem="Table not found: nope")
     ]
 
 
@@ -112,7 +112,7 @@ def test_a_non_ascii_problem_comes_back_intact(node, tmp_path):
     assert findings == [
         Finding(
             id="page.md, block 1",
-            model="acl.dbml",
+            model="shop.dbml",
             problem="нет таблицы «заказы»",
         )
     ]

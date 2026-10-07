@@ -24,10 +24,10 @@ const table = (
 });
 
 const TABLES = [
-  table("analysis", [["id", true]]),
-  table("analysis_liquid", [
+  table("order", [["id", true]]),
+  table("order_item", [
     ["id", true],
-    ["analysis_id", false],
+    ["order_id", false],
   ]),
 ];
 
@@ -44,18 +44,18 @@ const ref = (
 describe("computeForeignKeyFields", () => {
   it("marks the many side of a one-to-many relation", () => {
     const keys = computeForeignKeyFields(TABLES, [
-      ref(["analysis", "id", "1"], ["analysis_liquid", "analysis_id", "*"]),
+      ref(["order", "id", "1"], ["order_item", "order_id", "*"]),
     ]);
 
-    expect([...keys]).toEqual(["analysis_liquid.analysis_id"]);
+    expect([...keys]).toEqual(["order_item.order_id"]);
   });
 
   it("reads the relation, not the order the endpoints came in", () => {
     const keys = computeForeignKeyFields(TABLES, [
-      ref(["analysis_liquid", "analysis_id", "*"], ["analysis", "id", "1"]),
+      ref(["order_item", "order_id", "*"], ["order", "id", "1"]),
     ]);
 
-    expect([...keys]).toEqual(["analysis_liquid.analysis_id"]);
+    expect([...keys]).toEqual(["order_item.order_id"]);
   });
 
   it("takes the side that is not a primary key when both are one", () => {
@@ -63,10 +63,10 @@ describe("computeForeignKeyFields", () => {
     // cannot say which side holds the key. The column that is its table's
     // primary key is the one being pointed at.
     const keys = computeForeignKeyFields(TABLES, [
-      ref(["analysis", "id", "1"], ["analysis_liquid", "analysis_id", "1"]),
+      ref(["order", "id", "1"], ["order_item", "order_id", "1"]),
     ]);
 
-    expect([...keys]).toEqual(["analysis_liquid.analysis_id"]);
+    expect([...keys]).toEqual(["order_item.order_id"]);
   });
 
   it("marks nothing when a one-to-one names two primary keys", () => {
@@ -74,7 +74,7 @@ describe("computeForeignKeyFields", () => {
     // of their own table and either could be the one carrying the constraint;
     // marking a guess would be worse than marking neither.
     const keys = computeForeignKeyFields(TABLES, [
-      ref(["analysis", "id", "1"], ["analysis_liquid", "id", "1"]),
+      ref(["order", "id", "1"], ["order_item", "id", "1"]),
     ]);
 
     expect([...keys]).toEqual([]);
@@ -91,14 +91,11 @@ describe("computeForeignKeyFields", () => {
 
   it("collects every relation on the diagram", () => {
     const keys = computeForeignKeyFields(TABLES, [
-      ref(["analysis", "id", "1"], ["analysis_liquid", "analysis_id", "*"]),
-      ref(["analysis", "id", "1"], ["analysis_liquid", "id", "*"]),
+      ref(["order", "id", "1"], ["order_item", "order_id", "*"]),
+      ref(["order", "id", "1"], ["order_item", "id", "*"]),
     ]);
 
-    expect([...keys].sort()).toEqual([
-      "analysis_liquid.analysis_id",
-      "analysis_liquid.id",
-    ]);
+    expect([...keys].sort()).toEqual(["order_item.id", "order_item.order_id"]);
   });
 
   it("survives a relation naming a table the diagram does not hold", () => {

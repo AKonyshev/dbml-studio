@@ -51,8 +51,8 @@ knowing anyway.
 
 ````markdown
 ```dbml
-model: /../antora/models/to-be/dbml/rd.dbml
-tables: reference_dictionary.agent_group, reference_dictionary.agent
+model: /../models/library.dbml
+tables: library.author_group, library.author
 height: 600
 ```
 ````

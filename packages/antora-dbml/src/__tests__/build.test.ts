@@ -185,18 +185,18 @@ describe("a site with dbml:: blocks", () => {
   it("draws a block on pages at different depths, each pointing to the frame from itself", () => {
     const site = build({
       pages: {
-        "index.adoc": '= Top\n\ndbml::acl[tables="a",height=600]\n',
-        "deep/er/x.adoc": "= Deep\n\ndbml::acl[]\n",
+        "index.adoc": '= Top\n\ndbml::shop[tables="a",height=600]\n',
+        "deep/er/x.adoc": "= Deep\n\ndbml::shop[]\n",
       },
-      models: { "acl.dbml": MODEL },
+      models: { "shop.dbml": MODEL },
     });
 
     expect(site.result.status).toBe(0);
     expect(site.read("docs/index.html")).toContain(
-      'src="../_dbml/embed.html?model=models%2Facl.dbml&amp;tables=a&amp;theme=light" width="100%" height="600"',
+      'src="../_dbml/embed.html?model=models%2Fshop.dbml&amp;tables=a&amp;theme=light" width="100%" height="600"',
     );
     expect(site.read("docs/deep/er/x.html")).toContain(
-      'src="../../../_dbml/embed.html?model=models%2Facl.dbml&amp;theme=light"',
+      'src="../../../_dbml/embed.html?model=models%2Fshop.dbml&amp;theme=light"',
     );
     expect(site.read("docs/deep/er/x.html")).toContain(
       'href="../../../_dbml/frame-host.css"',
@@ -206,12 +206,12 @@ describe("a site with dbml:: blocks", () => {
   it("ships the frame, the host script and only the models blocks name, once", () => {
     const site = build({
       pages: {
-        "a.adoc": '= A\n\ndbml::acl[]\n\ndbml::acl[tables="a"]\n',
-        "b.adoc": `= B\n\ndbml::to-be/${RU}[]\n`,
+        "a.adoc": '= A\n\ndbml::shop[]\n\ndbml::shop[tables="a"]\n',
+        "b.adoc": `= B\n\ndbml::draft/${RU}[]\n`,
       },
       models: {
-        "acl.dbml": MODEL,
-        [`to-be/${RU}.dbml`]: MODEL,
+        "shop.dbml": MODEL,
+        [`draft/${RU}.dbml`]: MODEL,
         "unused.dbml": MODEL,
       },
     });
@@ -221,8 +221,8 @@ describe("a site with dbml:: blocks", () => {
     expect(site.has("_dbml/assets/frame.js")).toBe(true);
     expect(site.has("_dbml/frame-host.js")).toBe(true);
     expect(site.has("_dbml/frame-host.css")).toBe(true);
-    expect(site.has("_dbml/models/acl.dbml")).toBe(true);
-    expect(site.has(`_dbml/models/to-be/${RU}.dbml`)).toBe(true);
+    expect(site.has("_dbml/models/shop.dbml")).toBe(true);
+    expect(site.has(`_dbml/models/draft/${RU}.dbml`)).toBe(true);
     expect(site.has("_dbml/models/unused.dbml")).toBe(false);
     // The host script once per page, before the first diagram.
     expect(site.read("docs/a.html").match(/frame-host\.js/g)).toHaveLength(1);
@@ -230,8 +230,8 @@ describe("a site with dbml:: blocks", () => {
 
   it("adds nothing when the only dbml:: lines are inside a listing", () => {
     const site = build({
-      pages: { "a.adoc": "= A\n\n----\ndbml::acl[]\n----\n" },
-      models: { "acl.dbml": MODEL },
+      pages: { "a.adoc": "= A\n\n----\ndbml::shop[]\n----\n" },
+      models: { "shop.dbml": MODEL },
     });
 
     expect(site.result.status).toBe(0);
@@ -340,8 +340,8 @@ describe("a site with dbml:: blocks", () => {
 
   it("falls back from a bad height or theme, with a warning naming the block", () => {
     const site = build({
-      pages: { "a.adoc": "= A\n\ndbml::acl[height=abc,theme=blue]\n" },
-      models: { "acl.dbml": MODEL },
+      pages: { "a.adoc": "= A\n\ndbml::shop[height=abc,theme=blue]\n" },
+      models: { "shop.dbml": MODEL },
       settings: { height: 420, theme: "dark" },
     });
 

@@ -16,14 +16,14 @@ describe("loadModelText", () => {
       return { ok: true, text: async () => "Table a { id integer }" };
     });
 
-    expect(await loadModelText("https://docs.example/models/acl.dbml")).toBe(
+    expect(await loadModelText("https://docs.example/models/shop.dbml")).toBe(
       "Table a { id integer }",
     );
 
     // Not fingerprinted, and a site may swap the file under a running page: a
     // cached copy is a stale copy with no way to notice.
     expect(calls).toEqual([
-      ["https://docs.example/models/acl.dbml", { cache: "no-store" }],
+      ["https://docs.example/models/shop.dbml", { cache: "no-store" }],
     ]);
   });
 
@@ -40,6 +40,6 @@ describe("loadModelText", () => {
       throw new TypeError("network error");
     });
 
-    expect(await loadModelText("https://docs.example/acl.dbml")).toBeNull();
+    expect(await loadModelText("https://docs.example/shop.dbml")).toBeNull();
   });
 });
