@@ -25,6 +25,11 @@ const option = (name, fallback) => {
   return index === -1 ? fallback : path.resolve(process.argv[index + 1]);
 };
 
+// `--frame-only`: the frame and nothing beside it, for a host that inlines the
+// frame itself (the dbml-frame npm package). Writes the walked part of the
+// manifest as frame/manifest.json, so such a host can walk the same graph.
+const frameOnly = process.argv.includes("--frame-only");
+
 const dist = option("--dist", path.join(packageRoot, "..", "web", "dist"));
 const out = option(
   "--out",
@@ -69,7 +74,9 @@ const walk = (key) => {
 };
 walk("embed.html");
 
-const byName = ["frame-host.js", "frame-host.css", "validate.mjs"];
+const byName = frameOnly
+  ? []
+  : ["frame-host.js", "frame-host.css", "validate.mjs"];
 const missing = [...frameFiles, ...byName].filter(
   (file) => !existsSync(path.join(dist, file)),
 );
@@ -88,6 +95,16 @@ for (const file of frameFiles) {
 }
 for (const file of byName) {
   cpSync(path.join(dist, file), path.join(out, file));
+}
+
+if (frameOnly) {
+  const walked = Object.fromEntries(
+    [...seen].map((key) => [key, manifest[key]]),
+  );
+  writeFileSync(
+    path.join(out, "frame", "manifest.json"),
+    `${JSON.stringify(walked, null, 2)}\n`,
+  );
 }
 
 let build = "unknown";
@@ -109,5 +126,5 @@ try {
 writeFileSync(path.join(out, "BUILD"), `${build}\n`);
 
 console.log(
-  `vendor: ${frameFiles.size} frame files and ${byName.length} more into ${out} (${build})`,
+  `vendor: ${frameFiles.size} frame files${byName.length ? ` and ${byName.length} more` : ""} into ${out} (${build})`,
 );

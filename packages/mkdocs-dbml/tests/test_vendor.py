@@ -136,3 +136,44 @@ def test_the_plugin_knows_which_build_it_carries(dist, tmp_path):
 def test_a_missing_frame_is_said_plainly(tmp_path):
     with pytest.raises(vendor.VendorMissing, match="yarn workspace mkdocs-dbml vendor"):
         vendor.frame_files(tmp_path / "nothing-here")
+
+
+def run_frame_only(dist: Path, out: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["node", str(SCRIPT), "--dist", str(dist), "--out", str(out), "--frame-only"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_frame_only_takes_the_frame_and_its_manifest_and_no_extras(dist, tmp_path):
+    out = tmp_path / "out"
+    result = run_frame_only(dist, out)
+    assert result.returncode == 0, result.stderr
+    assert listing(out) == {
+        "BUILD",
+        "frame/embed.html",
+        "frame/manifest.json",
+        "frame/assets/embed-A.js",
+        "frame/assets/index-B.js",
+        "frame/assets/index-B.css",
+        "frame/assets/lazy-C.js",
+        "frame/assets/font-D.woff2",
+    }
+
+
+def test_frame_only_manifest_is_the_walked_graph_verbatim(dist, tmp_path):
+    out = tmp_path / "out"
+    assert run_frame_only(dist, out).returncode == 0
+    written = json.loads((out / "frame" / "manifest.json").read_text())
+    full = json.loads((dist / ".vite" / "manifest.json").read_text())
+    assert set(written) == {"embed.html", "_index-B.js", "_lazy-C.js"}
+    for key, entry in written.items():
+        assert entry == full[key]
+
+
+def test_frame_only_does_not_need_the_host_script_or_validator(dist, tmp_path):
+    for name in ("frame-host.js", "frame-host.css", "validate.mjs"):
+        (dist / name).unlink()
+    assert run_frame_only(dist, tmp_path / "out").returncode == 0
