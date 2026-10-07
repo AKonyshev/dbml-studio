@@ -71,8 +71,13 @@ fi
 # What the release notes promise: the diagram frame and the license notice
 # travel inside the wheel. A wheel built from an empty `_vendor/` would pass
 # twine's own check and break every site that installs it.
+#
+# The listing is read whole first: `grep -q` stops at the first match, and
+# under pipefail the SIGPIPE that leaves `unzip` with fails the check — on a
+# wheel that carries everything, depending on timing.
+LISTING="$(unzip -l "$WORK/$WHEEL")"
 for inside in "mkdocs_dbml/_vendor/frame/embed.html" "mkdocs_dbml/LICENSE"; do
-  if ! unzip -l "$WORK/$WHEEL" | grep -q "$inside"; then
+  if ! grep -q "$inside" <<< "$LISTING"; then
     echo "$WHEEL does not carry $inside — not publishing it" >&2
     exit 1
   fi
