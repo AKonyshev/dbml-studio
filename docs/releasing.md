@@ -109,14 +109,26 @@ from whatever `dist/` held. Check the version inside before uploading:
 unzip -p dbml-studio-<version>.vsix extension/package.json | grep '"version"'
 ```
 
-The file is git-ignored; delete it when you are done or leave it, either way it
-will not be committed.
+The file is git-ignored. Move it to the repository root's `dist/`, which keeps
+every released package beside the plugins' — that is the copy step 7 publishes:
+
+```bash
+mv dbml-studio-<version>.vsix ../../dist/
+```
 
 ### 7. The Marketplace
 
 ```bash
-yarn workspace dbml-studio publish
+yarn workspace dbml-studio publish:marketplace --packagePath ../../dist/dbml-studio-<version>.vsix
 ```
+
+It publishes the `.vsix` attached to the GitHub release, not a fresh build, the
+way the plugins' scripts publish their released packages — compare it with the
+release asset first if it has been sitting in `dist/`. `vsce` takes the access
+token stored by `npx vsce login konyshevav`, or `VSCE_PAT` from the environment.
+The script is `publish:marketplace`, not `publish`: `yarn workspace … publish`
+is yarn's own command, which packs the extension as an npm package and pushes
+it to yarn's registry.
 
 Separate, last, and **only when somebody decides to**. It is irreversible and
 it reaches every installed copy. The publisher has been blocked once, in July
@@ -317,6 +329,12 @@ further step.
 - **`vsce` not installed.** It was nobody's dependency until 1.0.2 and the
   scripts called it by bare name, so `create:package` and `publish` worked only
   on a machine that happened to have it globally. It is a devDependency now.
+- **`yarn workspace dbml-studio publish` for the Marketplace.** Step 7 used to
+  say so, and with the script named `publish` the command ran yarn's built-in
+  `publish` instead: for 1.2.2 it tried to put the extension on
+  registry.yarnpkg.com as an npm package, and only its size (a 413 from the
+  registry) stopped it. The Marketplace still had 1.2.1. The script is
+  `publish:marketplace` now, which yarn cannot mistake for its own command.
 - **A stale `out/`.** Unrelated to releasing, but it is how the integration
   suite in step 2 once failed on a working tree containing nothing wrong. See
   `docs/testing.md`.
