@@ -56,12 +56,16 @@ Its own branch, because `main` takes changes through pull requests.
 git checkout -b chore/release-<version>
 ```
 
-Two files, and only two:
+Three files, and only three:
 
 - `packages/dbml-vs-code-extension/package.json` — the version;
 - `packages/dbml-vs-code-extension/CHANGELOG.md` — an entry under the new
   version, in the `Added` / `Changed` / `Fixed` sections
-  [Keep a Changelog](http://keepachangelog.com/) uses.
+  [Keep a Changelog](http://keepachangelog.com/) uses;
+- `packages/dbml-frame/package.json` — the same version as the extension's,
+  because the package is released with it (below). Its
+  `packages/dbml-frame/CHANGELOG.md` gets an entry only when the frame changed
+  for hosts, not on every release.
 
 Write the entry for someone deciding whether to update. Say what they would
 notice and, where it helps, why it was wrong — a fix nobody can recognise is a
@@ -114,6 +118,14 @@ every released package beside the plugins' — that is the copy step 7 publishes
 
 ```bash
 mv dbml-studio-<version>.vsix ../../dist/
+```
+
+The `dbml-frame` tarball goes on the same release (see `dbml-frame` below):
+
+```bash
+cd ../..
+yarn package:frame
+gh release upload v<version> dist/dbml-frame-<version>.tgz
 ```
 
 ### 7. The Marketplace
@@ -263,6 +275,61 @@ Every npm call in the script names that registry: run through
 registry.yarnpkg.com, a mirror. The script is
 `publish:npm`, not `publish`, because `yarn workspace … publish` is yarn's own
 command.
+
+## dbml-frame
+
+`dbml-frame` is the diagram frame and the protocol a host speaks with it, as an
+npm package, for hosts that live outside this repository: the Obsidian plugin
+builds its frame from it. It carries the frame (`frame/`, with its
+`manifest.json`), the `BUILD` string that says which build the frame is, and the
+compiled `protocol/frameHost`.
+
+It has no tag and no release of its own. Its version is the extension's, set in
+the release commit (step 3), and its tarball is attached to the extension's
+release `v<version>` — so a host can name the frame it was built against by one
+number.
+
+One command builds the site, the package and the tarball, and refuses a
+tarball that is missing the frame, its manifest, `BUILD`, the protocol (the
+`.js` and its `.d.ts`) or the license:
+
+```bash
+yarn package:frame
+```
+
+The tarball is `dist/dbml-frame-<version>.tgz`, beside the `.vsix` archive.
+Check what is inside before attaching it:
+
+```bash
+tar -tzf dist/dbml-frame-<version>.tgz
+```
+
+It must list `package/frame/embed.html`, `package/frame/manifest.json`,
+`package/BUILD`, `package/protocol/frameHost.js`,
+`package/protocol/frameHost.d.ts` and `package/LICENSE`, and nothing under
+`package/src/`. `yarn package:frame` already refuses a tarball without the
+required files; the sources check is by eye.
+
+Publishing to npm is separate, last, and only when somebody decides to — a
+version published once can never be published again. It comes after the GitHub
+release, because it publishes the tarball attached there rather than a fresh
+build:
+
+```bash
+yarn workspace dbml-frame publish:npm <version> --check   # fetch and check only
+yarn workspace dbml-frame publish:npm <version>
+```
+
+The script (`packages/dbml-frame/scripts/publish-npm.sh`) fetches the tarball
+from the release `v<version>`, refuses one that does not carry the required
+files or whose `package.json` says another version, runs
+`npm publish --dry-run`, and asks for the version to be typed back before
+publishing. The last step is the maintainer's: it needs an npm account that may
+publish `dbml-frame`, logged in once with
+`npm login --registry https://registry.npmjs.org/`, and its two-factor code.
+Every npm call in the script names that registry, for the reason given under
+`antora-dbml`. The script is `publish:npm`, not `publish`, because
+`yarn workspace … publish` is yarn's own command.
 
 ## The Obsidian plugin
 
