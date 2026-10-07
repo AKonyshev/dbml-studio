@@ -404,7 +404,7 @@
     "package": "yarn run build",
     "preview": "npx vite preview",
     "create:package": "vsce package",
-    "publish": "vsce publish",
+    "publish:marketplace": "vsce publish",
     "generate:css": "cd ../json-table-schema-visualizer && npx tailwindcss -i ./src/styles/index.css >  ../dbml-vs-code-extension/dist/webview/assets/index.css --minify"
   },
   "devDependencies": {
