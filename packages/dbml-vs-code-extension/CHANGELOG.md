@@ -4,6 +4,17 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.2] - 2026-10-07
+
+### Fixed
+
+- **Dragging the diagram keeps its grabbing hand.** The hand lasted only until the pointer crossed a relation's button: leaving the button set the cursor back to the arrow in the middle of the drag. It now stays the hand until you let go.
+- **The cursor comes back after the first drag.** After the first drag of the diagram, or the first visit to a relation's button, the cursor stayed an arrow everywhere in the diagram, over text too. It now returns to the ordinary one.
+
+### Changed
+
+- **The extension is built with current tools and libraries** — a new bundler, React 19 and version 10 of the DBML parser. Nothing you do in it works differently: the same schemas draw the same diagrams, and import from a database produces the same DBML. The package is larger for it, 5.6 MB in place of 3.6, most of it the newer parser.
+
 ## [1.2.1] - 2026-09-08
 
 ### Fixed
