@@ -5,7 +5,11 @@ import { TOOLS } from "./tools";
 import { VERSION } from "./version";
 
 import type { ToolContext, ToolResult } from "./context";
-import type { CallToolResult } from "@modelcontextprotocol/server";
+import type {
+  CallToolResult,
+  StandardSchemaWithJSON,
+} from "@modelcontextprotocol/server";
+import type { z } from "zod";
 
 // Something to go on when a tool fails unexpectedly, on stderr, which the
 // client logs and the model never sees. Only the error's name and code: the
@@ -54,6 +58,33 @@ export async function toCallResult(
   }
 }
 
+// The SDK asks a schema for its JSON Schema with `target: "draft-2020-12"`
+// hard-coded, and zod then stamps `$schema: ".../draft/2020-12/schema"` on it.
+// VS Code's Copilot cannot resolve that meta-schema, logs "Error compiling
+// input schema" for every tool and skips argument validation. The SDK has no
+// option for the dialect, but it accepts any Standard Schema that supplies its
+// own JSON form, so this wraps the zod schema with the same JSON Schema minus
+// the `$schema` key (MCP clients assume 2020-12 when it is absent). Parsing is
+// zod's own `validate`, untouched, so input and structuredContent are still
+// checked the same way.
+export function withoutSchemaKey(
+  schema: z.ZodType,
+): StandardSchemaWithJSON<unknown, unknown> {
+  const standard = schema["~standard"];
+  const convert =
+    (io: "input" | "output") =>
+    (options: Parameters<typeof standard.jsonSchema.input>[0]) => {
+      const { $schema: _dialect, ...rest } = standard.jsonSchema[io](options);
+      return rest;
+    };
+  return {
+    "~standard": {
+      ...standard,
+      jsonSchema: { input: convert("input"), output: convert("output") },
+    },
+  };
+}
+
 export function createServer(ctx: ToolContext): McpServer {
   const server = new McpServer({ name: "dbml-mcp", version: VERSION });
   for (const tool of TOOLS) {
@@ -62,8 +93,8 @@ export function createServer(ctx: ToolContext): McpServer {
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.inputSchema,
-        outputSchema: tool.outputSchema,
+        inputSchema: withoutSchemaKey(tool.inputSchema),
+        outputSchema: withoutSchemaKey(tool.outputSchema),
         annotations: tool.annotations,
       },
       async (input: unknown) =>

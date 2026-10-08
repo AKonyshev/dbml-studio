@@ -70,6 +70,31 @@ describe("the bundled server over stdio", () => {
     expect(validate?.outputSchema).toBeDefined();
   });
 
+  // VS Code's Copilot cannot resolve the 2020-12 meta-schema a `$schema` key
+  // names ("no schema with key or ref ...") and then skips the tool's argument
+  // validation. Without the key MCP clients assume 2020-12 anyway.
+  it("advertises schemas without a $schema key", async () => {
+    const { tools } = await client.listTools();
+    expect(tools).toHaveLength(8);
+    for (const tool of tools) {
+      expect(tool.inputSchema).toMatchObject({ type: "object" });
+      expect(tool.inputSchema).not.toHaveProperty("$schema");
+      expect(tool.outputSchema).toMatchObject({ type: "object" });
+      expect(tool.outputSchema).not.toHaveProperty("$schema");
+    }
+  });
+
+  it("still rejects arguments that do not fit the input schema", async () => {
+    const result = await client
+      .callTool({ name: "list_databases", arguments: {} })
+      .catch((error: unknown) => error);
+    const text = JSON.stringify(
+      result instanceof Error ? result.message : result,
+    );
+    expect(text).toMatch(/connection/);
+    expect(text).toMatch(/invalid|required|expected/i);
+  });
+
   it("validates a file in its working folder", async () => {
     const result = await client.callTool({
       name: "validate_dbml",
