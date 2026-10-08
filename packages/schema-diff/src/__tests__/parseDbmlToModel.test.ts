@@ -58,6 +58,42 @@ describe("parseDbmlToModel", () => {
     expect(tables).toEqual(["t", "u"]);
   });
 
+  // A database refuses a NULL in a primary key column and reports every one as
+  // NOT NULL, so a `[pk]` that does not also say `not null` still means it.
+  describe("primary key columns are not nullable", () => {
+    test("an inline [pk] without [not null]", () => {
+      const m = parseDbmlToModel(`Table "t" {\n  "id" int4 [pk]\n}`);
+      expect(m.tables.get("t")?.columns.get("id")).toEqual({
+        name: "id",
+        type: "integer",
+        nullable: false,
+        pk: true,
+      });
+    });
+
+    test("every column of a composite primary key, and no other", () => {
+      const m = parseDbmlToModel(`Table "t" {
+  "a" int4
+  "b" int4
+  "note" text
+  Indexes {
+    (a, b) [pk]
+  }
+}`);
+      const columns = m.tables.get("t")?.columns;
+      // Column-level pk stays false: the database side reports a composite
+      // key as an index, not as a pk on each column.
+      expect(columns?.get("a")).toMatchObject({ nullable: false, pk: false });
+      expect(columns?.get("b")).toMatchObject({ nullable: false, pk: false });
+      expect(columns?.get("note")?.nullable).toBe(true);
+    });
+
+    test("an explicit [null] on a pk column does not make it nullable", () => {
+      const m = parseDbmlToModel(`Table "t" {\n  "id" int4 [pk, null]\n}`);
+      expect(m.tables.get("t")?.columns.get("id")?.nullable).toBe(false);
+    });
+  });
+
   test("throws DbmlParseError with line/column on invalid DBML", () => {
     // Valid table bodies, but the FK action `[delete: on delete set null]`
     // is malformed (DBML expects `set null`, not `on delete set null`).
