@@ -23,7 +23,10 @@ is a single bundled file with no dependencies to install.
 the DBML or SQL either as `text` or as a `path` to a file in the working
 folder, never both. `import_schema`, `dbml_to_sql` and `sql_to_dbml` can write
 their result to `outputPath` instead of returning it, which is what to use for
-a large database. Everything that reads a database takes a `connection`: a name
+a large database. The result comes back as structured content (`sql` for
+`dbml_to_sql`, `dbml` for `sql_to_dbml` and `import_schema`, `report` for
+`compare_with_database`, next to the diff fields), omitted when written to
+`outputPath`; the text content repeats it. Everything that reads a database takes a `connection`: a name
 from `list_connections`, or a `postgres://` URL.
 
 ## Set up

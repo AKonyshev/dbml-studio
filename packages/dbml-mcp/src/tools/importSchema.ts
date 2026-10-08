@@ -26,6 +26,10 @@ const outputSchema = z.object({
   enums: z.number(),
   refs: z.number(),
   droppedCrossSchemaRefs: z.number(),
+  dbml: z
+    .string()
+    .optional()
+    .describe("The DBML. Present unless it was written to outputPath."),
   outputPath: z.string().optional(),
 });
 
@@ -63,7 +67,7 @@ export const importSchema: ToolDefinition<
     if (input.outputPath === undefined) {
       return {
         text: dbml + (dropped === "" ? "" : `\n//${dropped}\n`),
-        structured: { ...counts, outputPath: undefined },
+        structured: { ...counts, dbml, outputPath: undefined },
       };
     }
     const written = await writeOutput(

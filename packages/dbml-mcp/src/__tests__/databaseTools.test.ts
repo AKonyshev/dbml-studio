@@ -102,12 +102,14 @@ describe("list_connections", () => {
     const ctx = await makeContext({ connections: connectionsFromEnv(env) });
     const result = await listConnections.run({}, ctx);
     expect(result.structured).toEqual({ connections: ["local"] });
+    expect(result.structured).not.toHaveProperty("hint");
     expect(result.text).not.toContain("Pa55-w0rd");
   });
 
   it("answers an empty list when nothing is configured", async () => {
     const result = await listConnections.run({}, await makeContext());
-    expect(result.structured).toEqual({ connections: [] });
+    expect(result.structured.connections).toEqual([]);
+    expect(result.structured.hint).toContain("DBML_CONNECTION_<NAME>");
     expect(result.text).toContain("DBML_CONNECTION_<NAME>");
   });
 });
@@ -195,6 +197,7 @@ describe("import_schema", () => {
       enums: 1,
       refs: 1,
       droppedCrossSchemaRefs: 0,
+      dbml: result.text,
       outputPath: undefined,
     });
     expect(result.text).toContain("membership_status");
@@ -224,6 +227,7 @@ describe("import_schema", () => {
     );
     expect(written).toContain("membership_status");
     expect(result.text).not.toContain("membership_status");
+    expect(result.structured).not.toHaveProperty("dbml");
   });
 
   it("counts references to schemas it left out", async () => {
@@ -257,6 +261,9 @@ describe("import_schema", () => {
     );
     expect(result.structured.droppedCrossSchemaRefs).toBe(1);
     expect(result.text).toContain("1 references to schemas not imported");
+    // The note belongs to the text; the structured DBML stays plain.
+    expect(result.structured.dbml).not.toContain("not imported");
+    expect(result.structured.dbml).toContain("member_id");
   });
 });
 
@@ -301,6 +308,7 @@ describe("compare_with_database", () => {
       ctx,
     );
     expect(result.structured.identical).toBe(true);
+    expect(result.structured.report).toBe(result.text);
   });
 
   it("answers a diff that its own output schema accepts", async () => {
@@ -338,6 +346,8 @@ Table fine {
       ctx,
     );
     expect(result.structured.identical).toBe(false);
+    expect(result.structured.report).toBe(result.text);
+    expect(result.structured.report).toContain("fine");
     expect(result.structured.tablesOnlyInDbml).toContain("fine");
     expect(result.structured.tablesOnlyInDatabase).toContain("loan");
     expect(result.structured.columnDiffs.length).toBeGreaterThan(0);

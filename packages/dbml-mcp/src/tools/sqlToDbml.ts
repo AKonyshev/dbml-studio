@@ -21,6 +21,10 @@ const inputSchema = z.object({
 });
 const outputSchema = z.object({
   dialect: z.string(),
+  dbml: z
+    .string()
+    .optional()
+    .describe("The DBML. Present unless it was written to outputPath."),
   outputPath: z.string().optional(),
 });
 
@@ -49,7 +53,7 @@ export const sqlToDbml: ToolDefinition<
     if (input.outputPath === undefined) {
       return {
         text: dbml,
-        structured: { dialect: input.dialect, outputPath: undefined },
+        structured: { dialect: input.dialect, dbml, outputPath: undefined },
       };
     }
     const written = await writeOutput(

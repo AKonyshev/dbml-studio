@@ -14,6 +14,7 @@ describe("dbml_to_sql", () => {
     expect(result.text).toContain('CREATE TABLE "member"');
     expect(result.structured).toEqual({
       dialect: "postgres",
+      sql: result.text,
       outputPath: undefined,
     });
   });
@@ -31,6 +32,7 @@ describe("dbml_to_sql", () => {
     );
     expect(result.text).not.toContain("CREATE TABLE");
     expect(result.text).toContain("sql/library.sql");
+    expect(result.structured).not.toHaveProperty("sql");
     const written = result.structured.outputPath;
     if (written === undefined) throw new Error("outputPath was not reported");
     expect(await readFile(written, "utf8")).toContain("CREATE TABLE");
@@ -69,6 +71,21 @@ describe("sql_to_dbml", () => {
     );
     expect(result.text).toContain("Table");
     expect(result.text).toContain("member");
+    expect(result.structured.dbml).toBe(result.text);
+  });
+
+  it("writes to outputPath and leaves the DBML out of the structured result", async () => {
+    const result = await sqlToDbml.run(
+      {
+        text: "CREATE TABLE member (id integer PRIMARY KEY);",
+        dialect: "postgres",
+        outputPath: "dbml/member.dbml",
+        overwrite: false,
+      },
+      await makeContext(),
+    );
+    expect(result.structured).not.toHaveProperty("dbml");
+    expect(result.structured.outputPath).toBeDefined();
   });
 
   it("names the line of SQL it cannot parse", async () => {

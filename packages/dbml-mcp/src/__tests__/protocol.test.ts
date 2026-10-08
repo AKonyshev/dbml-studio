@@ -83,6 +83,20 @@ describe("the bundled server over stdio", () => {
     });
   });
 
+  it("puts the DDL in structured content, where the agent reads it", async () => {
+    const result = await client.callTool({
+      name: "dbml_to_sql",
+      arguments: {
+        text: "Table member {\n  id integer [pk]\n}\n",
+        dialect: "mysql",
+      },
+    });
+    expect(result.structuredContent).toMatchObject({ dialect: "mysql" });
+    expect((result.structuredContent as { sql?: string }).sql).toContain(
+      "CREATE TABLE",
+    );
+  });
+
   it("answers a database tool without connections with CONNECTION_NOT_FOUND", async () => {
     const result = await client.callTool({
       name: "list_databases",

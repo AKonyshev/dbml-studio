@@ -51,6 +51,9 @@ const inputSchema = z.object({
 });
 
 const outputSchema = z.object({
+  report: z
+    .string()
+    .describe("The differences as markdown, ready to show the user."),
   identical: z.boolean(),
   tablesOnlyInDbml: z.array(z.string()),
   tablesOnlyInDatabase: z.array(z.string()),
@@ -122,6 +125,7 @@ export const compareWithDatabase: ToolDefinition<
     );
     assertSchemasExist(db, [input.schema]);
     const diff = diffSchemas(model, databaseSchemaToModel(db, input.schema));
-    return { text: renderDiffMarkdown(diff), structured: diff };
+    const report = renderDiffMarkdown(diff);
+    return { text: report, structured: { report, ...diff } };
   },
 };
