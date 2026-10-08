@@ -23,29 +23,38 @@ export const MCP_PROVIDER_ID = "dbmlStudio.mcp";
 
 // A saved connection's name is free text in any language, which a variable
 // name cannot carry. Each connection travels under a numbered variable, and
-// DBML_CONNECTION_NAMES maps the numbers back to the names. The server matches
-// names case-insensitively, so names equal but for case cannot both be given:
-// every one of them is left out and returned as a collision.
+// DBML_CONNECTION_NAMES maps the numbers back to the names. The server trims
+// the names and refuses to start on a blank one, so they are trimmed here and
+// a blank name is left out without a word: it names nothing an agent could
+// ask for. The server matches names case-insensitively, so names equal once
+// trimmed but for case cannot both be given: every one of them is left out and
+// returned as a collision, as saved.
+const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export function connectionEnv(connections: Record<string, string>): {
   env: Record<string, string>;
   collisions: string[][];
 } {
-  const byKey = new Map<string, string[]>();
-  for (const name of Object.keys(connections).sort()) {
-    const key = name.toLowerCase();
-    byKey.set(key, [...(byKey.get(key) ?? []), name]);
+  const byKey = new Map<string, { saved: string; name: string }[]>();
+  const entries = Object.keys(connections)
+    .map((saved) => ({ saved, name: saved.trim() }))
+    .filter(({ name }) => name !== "")
+    .sort((a, b) => compare(a.name, b.name) || compare(a.saved, b.saved));
+  for (const entry of entries) {
+    const key = entry.name.toLowerCase();
+    byKey.set(key, [...(byKey.get(key) ?? []), entry]);
   }
   const env: Record<string, string> = {};
   const names: Record<string, string> = {};
   const collisions: string[][] = [];
   for (const group of byKey.values()) {
     if (group.length > 1) {
-      collisions.push(group);
+      collisions.push(group.map(({ saved }) => saved));
       continue;
     }
     const suffix = `C${Object.keys(names).length + 1}`;
-    names[suffix] = group[0];
-    env[`${CONNECTION_ENV_PREFIX}${suffix}`] = connections[group[0]];
+    names[suffix] = group[0].name;
+    env[`${CONNECTION_ENV_PREFIX}${suffix}`] = connections[group[0].saved];
   }
   env[CONNECTION_NAMES_ENV] = JSON.stringify(names);
   return { env, collisions };

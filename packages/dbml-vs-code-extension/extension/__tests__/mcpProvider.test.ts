@@ -88,6 +88,45 @@ describe("connectionEnv", () => {
     expect(collisions).toEqual([[PROD_RU_TITLE, PROD_RU]]);
   });
 
+  it("gives the server names trimmed, as it trims them itself", () => {
+    const { env, collisions } = connectionEnv({
+      "  staging ": "postgres://a",
+      "\tprod": "postgres://b",
+    });
+    expect(collisions).toEqual([]);
+    expect(env).toEqual({
+      DBML_CONNECTION_C1: "postgres://b",
+      DBML_CONNECTION_C2: "postgres://a",
+      DBML_CONNECTION_NAMES: JSON.stringify({ C1: "prod", C2: "staging" }),
+    });
+  });
+
+  it("leaves out a name that is blank, which the server would refuse to start on", () => {
+    const { env, collisions } = connectionEnv({
+      "   ": "postgres://a",
+      "": "postgres://b",
+      x: "postgres://c",
+    });
+    expect(collisions).toEqual([]);
+    expect(env).toEqual({
+      DBML_CONNECTION_C1: "postgres://c",
+      DBML_CONNECTION_NAMES: JSON.stringify({ C1: "x" }),
+    });
+  });
+
+  it("treats names equal once trimmed and case-folded as a collision", () => {
+    const { env, collisions } = connectionEnv({
+      prod: "postgres://a",
+      " Prod": "postgres://b",
+      x: "postgres://c",
+    });
+    expect(env).toEqual({
+      DBML_CONNECTION_C1: "postgres://c",
+      DBML_CONNECTION_NAMES: JSON.stringify({ C1: "x" }),
+    });
+    expect(collisions).toEqual([[" Prod", "prod"]]);
+  });
+
   it("keeps names that differ only in punctuation apart", () => {
     const { env, collisions } = connectionEnv({
       "lib-db": "postgres://a",
