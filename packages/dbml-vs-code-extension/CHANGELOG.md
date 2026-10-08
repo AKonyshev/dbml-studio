@@ -4,6 +4,20 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.3.0] - 2026-10-08
+
+### Added
+
+- **AI agents can use DBML Studio's tools (MCP).** Turn on `dbmlStudio.mcp.enabled` in your user settings and DBML Studio offers its tools to AI agents in VS Code, such as Copilot in agent mode, as an MCP server. An agent can then import a database schema as DBML, compare a `.dbml` file with a database, check DBML it wrote, and convert between DBML and SQL — when you ask in plain words ("how does schema.dbml differ from staging?"). It uses the connections you saved in DBML Studio and reads only the structure of those databases, never their data, and it runs nothing against them. It reads and writes files only inside the open folder. Saving or removing a connection restarts the server with the new set. Off by default: an update never hands your databases to an agent without you turning it on, and a repository's settings cannot turn it on for you. The same server runs outside VS Code too, for Claude Code or Cursor, as the npm package `dbml-mcp`.
+
+### Fixed
+
+- **Comparing with a database no longer flags every primary key.** A column written `id integer [pk]` without `not null` was reported as nullable against the database, because Postgres makes every primary key column `NOT NULL` and the comparison did not. A primary key column, inline or in a composite key, now compares as not nullable.
+
+### Changed
+
+- **Requires VS Code 1.101 or later** (May 2025), the first release with the API the MCP server uses. Older VS Code keeps 1.2.2. The package grows from 5.6 MB to about 8.1 MB, most of it the SQL parsers the server carries.
+
 ## [1.2.2] - 2026-10-07
 
 ### Fixed

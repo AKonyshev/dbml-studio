@@ -1,6 +1,6 @@
 {
   "name": "dbml-frame",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "The DBML Studio diagram frame and the protocol a host speaks with it, for hosts that embed the frame outside the DBML Studio repository.",
   "license": "MIT",
   "author": "AKonyshev",
