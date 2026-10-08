@@ -18,6 +18,14 @@ describe("connectionsFromEnv", () => {
     expect(connectionsFromEnv({ DBML_CONNECTION_X: "" }).names()).toEqual([]);
   });
 
+  it("ignores a variable with an empty suffix", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_: URL_LOCAL,
+      DBML_CONNECTION_LOCAL: URL_LOCAL,
+    });
+    expect(source.names()).toEqual(["local"]);
+  });
+
   it("refuses two variables that make the same name, naming both", () => {
     expect(() =>
       connectionsFromEnv({
@@ -77,5 +85,32 @@ describe("resolveConnection", () => {
     } catch (error) {
       expect((error as Error).message).not.toContain("p#ss");
     }
+  });
+
+  it.each([
+    "postgres:/u:Pa55@h/db",
+    "user:Pa55@host/db",
+    "jdbc:postgresql://u:Pa55@h/db",
+  ])("does not echo a value that is not a name: %s", (value) => {
+    expect.assertions(3);
+    try {
+      resolveConnection(source, value);
+    } catch (error) {
+      expect(error).toBeInstanceOf(ToolError);
+      expect((error as ToolError).code).toBe("CONNECTION_NOT_FOUND");
+      expect((error as ToolError).message).not.toContain("Pa55");
+    }
+  });
+
+  it("does not echo it when no connections are configured either", () => {
+    expect(() =>
+      resolveConnection(connectionsFromEnv({}), "user:Pa55@host/db"),
+    ).toThrow(/^(?!.*Pa55).*DBML_CONNECTION_<NAME>/s);
+  });
+
+  it("still echoes a value that looks like a name", () => {
+    expect(() => resolveConnection(source, "prod")).toThrow(
+      'No connection named "prod"',
+    );
   });
 });

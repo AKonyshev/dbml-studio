@@ -17,6 +17,7 @@ export function connectionsFromEnv(
     if (!variable.toUpperCase().startsWith(CONNECTION_ENV_PREFIX)) continue;
     if (value === undefined || value.trim() === "") continue;
     const name = variable.slice(CONNECTION_ENV_PREFIX.length).toLowerCase();
+    if (name === "") continue;
     const earlier = byName.get(name);
     if (earlier !== undefined) {
       throw new Error(
@@ -33,6 +34,10 @@ export function connectionsFromEnv(
 
 const RAW_URL = /^postgres(ql)?:\/\//i;
 
+// A value that fails the URL check may still be a malformed connection string
+// with a password in it, so only something shaped like a name is quoted back.
+const LOOKS_LIKE_NAME = /^[\w .-]{1,64}$/;
+
 export function resolveConnection(
   source: ConnectionSource,
   value: string,
@@ -46,11 +51,14 @@ export function resolveConnection(
     connectionString = value.trim();
   } else {
     const names = source.names();
+    const subject = LOOKS_LIKE_NAME.test(value.trim())
+      ? `No connection named "${value}"`
+      : "No connection matches that value";
     throw new ToolError(
       "CONNECTION_NOT_FOUND",
       names.length === 0
-        ? `No connection named "${value}", and none are configured. Set DBML_CONNECTION_<NAME>=postgres://… in the MCP server's environment, or pass a postgres:// URL.`
-        : `No connection named "${value}". Known connections: ${names.join(", ")}.`,
+        ? `${subject}, and none are configured. Set DBML_CONNECTION_<NAME>=postgres://… in the MCP server's environment, or pass a postgres:// URL.`
+        : `${subject}. Known connections: ${names.join(", ")}.`,
     );
   }
   if (database === undefined) return connectionString;
