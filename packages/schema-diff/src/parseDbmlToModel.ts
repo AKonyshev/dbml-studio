@@ -20,10 +20,13 @@ interface ParsedField {
 }
 interface ParsedIndexColumn {
   value: string | number;
+  type?: string;
 }
 interface ParsedIndex {
   columns?: ParsedIndexColumn[];
   unique?: boolean;
+  // @dbml/core types this as a string; the parser sets `true`.
+  pk?: boolean | string;
   name?: string;
 }
 interface ParsedTable {
@@ -68,12 +71,22 @@ export function parseDbmlToModel(dbmlText: string): CanonSchema {
   const tables = new Map<string, CanonTable>();
   for (const t of parsed.tables ?? []) {
     const { schema, table } = splitQualified(t.name, t.schemaName);
+    // A database reports every primary key column as NOT NULL, whether or not
+    // the DBML says so — inline `[pk]` or a member of `(a, b) [pk]`.
+    const pkFromIndexes = new Set(
+      (t.indexes ?? [])
+        .filter((ix) => ix.pk === true)
+        .flatMap((ix) => ix.columns ?? [])
+        .filter((c) => c.type === "column")
+        .map((c) => String(c.value)),
+    );
     const columns = new Map<string, CanonColumn>();
     for (const f of t.fields ?? []) {
+      const inPk = f.pk === true || pkFromIndexes.has(f.name);
       columns.set(f.name, {
         name: f.name,
         type: canonicalizeType(f.type?.type_name ?? ""),
-        nullable: f.not_null !== true,
+        nullable: !inPk && f.not_null !== true,
         pk: f.pk === true,
       });
     }

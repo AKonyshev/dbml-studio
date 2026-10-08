@@ -27,13 +27,13 @@ const connection = url as unknown as string;
 // would write it, not the way Postgres reports it back.
 const MATCHING = `
 Table "authors" {
-  "id" int4 [pk, not null, increment]
+  "id" int4 [pk, increment]
   "email" varchar(255) [unique, not null]
   "bio" text
 }
 
 Table "books" {
-  "id" int4 [pk, not null, increment]
+  "id" int4 [pk, increment]
   "author_id" int4 [not null]
   "title" varchar(255) [not null]
 }
