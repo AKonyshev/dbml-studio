@@ -6,6 +6,7 @@ import { readSource, writeOutput } from "../paths";
 
 import {
   describeProblems,
+  isParseError,
   outputShape,
   parseErrors,
   sourceShape,
@@ -39,6 +40,7 @@ export const dbmlToSql: ToolDefinition<
     try {
       sql = exporter.export(dbml, input.dialect);
     } catch (error) {
+      if (!isParseError(error)) throw error;
       throw new ToolError(
         "DBML_PARSE_ERROR",
         describeProblems(parseErrors(error)),

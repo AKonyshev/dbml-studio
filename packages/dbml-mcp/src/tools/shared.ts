@@ -35,11 +35,24 @@ export interface ParseProblem {
 // @dbml/core throws two shapes: a syntax error from the grammar, with
 // `location.start`, and a CompilerError holding `diags`, each with its own
 // location. Both become a flat list.
+interface Located {
+  message?: string;
+  location?: { start?: { line?: number; column?: number } };
+}
+
+// True for the two shapes above. Anything else (a TypeError from inside the
+// library, say) is a bug, not a problem with the user's text, and must not be
+// reported as invalid input at line 0, column 0.
+export function isParseError(error: unknown): boolean {
+  const e = error as { diags?: unknown; location?: Located["location"] } | null;
+  if (typeof e !== "object" || e === null) return false;
+  return (
+    (Array.isArray(e.diags) && e.diags.length > 0) ||
+    e.location?.start !== undefined
+  );
+}
+
 export function parseErrors(error: unknown): ParseProblem[] {
-  interface Located {
-    message?: string;
-    location?: { start?: { line?: number; column?: number } };
-  }
   const one = (e: Located): ParseProblem => ({
     message: e.message ?? "Could not parse the input.",
     line: e.location?.start?.line ?? 0,
