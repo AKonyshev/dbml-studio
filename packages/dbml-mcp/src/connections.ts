@@ -1,4 +1,4 @@
-import { withDatabase } from "db-to-dbml";
+import { DbImportErrorCode, withDatabase } from "db-to-dbml";
 
 import { fromDbImportError, ToolError } from "./errors";
 
@@ -79,6 +79,17 @@ const RAW_URL = /^postgres(ql)?:\/\//i;
 // with a password in it, so only something shaped like a name is quoted back.
 const LOOKS_LIKE_NAME = /^[\w .-]{1,64}$/;
 
+// pg reads a connection string with `new URL`, after encoding spaces, and
+// tries again with a stand-in host for a socket URL such as
+// postgres://user@/db?host=/tmp. A string that fails all of that would fail
+// inside pg as an error that quotes it, so it is refused here, by code only.
+function readableAsUrl(value: string): boolean {
+  const encoded = encodeURI(value).replace(/%25(\d\d)/g, "%$1");
+  return [value, encoded, encoded.replace("@/", "@localhost/")].some(
+    (candidate) => URL.canParse(candidate),
+  );
+}
+
 export function resolveConnection(
   source: ConnectionSource,
   value: string,
@@ -89,6 +100,12 @@ export function resolveConnection(
   if (named !== undefined) {
     connectionString = named;
   } else if (RAW_URL.test(value.trim())) {
+    if (!readableAsUrl(value.trim())) {
+      throw new ToolError(
+        DbImportErrorCode.INVALID_CONNECTION_STRING,
+        "The connection string is not a readable PostgreSQL URL.",
+      );
+    }
     connectionString = value.trim();
   } else {
     const names = source.names();

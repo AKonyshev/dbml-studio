@@ -64,7 +64,7 @@ if ! gh release download "$TAG" --repo "$REPO" --pattern "$TARBALL" --dir "$WORK
 fi
 
 LISTING="$(tar -tzf "$WORK/$TARBALL")"
-for inside in package/dist/server.cjs package/README.md package/LICENSE package/package.json; do
+for inside in package/dist/server.cjs package/README.md package/CHANGELOG.md package/LICENSE package/package.json; do
   if ! grep -qx "$inside" <<< "$LISTING"; then
     echo "$TARBALL does not carry $inside — not publishing it" >&2
     exit 1

@@ -12,7 +12,7 @@ mkdir -p "$ROOT/dist"
 TARBALL="$(cd "$PACKAGE" && npm pack --pack-destination "$ROOT/dist" --silent)"
 
 LISTING="$(tar -tzf "$ROOT/dist/$TARBALL")"
-for inside in package/dist/server.cjs package/README.md package/LICENSE package/package.json; do
+for inside in package/dist/server.cjs package/README.md package/CHANGELOG.md package/LICENSE package/package.json; do
   if ! grep -qx "$inside" <<< "$LISTING"; then
     echo "$TARBALL does not carry $inside" >&2
     exit 1

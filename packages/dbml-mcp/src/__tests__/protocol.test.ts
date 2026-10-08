@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 
@@ -50,6 +50,7 @@ describe("the bundled server over stdio", () => {
 
   afterAll(async () => {
     await client.close();
+    await rm(root, { recursive: true, force: true });
   });
 
   it("lists the eight tools", async () => {
@@ -99,18 +100,23 @@ describe.each([
   ["started in the home folder", [], homedir()],
 ])("the bundled server %s", (_label, args, cwd) => {
   let client: Client;
+  let made: string | undefined;
 
   beforeAll(async () => {
-    const start =
-      cwd ?? (await mkdtemp(path.join(tmpdir(), "dbml-mcp-noroot-")));
-    if (cwd === undefined) {
-      await writeFile(path.join(start, "x.dbml"), "Table member {\n}\n");
+    let start = cwd;
+    if (start === undefined) {
+      made = await mkdtemp(path.join(tmpdir(), "dbml-mcp-noroot-"));
+      await writeFile(path.join(made, "x.dbml"), "Table member {\n}\n");
+      start = made;
     }
     client = await connect({ PATH: process.env.PATH ?? "" }, start, args);
   }, 30_000);
 
   afterAll(async () => {
     await client.close();
+    if (made !== undefined) {
+      await rm(made, { recursive: true, force: true });
+    }
   });
 
   it("refuses a path with NO_ROOT", async () => {

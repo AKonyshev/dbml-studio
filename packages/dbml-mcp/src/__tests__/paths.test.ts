@@ -3,6 +3,7 @@ import {
   mkdtemp,
   mkdir,
   readFile,
+  rm,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -25,6 +26,11 @@ beforeEach(async () => {
     path.join(outside, "secret.dbml"),
     "Table x {\n  id int\n}\n",
   );
+});
+
+afterEach(async () => {
+  await rm(root, { recursive: true, force: true });
+  await rm(outside, { recursive: true, force: true });
 });
 
 const codeOf = async (p: Promise<unknown>): Promise<string> =>

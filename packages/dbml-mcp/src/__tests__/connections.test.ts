@@ -209,6 +209,23 @@ describe("resolveConnection", () => {
     ).toThrow(/^(?!.*Pa55).*DBML_CONNECTION_<NAME>/s);
   });
 
+  it("calls a raw URL no parser can read an invalid connection string, without echoing it", () => {
+    expect.assertions(3);
+    try {
+      resolveConnection(source, "postgresql://u:WRONG PW@local host:x/db");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ToolError);
+      expect((error as ToolError).code).toBe("INVALID_CONNECTION_STRING");
+      expect((error as ToolError).message).not.toContain("WRONG PW");
+    }
+  });
+
+  it("still accepts a socket URL that has no host before the path", () => {
+    expect(resolveConnection(source, "postgres://u@/library?host=/tmp")).toBe(
+      "postgres://u@/library?host=/tmp",
+    );
+  });
+
   it("still echoes a value that looks like a name", () => {
     expect(() => resolveConnection(source, "prod")).toThrow(
       'No connection named "prod"',

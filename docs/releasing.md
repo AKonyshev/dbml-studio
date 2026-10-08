@@ -327,8 +327,8 @@ yarn workspace dbml-mcp publish:npm <version>
 
 The script (`packages/dbml-mcp/scripts/publish-npm.sh`) fetches the tarball
 from the release `dbml-mcp-v<version>`, refuses one that does not carry the
-bundle, the README and the license or whose `package.json` says another
-version, runs `npm publish --dry-run`, and asks for the version to be typed
+bundle, the README, the changelog and the license or whose `package.json` says
+another version, runs `npm publish --dry-run`, and asks for the version to be typed
 back before publishing. The last step is the maintainer's: it needs an npm
 account that may publish `dbml-mcp`, logged in once with
 `npm login --registry https://registry.npmjs.org/`, and its two-factor code.
