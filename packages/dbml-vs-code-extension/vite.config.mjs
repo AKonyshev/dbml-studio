@@ -42,6 +42,22 @@ function generateWebviewCss() {
   };
 }
 
+// The MCP server ships inside the .vsix as one file; the extension starts it
+// with VS Code's own Node. Built after Vite writes, like the CSS, so a watch
+// rebuild that empties dist/ cannot leave it out.
+function buildMcpServer() {
+  return {
+    name: "build-mcp-server",
+    writeBundle() {
+      execFileSync(
+        "node",
+        ["../dbml-mcp/scripts/build.mjs", "--outfile", "dist/mcp/server.cjs"],
+        { cwd: __dirname, stdio: "inherit" },
+      );
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -54,6 +70,7 @@ export default defineConfig({
     react(),
     vscode(),
     generateWebviewCss(),
+    buildMcpServer(),
   ],
   resolve: workspaceReactResolve,
 });

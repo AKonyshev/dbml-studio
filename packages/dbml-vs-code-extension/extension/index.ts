@@ -1,10 +1,12 @@
 import {
   commands,
   languages,
+  lm,
   type ExtensionContext,
   type Uri,
   ViewColumn,
   window,
+  workspace,
 } from "vscode";
 import { parseDBMLToJSON } from "dbml-to-json-table-schema";
 
@@ -14,6 +16,7 @@ import { EXTENSION_CONFIG_SESSION, WEB_VIEW_NAME } from "@/extension/constants";
 import { importFromDatabase } from "./importFromDatabase";
 import { compareWithDatabase } from "./compareWithDatabase";
 import { ConnectionsTreeProvider } from "./connectionsTreeProvider";
+import { createMcpProvider, MCP_PROVIDER_ID } from "./mcpProvider";
 import {
   addConnection,
   compareWithConnection,
@@ -89,12 +92,36 @@ export function activate(context: ExtensionContext): void {
     }
   };
 
+  const mcpProvider = createMcpProvider({
+    secrets: context.secrets,
+    extensionPath: context.extensionPath,
+    extensionVersion: (context.extension.packageJSON as { version: string })
+      .version,
+    isEnabled: () =>
+      workspace
+        .getConfiguration("dbmlStudio")
+        .get<boolean>("mcp.enabled", false),
+    workspaceFolder: () => workspace.workspaceFolders?.[0]?.uri.fsPath,
+    warn: (message) => {
+      void window.showWarningMessage(message);
+    },
+  });
+
   context.subscriptions.push(
     registration,
     diagnostics,
     window.registerTreeDataProvider("dbmlStudio.panel", treeProvider),
+    // A saved or deleted connection refreshes the MCP provider, which bumps
+    // the definition's version so VS Code restarts the server with the new set.
     context.secrets.onDidChange(() => {
       treeProvider.refresh();
+      mcpProvider.refresh();
+    }),
+    lm.registerMcpServerDefinitionProvider(MCP_PROVIDER_ID, mcpProvider),
+    workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("dbmlStudio.mcp.enabled")) {
+        mcpProvider.refresh();
+      }
     }),
     commands.registerCommand("dbmlStudio.previewDiagrams", () => {
       void openDiagram(ViewColumn.Beside);

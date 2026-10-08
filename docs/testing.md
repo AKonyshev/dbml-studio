@@ -69,11 +69,12 @@ so it passes either way. `scripts/test.js`, `scripts/typecheck.js` and
 `scripts/workspace-packages.js` do not call git: they find the repository from
 `__dirname` and walk the file system.
 
-## Two suites want a database, and skip without one
+## Three suites want a database, and skip without one
 
 `packages/db-to-dbml` and `packages/schema-diff` each have a
-`liveDatabase.test.ts` that talks to a real PostgreSQL. Everything else in those
-packages hands the connector a fixture, which proves the translation and nothing
+`liveDatabase.test.ts` that talks to a real PostgreSQL, and `packages/dbml-mcp`
+has `databaseTools.live.test.ts`, which runs its database tools against one.
+Everything else in those packages hands the connector a fixture, which proves the translation and nothing
 about the query that feeds it — the shape of `information_schema`, that a column
 written `serial` comes back as `int4` with `increment`, that a foreign key
 arrives with the table it points at. Those are the things a fixture agrees with
@@ -115,12 +116,23 @@ DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
   yarn workspace db-to-dbml test
 DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
   yarn workspace schema-diff test
+DBML_TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/dbmltest \
+  yarn workspace dbml-mcp test databaseTools.live
 
 docker rm -f dbml-test-pg
 ```
 
 The schema above is what the assertions are written against; changing it means
 changing them.
+
+`packages/dbml-mcp` has a second kind of suite that is not about a database but
+is in the sweep all the same: `protocol.test.ts` builds the bundle
+(`dist/server.cjs`) and spawns it with `node`, then speaks MCP to it over stdio
+with the SDK's client. The source tests import the code directly, so they pass
+whether or not the bundle starts; a dependency that does not survive bundling
+(a `require` esbuild cannot resolve, a file read at start-up) is visible only
+when the bundle itself runs. The bundle is rebuilt on every run, a deliberate
+cost for that.
 
 ## One suite in the sweep is not pure
 

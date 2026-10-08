@@ -278,6 +278,75 @@ registry.yarnpkg.com, a mirror. The script is
 `publish:npm`, not `publish`, because `yarn workspace … publish` is yarn's own
 command.
 
+## dbml-mcp
+
+The MCP server is an npm package, versioned on its own, in
+`packages/dbml-mcp/package.json`, by the same rule: what would a user of the
+previous version notice? The entry goes in `packages/dbml-mcp/CHANGELOG.md`, and
+the release commit fills in its date.
+
+It is one bundled file with no runtime dependencies, so one command builds the
+bundle and the tarball, and refuses a tarball that is missing the bundle, the
+README or the license, or that declares a dependency:
+
+```bash
+yarn package:mcp
+```
+
+The tarball is `dist/dbml-mcp-<version>.tgz`, beside the `.vsix` archive.
+Check what is inside before anything else:
+
+```bash
+tar -tzf dist/dbml-mcp-<version>.tgz
+```
+
+It must list `package/dist/server.cjs`, `package/README.md`,
+`package/CHANGELOG.md`, `package/LICENSE` and `package/package.json`, and
+nothing else. `yarn package:mcp` already refuses a tarball without the required
+files; the rest is by eye.
+
+Tag it on the merge commit, annotated, as `dbml-mcp-v<version>`, and attach the
+tarball to the GitHub release:
+
+```bash
+git tag -a dbml-mcp-v<version> -m "dbml-mcp-v<version> — <the short name>"
+git push origin dbml-mcp-v<version>
+gh release create dbml-mcp-v<version> --latest=false --title "dbml-mcp <version> — <the short name>" --notes "..."
+gh release upload dbml-mcp-v<version> dist/dbml-mcp-<version>.tgz
+```
+
+Publishing to npm is separate, last, and only when somebody decides to — a
+version published once can never be published again. It comes after the GitHub
+release, because it publishes the tarball attached there rather than a fresh
+build:
+
+```bash
+yarn workspace dbml-mcp publish:npm <version> --check   # fetch and check only
+yarn workspace dbml-mcp publish:npm <version>
+```
+
+The script (`packages/dbml-mcp/scripts/publish-npm.sh`) fetches the tarball
+from the release `dbml-mcp-v<version>`, refuses one that does not carry the
+bundle, the README, the changelog and the license or whose `package.json` says
+another version, runs `npm publish --dry-run`, and asks for the version to be typed
+back before publishing. The last step is the maintainer's: it needs an npm
+account that may publish `dbml-mcp`, logged in once with
+`npm login --registry https://registry.npmjs.org/`, and its two-factor code.
+Every npm call in the script names that registry, for the reason given under
+`antora-dbml`.
+
+The extension is not released through any of this, but it is affected by it: the
+`.vsix` embeds the server as `extension/dist/mcp/server.cjs`, built from
+whatever `dbml-mcp` source is in the workspace when the `.vsix` is built, not
+from a published `dbml-mcp` version. The extension's own version therefore does
+not have to match a tag here. The `version` its MCP definition reports is both,
+`<extension version>-<dbml-mcp version>`, so a change to either makes VS Code
+restart the server. Check that the server is in the archive:
+
+```bash
+unzip -l dist/dbml-studio-<version>.vsix | grep mcp/server.cjs
+```
+
 ## dbml-frame
 
 `dbml-frame` is the diagram frame and the protocol a host speaks with it, as an

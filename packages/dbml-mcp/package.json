@@ -1,0 +1,51 @@
+{
+  "name": "dbml-mcp",
+  "version": "0.1.0",
+  "description": "An MCP server that lets AI agents import a Postgres schema as DBML, compare DBML with a live database, validate DBML and convert between DBML and SQL.",
+  "license": "MIT",
+  "author": "AKonyshev",
+  "homepage": "https://github.com/AKonyshev/dbml-studio/tree/main/packages/dbml-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AKonyshev/dbml-studio.git",
+    "directory": "packages/dbml-mcp"
+  },
+  "bugs": "https://github.com/AKonyshev/dbml-studio/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "dbml",
+    "postgres",
+    "schema"
+  ],
+  "bin": {
+    "dbml-mcp": "dist/server.cjs"
+  },
+  "files": [
+    "dist/server.cjs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@dbml/core": "^10.2.0",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@types/node": "^20.19.43",
+    "db-to-dbml": "0.0.0",
+    "esbuild": "^0.28.2",
+    "schema-diff": "0.0.0",
+    "zod": "^4.2.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "jest",
+    "pack:release": "bash scripts/pack.sh",
+    "publish:npm": "bash scripts/publish-npm.sh",
+    "prepack": "cp ../../LICENSE LICENSE"
+  }
+}

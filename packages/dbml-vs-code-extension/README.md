@@ -66,6 +66,17 @@ The Chinese translation is a community contribution and has not been reviewed by
 
 - `dbmlStudio.preferredTheme` — `light` or `dark` (default: `dark`)
 - `dbmlStudio.scrollDirection` — `up-out` or `up-in` (default: `up-out`)
+- `dbmlStudio.mcp.enabled` — offer DBML Studio's tools to AI agents (default: off; user settings only). See below.
+
+## AI agents (MCP)
+
+DBML Studio can offer its tools to AI agents in VS Code (Copilot agent mode) as an [MCP](https://modelcontextprotocol.io) server: import a database schema as DBML, compare a DBML file with a database, validate DBML, and convert between DBML and SQL. It needs VS Code 1.101 or later.
+
+It is off by default. Turn on `dbmlStudio.mcp.enabled` in your user settings, and a "DBML Studio" server appears in VS Code's list of MCP servers. It is a user setting only, so a repository's `.vscode/settings.json` cannot turn it on for you. The connections saved in DBML Studio are the connections the agent can use, under the names you gave them; save or remove one and the server restarts with the new set. Two connections whose names differ only in letter case are both left out, with a warning. The agent reads only the **structure** of those databases (never the data), and what it reads is sent to the agent's model.
+
+The server reads and writes files only inside the first folder of the workspace. With no folder open it has none: the agent can still pass DBML and SQL as text, but not as files.
+
+The same server also runs outside VS Code, in Claude Code and Cursor, as the [`dbml-mcp`](https://github.com/AKonyshev/dbml-studio/tree/main/packages/dbml-mcp#readme) package; its README has that setup, the tools and the rules they follow.
 
 ## Release notes
 

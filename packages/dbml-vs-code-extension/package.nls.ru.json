@@ -23,5 +23,6 @@
   "command.tableDetailLevel": "DBML: Сменить уровень детализации таблицы под курсором",
   "command.resetTableDetailLevels": "DBML: Вернуть всем таблицам общий уровень детализации",
   "command.showShortcuts": "DBML: Показать легенду диаграммы",
+  "configuration.mcp.enabled": "Предлагать инструменты DBML Studio (импорт схемы базы, сравнение DBML с базой, проверка DBML, преобразование DBML и SQL) ИИ-агентам в VS Code как MCP-сервер. Сервер получает подключения, сохранённые в DBML Studio: агент сможет читать **структуру** (но не данные) этих баз, и прочитанное уходит в модель агента.",
   "configuration.title": "DBML Studio"
 }

@@ -5,10 +5,10 @@ import { defineConfig } from "@vscode/test-cli";
 // keeps rootDir at the package root, which is why the output sits under
 // `out/extension/test`.
 //
-// Runs on current stable rather than the `^1.87.0` engine floor: an Electron
-// from early 2024 segfaults on macOS 26, so the oldest supported version cannot
-// actually be exercised on this host. Nothing here uses API newer than 1.87 —
-// `window.tabGroups` landed in 1.68.
+// Runs on current stable rather than the `^1.101.0` engine floor, so these
+// tests do not exercise the oldest supported version. The floor is set by the
+// MCP server definition provider API, stable since 1.101; `window.tabGroups`,
+// which the tests lean on, landed in 1.68.
 export default defineConfig({
   files: "out/extension/test/**/*.test.js",
   // Mocha's 2s default is shorter than a webview takes to boot and answer, and

@@ -23,5 +23,6 @@
   "command.tableDetailLevel": "DBML：切换指针所指表的详细程度",
   "command.resetTableDetailLevels": "DBML：让所有表恢复统一详细程度",
   "command.showShortcuts": "DBML：显示关系图图例",
+  "configuration.mcp.enabled": "以 MCP 服务器的形式向 VS Code 中的 AI 代理提供 DBML Studio 的工具（导入数据库结构、将 DBML 与数据库比较、校验 DBML、在 DBML 与 SQL 之间转换）。服务器会获得在 DBML Studio 中保存的连接，代理可以读取这些数据库的**结构**（不读取数据），读取的内容会发送给代理所用的模型。",
   "configuration.title": "DBML Studio"
 }
