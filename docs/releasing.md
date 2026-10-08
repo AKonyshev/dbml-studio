@@ -338,9 +338,10 @@ Every npm call in the script names that registry, for the reason given under
 The extension is not released through any of this, but it is affected by it: the
 `.vsix` embeds the server as `extension/dist/mcp/server.cjs`, built from
 whatever `dbml-mcp` source is in the workspace when the `.vsix` is built, not
-from a published `dbml-mcp` version. The extension's own version (and the
-`version` its MCP definition reports, which is `dbml-mcp`'s) therefore does not
-have to match a tag here. Check that the server is in the archive:
+from a published `dbml-mcp` version. The extension's own version therefore does
+not have to match a tag here. The `version` its MCP definition reports is both,
+`<extension version>-<dbml-mcp version>`, so a change to either makes VS Code
+restart the server. Check that the server is in the archive:
 
 ```bash
 unzip -l dist/dbml-studio-<version>.vsix | grep mcp/server.cjs

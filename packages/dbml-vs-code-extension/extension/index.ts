@@ -95,6 +95,8 @@ export function activate(context: ExtensionContext): void {
   const mcpProvider = createMcpProvider({
     secrets: context.secrets,
     extensionPath: context.extensionPath,
+    extensionVersion: (context.extension.packageJSON as { version: string })
+      .version,
     isEnabled: () =>
       workspace
         .getConfiguration("dbmlStudio")

@@ -397,6 +397,7 @@
         "dbmlStudio.mcp.enabled": {
           "type": "boolean",
           "default": false,
+          "scope": "application",
           "markdownDescription": "%configuration.mcp.enabled%"
         }
       }
