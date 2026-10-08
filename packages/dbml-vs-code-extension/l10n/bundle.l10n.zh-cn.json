@@ -11,6 +11,7 @@
   "Could not read the list of databases": "无法读取数据库列表",
   "Could not read the list of schemas": "无法读取模式列表",
   "Could not read the schemas of: {0}": "无法读取以下数据库的模式：{0}",
+  "DBML Studio: the connections {0} cannot both be given to AI agents, because their names differ only in punctuation or case. Rename one.": "DBML Studio：连接 {0} 无法同时提供给 AI 代理，因为它们的名称仅在标点或大小写上不同。请重命名其中一个。",
   "DBML parse error at line {0}:{1} — {2}": "DBML 解析错误，位于第 {0}:{1} 行 — {2}",
   "Delete": "删除",
   "Delete connection \"{0}\"?": "确定要删除连接“{0}”吗？",

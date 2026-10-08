@@ -8,6 +8,11 @@
   // Only the VS Code integration tests are compiled here; `index.ts` and the
   // jest suites reach into `extension-shared`, whose sources sit outside
   // `rootDir` and are typechecked by the repo-wide `yarn typecheck` instead.
+  // `mcpProvider.ts` is left out for the same reason: it imports `dbml-mcp`.
   "include": ["extension/**/*.ts"],
-  "exclude": ["extension/index.ts", "extension/__tests__"]
+  "exclude": [
+    "extension/index.ts",
+    "extension/mcpProvider.ts",
+    "extension/__tests__"
+  ]
 }

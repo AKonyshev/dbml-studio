@@ -38,6 +38,7 @@ export const workspace = {
   })),
   applyEdit: jest.fn(),
   onDidChangeTextDocument: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
 };
 
 export const commands = {
@@ -79,6 +80,7 @@ export const Uri = {
     return { path, fsPath: path, toString: () => path };
   }),
   parse: jest.fn((value: string) => ({ toString: () => value })),
+  file: jest.fn((p: string) => ({ fsPath: p, path: p, toString: () => p })),
 };
 
 export const QuickPickItemKind = {
@@ -155,7 +157,43 @@ export class ThemeIcon {
 }
 
 export class EventEmitter<T> {
-  public readonly event = jest.fn();
+  private readonly listeners: Array<(value: T) => void> = [];
 
-  public fire(_value?: T): void {}
+  public readonly event = (
+    listener: (value: T) => void,
+  ): { dispose: () => void } => {
+    this.listeners.push(listener);
+    return {
+      dispose: () => {
+        this.listeners.splice(this.listeners.indexOf(listener), 1);
+      },
+    };
+  };
+
+  public fire(value: T): void {
+    this.listeners.forEach((listener) => {
+      listener(value);
+    });
+  }
+
+  public dispose(): void {}
 }
+
+// Mirrors @types/vscode: `label` is readonly and `cwd` is a Uri.
+export class McpStdioServerDefinition {
+  public cwd?: { fsPath: string };
+
+  constructor(
+    public readonly label: string,
+    public command: string,
+    public args: string[] = [],
+    public env: Record<string, string | number | null> = {},
+    public version?: string,
+  ) {}
+}
+
+export const lm = {
+  registerMcpServerDefinitionProvider: jest.fn(() => ({
+    dispose: jest.fn(),
+  })),
+};

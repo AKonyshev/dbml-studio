@@ -11,6 +11,7 @@
   "Could not read the list of databases": "Не удалось прочитать список баз данных",
   "Could not read the list of schemas": "Не удалось прочитать список схем",
   "Could not read the schemas of: {0}": "Не удалось прочитать схемы: {0}",
+  "DBML Studio: the connections {0} cannot both be given to AI agents, because their names differ only in punctuation or case. Rename one.": "DBML Studio: подключения {0} нельзя одновременно передать ИИ-агентам, потому что их имена различаются только знаками препинания или регистром. Переименуйте одно из них.",
   "DBML parse error at line {0}:{1} — {2}": "Ошибка разбора DBML в строке {0}:{1} — {2}",
   "Delete": "Удалить",
   "Delete connection \"{0}\"?": "Удалить подключение «{0}»?",

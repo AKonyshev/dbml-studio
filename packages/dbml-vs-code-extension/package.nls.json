@@ -23,5 +23,6 @@
   "command.tableDetailLevel": "DBML: Cycle the detail level of the hovered table",
   "command.resetTableDetailLevels": "DBML: Give every table the shared detail level back",
   "command.showShortcuts": "DBML: Show the diagram legend",
+  "configuration.mcp.enabled": "Offer DBML Studio's tools (import a database schema, compare DBML with a database, validate DBML, convert DBML and SQL) to AI agents in VS Code as an MCP server. The server gets the connections saved in DBML Studio, so an agent can read the **structure** (never the data) of those databases, and what it reads is sent to the agent's model.",
   "configuration.title": "DBML Studio"
 }
