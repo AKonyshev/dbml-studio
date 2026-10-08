@@ -37,6 +37,7 @@
     "build:web": "yarn workspace web build",
     "test:e2e": "yarn workspace web test:e2e",
     "package:antora": "bash packages/antora-dbml/scripts/pack.sh",
-    "package:frame": "bash packages/dbml-frame/scripts/pack.sh"
+    "package:frame": "bash packages/dbml-frame/scripts/pack.sh",
+    "package:mcp": "bash packages/dbml-mcp/scripts/pack.sh"
   }
 }
