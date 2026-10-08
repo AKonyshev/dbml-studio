@@ -1,4 +1,9 @@
+import { listSchemaNames } from "db-to-dbml";
 import { z } from "zod";
+
+import { fromDbImportError, ToolError } from "../errors";
+
+import type { DatabaseSchema } from "db-to-dbml";
 
 export const sourceShape = {
   text: z
@@ -67,3 +72,37 @@ export const describeProblems = (problems: ParseProblem[]): string =>
   problems
     .map((p) => `line ${p.line}, column ${p.column}: ${p.message}`)
     .join("\n");
+
+export const connectionShape = {
+  connection: z
+    .string()
+    .describe("A connection name from list_connections, or a postgres:// URL."),
+  database: z
+    .string()
+    .optional()
+    .describe(
+      "A database on that server (see list_databases); defaults to the connection's own.",
+    ),
+};
+
+// Every database call goes through here, so no error from a driver reaches
+// the response with its text.
+export async function onDatabase<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    throw fromDbImportError(error);
+  }
+}
+
+export function assertSchemasExist(db: DatabaseSchema, wanted: string[]): void {
+  const present = listSchemaNames(db);
+  const missing = wanted.filter((name) => !present.includes(name));
+  if (missing.length > 0) {
+    const existing = present.length === 0 ? "none" : present.join(", ");
+    throw new ToolError(
+      "SCHEMA_NOT_FOUND",
+      `No tables or enums in schema ${missing.join(", ")}. Schemas with tables or enums: ${existing}.`,
+    );
+  }
+}
