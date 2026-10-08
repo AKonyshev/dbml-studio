@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -11,7 +11,10 @@ const bundle = path.join(pkg, "dist/server.cjs");
 
 // The built file, not the sources: this is what npx and the extension run.
 beforeAll(() => {
-  execFileSync("node", ["scripts/build.mjs"], { cwd: pkg, stdio: "inherit" });
+  execFileSync(process.execPath, ["scripts/build.mjs"], {
+    cwd: pkg,
+    stdio: "inherit",
+  });
 }, 120_000);
 
 async function connect(
@@ -85,5 +88,27 @@ describe("the bundled server over stdio", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.stringify(result.content)).toContain("CONNECTION_NOT_FOUND");
+  });
+});
+
+describe("the bundled server at start-up", () => {
+  it("reports colliding connection names in a few lines and leaks no value", () => {
+    const run = spawnSync(process.execPath, [bundle], {
+      env: {
+        PATH: process.env.PATH ?? "",
+        DBML_CONNECTION_A_B: "postgres://u:hunter1@h/db",
+        DBML_CONNECTION_A_b: "postgres://u:hunter2@h/db",
+      },
+      encoding: "utf8",
+      timeout: 20_000,
+    });
+    expect(run.status).not.toBe(0);
+    expect(run.stderr.length).toBeLessThan(1000);
+    expect(run.stderr).toContain("DBML_CONNECTION_A_B");
+    expect(run.stderr).toContain("DBML_CONNECTION_A_b");
+    for (const secret of ["hunter1", "hunter2"]) {
+      expect(run.stdout).not.toContain(secret);
+      expect(run.stderr).not.toContain(secret);
+    }
   });
 });

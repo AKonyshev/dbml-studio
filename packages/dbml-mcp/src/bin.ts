@@ -4,6 +4,8 @@ import { postgresCatalog } from "./catalog";
 import { connectionsFromEnv } from "./connections";
 import { createServer } from "./server";
 
+import type { ConnectionSource } from "./connections";
+
 // --root <dir> names the working folder; otherwise it is where the client
 // started the process.
 function rootFromArgs(argv: string[]): string {
@@ -12,10 +14,24 @@ function rootFromArgs(argv: string[]): string {
   return value ?? process.cwd();
 }
 
-const connections = connectionsFromEnv(process.env);
+// stdout is the protocol channel; anything for a person goes to stderr. A
+// failure here (two variables naming one connection) is reported as one line,
+// not as an uncaught error: Node would print the offending source line first,
+// and in the bundle that line is the whole file.
+function connectionsOrExit(): ConnectionSource {
+  try {
+    return connectionsFromEnv(process.env);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "invalid connections";
+    process.stderr.write(`dbml-mcp: ${message}\n`);
+    process.exit(1);
+  }
+}
+
+const connections = connectionsOrExit();
 const root = rootFromArgs(process.argv.slice(2));
 
-// stdout is the protocol channel; anything for a person goes to stderr.
 // serveStdio returns a handle at once (it does not return a promise).
 serveStdio(
   () => createServer({ connections, root, catalog: postgresCatalog }),
