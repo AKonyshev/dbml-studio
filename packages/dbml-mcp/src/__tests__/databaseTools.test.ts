@@ -84,10 +84,6 @@ const LIBRARY_DB: DatabaseSchema = {
   },
 };
 
-// LIBRARY_DBML as a database reports it: Postgres says a primary key is not
-// null, and the comparison does not infer that from `[pk]` alone.
-const MATCHING_DBML = LIBRARY_DBML.replaceAll("[pk]", "[pk, not null]");
-
 const fakeCatalog = (overrides: Partial<Catalog> = {}): Catalog => ({
   listDatabases: async () => ["archive", "library"],
   listSchemas: async () => ["public"],
@@ -304,7 +300,7 @@ describe("compare_with_database", () => {
       catalog: fakeCatalog(),
     });
     const result = await compareWithDatabase.run(
-      { text: MATCHING_DBML, connection: "local", schema: "public" },
+      { text: LIBRARY_DBML, connection: "local", schema: "public" },
       ctx,
     );
     expect(result.structured.identical).toBe(true);
@@ -366,7 +362,7 @@ Table fine {
       catalog: fakeCatalog(),
     });
     const { writeFile } = await import("node:fs/promises");
-    await writeFile(path.join(ctx.root ?? "", "library.dbml"), MATCHING_DBML);
+    await writeFile(path.join(ctx.root ?? "", "library.dbml"), LIBRARY_DBML);
     const result = await compareWithDatabase.run(
       { path: "library.dbml", connection: "local", schema: "public" },
       ctx,

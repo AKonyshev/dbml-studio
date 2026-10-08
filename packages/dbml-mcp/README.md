@@ -167,10 +167,6 @@ A failed call answers `<CODE>: <message>`. The codes:
 - `compare_with_database` ignores type parameters: `varchar(120)` and
   `varchar(200)` compare equal, as do `numeric(10,2)` and `numeric(12,4)`.
   Type names are compared after synonyms are folded (`int4` is `integer`).
-- A primary key column written `[pk]` without `not null` compares as nullable
-  against Postgres, where a primary key column is always `NOT NULL`, so the
-  difference is reported. Write `not null` on primary key columns in the DBML
-  you compare.
 - `dbml_to_sql` comes from `@dbml/core` and keeps its behaviour:
   - For a one-to-one reference (`-`) it emits the foreign key in the opposite
     direction: `Ref: b.a_id - a.id` makes `a.id` reference `b.a_id`. Postgres

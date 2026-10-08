@@ -99,7 +99,7 @@ export const compareWithDatabase: ToolDefinition<
   name: "compare_with_database",
   title: "Compare DBML with a database",
   description:
-    "Compare a DBML model with one schema of a live Postgres database: tables, columns, enums, references and indexes on either side only, or different. Postgres makes every primary key column NOT NULL, but a DBML primary key column compares as NOT NULL only if it is also written `not null`.",
+    "Compare a DBML model with one schema of a live Postgres database: tables, columns, enums, references and indexes on either side only, or different.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: true },
