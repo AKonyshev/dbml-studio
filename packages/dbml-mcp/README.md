@@ -162,6 +162,24 @@ A failed call answers `<CODE>: <message>`. The codes:
 | `SQL_PARSE_ERROR`           | The SQL does not parse in the dialect asked for.                                                                                                                                                                                                   |
 | `UNKNOWN`                   | Any unexpected failure: in the database, writing a file, or a bug in the server. The answer never has details, on purpose. A failure inside the server also writes the error's name and code, never its message, to stderr, which the client logs. |
 
+## Known limitations
+
+- `compare_with_database` ignores type parameters: `varchar(120)` and
+  `varchar(200)` compare equal, as do `numeric(10,2)` and `numeric(12,4)`.
+  Type names are compared after synonyms are folded (`int4` is `integer`).
+- A primary key column written `[pk]` without `not null` compares as nullable
+  against Postgres, where a primary key column is always `NOT NULL`, so the
+  difference is reported. Write `not null` on primary key columns in the DBML
+  you compare.
+- `dbml_to_sql` comes from `@dbml/core` and keeps its behaviour:
+  - For a one-to-one reference (`-`) it emits the foreign key in the opposite
+    direction: `Ref: b.a_id - a.id` makes `a.id` reference `b.a_id`. Postgres
+    rejects that unless `b.a_id` has a unique constraint. Write the reference
+    as `>` or `<` to get the foreign key on the intended side.
+  - It keeps type names as written in the DBML and does not translate them
+    to the target dialect: a column typed `int4` stays `int4` in MySQL
+    output.
+
 ## License
 
 MIT.
