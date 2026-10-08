@@ -4,30 +4,71 @@ import { fromDbImportError, ToolError } from "./errors";
 
 export const CONNECTION_ENV_PREFIX = "DBML_CONNECTION_";
 
+// Optional: a JSON object from a variable's suffix to the name the connection
+// goes by. Environment variable names are ASCII by convention and in practice,
+// connection names are whatever the user typed, in any language.
+export const CONNECTION_NAMES_ENV = "DBML_CONNECTION_NAMES";
+
 export interface ConnectionSource {
   names: () => string[];
   get: (name: string) => string | undefined;
 }
 
+// Throws one short line naming the variable. The message never quotes the
+// map's values: it is only names, but it does not need to.
+function displayNames(raw: string | undefined): Map<string, string> {
+  const names = new Map<string, string>();
+  if (raw === undefined || raw.trim() === "") return names;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${CONNECTION_NAMES_ENV} is not valid JSON.`);
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(
+      `${CONNECTION_NAMES_ENV} must be a JSON object from a variable suffix to a connection name.`,
+    );
+  }
+  for (const [suffix, name] of Object.entries(parsed)) {
+    if (typeof name !== "string" || name.trim() === "") {
+      throw new Error(
+        `${CONNECTION_NAMES_ENV} gives the suffix "${suffix}" no name; every value must be a non-empty string.`,
+      );
+    }
+    names.set(suffix, name.trim());
+  }
+  return names;
+}
+
 export function connectionsFromEnv(
   env: Record<string, string | undefined>,
 ): ConnectionSource {
-  const byName = new Map<string, { variable: string; value: string }>();
+  const mapped = displayNames(env[CONNECTION_NAMES_ENV]);
+  // Keyed by the name lower-cased, which is how names are matched.
+  const byName = new Map<
+    string,
+    { name: string; variable: string; value: string }
+  >();
   for (const [variable, value] of Object.entries(env)) {
-    if (!variable.toUpperCase().startsWith(CONNECTION_ENV_PREFIX)) continue;
+    const upper = variable.toUpperCase();
+    if (!upper.startsWith(CONNECTION_ENV_PREFIX)) continue;
+    if (upper === CONNECTION_NAMES_ENV) continue;
     if (value === undefined || value.trim() === "") continue;
-    const name = variable.slice(CONNECTION_ENV_PREFIX.length).toLowerCase();
-    if (name === "") continue;
-    const earlier = byName.get(name);
+    const suffix = variable.slice(CONNECTION_ENV_PREFIX.length);
+    if (suffix === "") continue;
+    const name = mapped.get(suffix) ?? suffix.toLowerCase();
+    const key = name.toLowerCase();
+    const earlier = byName.get(key);
     if (earlier !== undefined) {
       throw new Error(
         `${earlier.variable} and ${variable} both name the connection "${name}"; keep one.`,
       );
     }
-    byName.set(name, { variable, value: value.trim() });
+    byName.set(key, { name, variable, value: value.trim() });
   }
   return {
-    names: () => [...byName.keys()].sort(),
+    names: () => [...byName.values()].map((c) => c.name).sort(),
     get: (name) => byName.get(name.toLowerCase())?.value,
   };
 }

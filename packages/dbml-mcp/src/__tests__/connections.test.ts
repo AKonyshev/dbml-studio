@@ -3,6 +3,12 @@ import { ToolError } from "../errors";
 
 const URL_LOCAL = "postgresql://reader:s3cret@localhost:5432/library";
 
+// Escaped, because the sources are English (sourceLanguage.test.ts).
+const PROD_RU = "\u043f\u0440\u043e\u0434"; // Russian "prod"
+const PROD_RU_TITLE = "\u041f\u0440\u043e\u0434"; // the same, capitalised
+const PROD_RU_UPPER = "\u041f\u0420\u041e\u0414"; // the same, upper case
+const LIBRARY_ZH = "\u56fe\u4e66\u9986"; // Chinese "library"
+
 describe("connectionsFromEnv", () => {
   it("names a connection by its lower-cased suffix", () => {
     const source = connectionsFromEnv({
@@ -34,6 +40,101 @@ describe("connectionsFromEnv", () => {
       }),
     ).toThrow(
       /DBML_CONNECTION_LOCAL.*DBML_CONNECTION_local|DBML_CONNECTION_local.*DBML_CONNECTION_LOCAL/,
+    );
+  });
+});
+
+describe("connectionsFromEnv with DBML_CONNECTION_NAMES", () => {
+  const URL_PROD = "postgresql://reader:pr0d@prod/library";
+
+  it("names a mapped connection by its display name, in any language", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_C1: URL_LOCAL,
+      DBML_CONNECTION_C2: URL_PROD,
+      DBML_CONNECTION_STAGING: "postgres://x@staging/library",
+      DBML_CONNECTION_NAMES: JSON.stringify({
+        C1: PROD_RU,
+        C2: ` ${LIBRARY_ZH} `,
+      }),
+    });
+    expect(source.names()).toEqual(["staging", PROD_RU, LIBRARY_ZH]);
+    expect(source.get(PROD_RU)).toBe(URL_LOCAL);
+    expect(source.get(LIBRARY_ZH)).toBe(URL_PROD);
+    expect(source.get("c1")).toBeUndefined();
+  });
+
+  it("matches a display name regardless of case", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_C1: URL_LOCAL,
+      DBML_CONNECTION_NAMES: JSON.stringify({ C1: PROD_RU }),
+    });
+    expect(source.get(PROD_RU_TITLE)).toBe(URL_LOCAL);
+    expect(resolveConnection(source, PROD_RU_UPPER)).toBe(URL_LOCAL);
+  });
+
+  it("matches the suffix exactly as written", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_C1: URL_LOCAL,
+      DBML_CONNECTION_NAMES: JSON.stringify({ c1: PROD_RU }),
+    });
+    expect(source.names()).toEqual(["c1"]);
+  });
+
+  it("is not a connection itself", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_NAMES: JSON.stringify({}),
+    });
+    expect(source.names()).toEqual([]);
+  });
+
+  it.each([
+    ["not JSON", `{C1: ${PROD_RU}`],
+    ["an array", JSON.stringify([PROD_RU])],
+    ["null", "null"],
+    ["a number for a name", JSON.stringify({ C1: 1 })],
+    ["an empty name", JSON.stringify({ C1: "  " })],
+  ])("refuses a value that is %s, naming the variable", (_label, names) => {
+    expect(() =>
+      connectionsFromEnv({
+        DBML_CONNECTION_C1: URL_LOCAL,
+        DBML_CONNECTION_NAMES: names,
+      }),
+    ).toThrow(/^DBML_CONNECTION_NAMES /);
+  });
+
+  it("never quotes a connection string when it refuses the map", () => {
+    expect(() =>
+      connectionsFromEnv({
+        DBML_CONNECTION_C1: URL_LOCAL,
+        DBML_CONNECTION_NAMES: "{",
+      }),
+    ).toThrow(/^(?!.*s3cret)/s);
+  });
+
+  it("refuses two display names equal but for case, naming both variables", () => {
+    expect(() =>
+      connectionsFromEnv({
+        DBML_CONNECTION_C1: URL_LOCAL,
+        DBML_CONNECTION_C2: URL_PROD,
+        DBML_CONNECTION_NAMES: JSON.stringify({
+          C1: PROD_RU_TITLE,
+          C2: PROD_RU,
+        }),
+      }),
+    ).toThrow(
+      /DBML_CONNECTION_C1.*DBML_CONNECTION_C2|DBML_CONNECTION_C2.*DBML_CONNECTION_C1/,
+    );
+  });
+
+  it("refuses a display name that collides with a plain one", () => {
+    expect(() =>
+      connectionsFromEnv({
+        DBML_CONNECTION_C1: URL_LOCAL,
+        DBML_CONNECTION_LOCAL: URL_PROD,
+        DBML_CONNECTION_NAMES: JSON.stringify({ C1: "Local" }),
+      }),
+    ).toThrow(
+      /DBML_CONNECTION_C1.*DBML_CONNECTION_LOCAL|DBML_CONNECTION_LOCAL.*DBML_CONNECTION_C1/,
     );
   });
 });

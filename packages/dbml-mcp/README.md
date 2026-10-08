@@ -67,8 +67,25 @@ Each `DBML_CONNECTION_<NAME>` variable is one connection. Its name is the part
 after the prefix, lower-cased: `DBML_CONNECTION_LOCAL` is `local`, and
 `DBML_CONNECTION_STAGING_EU` is `staging_eu`. Names are matched
 case-insensitively, so an agent that writes `Local` still gets `local`. Two
-variables that give the same name (`DBML_CONNECTION_LOCAL` and
-`dbml_connection_local`) stop the server at start with a message naming both.
+variables that give the same name, ignoring case (`DBML_CONNECTION_LOCAL` and
+`dbml_connection_local`), stop the server at start with a message naming both.
+
+A name that cannot be part of a variable name, such as `library prod`, `прод`
+or `图书馆`, goes in `DBML_CONNECTION_NAMES` (optional): a JSON object from a
+variable's suffix to the connection's name.
+
+```json
+"env": {
+  "DBML_CONNECTION_C1": "postgresql://reader@localhost:5432/library",
+  "DBML_CONNECTION_NAMES": "{\"C1\": \"library prod\"}"
+}
+```
+
+The suffix is matched exactly as written, and the name is then matched
+case-insensitively like any other. `DBML_CONNECTION_NAMES` is not a connection
+itself. A value that is not a JSON object of non-empty strings stops the server
+at start with a message naming the variable. The VS Code extension hands its
+saved connections over this way.
 
 A tool also accepts a raw `postgres://` or `postgresql://` URL as the
 `connection`. That works, but the URL, password included, is then part of the
