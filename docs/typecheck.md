@@ -91,6 +91,16 @@ in the three host packages uses relative paths for its own files. Pointing the
 alias at both locations would resolve a name to whichever came first in the list,
 silently, so it is deliberately mapped to one.
 
+## `dbml-mcp/*` and `rootDir` in the extension
+
+`dbml-vs-code-extension` maps `dbml-mcp/*` to `../dbml-mcp/src/*`, so its program
+contains files from outside the package. That is why its `tsconfig.json` sets no
+`rootDir`: with one, `tsc` reports TS6059 for every such file. The config is
+`noEmit`, so `rootDir` only ever guarded the layout of emitted output.
+`tsconfig.tests.json` does emit and keeps its `rootDir`, so it excludes
+`extension/mcpProvider.ts` for the same reason it excludes `extension/index.ts`:
+both reach into other packages and are checked by `yarn typecheck` instead.
+
 ## Vendored JavaScript
 
 `packages/json-table-schema-visualizer/src/export/svg/svgcanvas.esm.js` is

@@ -109,7 +109,8 @@ export function activate(context: ExtensionContext): void {
     registration,
     diagnostics,
     window.registerTreeDataProvider("dbmlStudio.panel", treeProvider),
-    // A saved or deleted connection restarts the MCP server with the new set.
+    // A saved or deleted connection refreshes the MCP provider, which bumps
+    // the definition's version so VS Code restarts the server with the new set.
     context.secrets.onDidChange(() => {
       treeProvider.refresh();
       mcpProvider.refresh();

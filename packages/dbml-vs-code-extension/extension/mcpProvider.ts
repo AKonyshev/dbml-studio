@@ -54,9 +54,14 @@ export function createMcpProvider(
   refresh: () => void;
 } {
   const changed = new EventEmitter<void>();
+  // VS Code treats a changed `version` as "this definition is outdated" and
+  // restarts the server; an identical definition would leave a running server
+  // holding the connections it started with. The counter carries no secrets.
+  let generation = 0;
   return {
     onDidChangeMcpServerDefinitions: changed.event,
     refresh: () => {
+      generation += 1;
       changed.fire();
     },
     // Called eagerly by VS Code, so it carries no secrets and asks nothing.
@@ -70,7 +75,7 @@ export function createMcpProvider(
           process.execPath,
           [path.join(deps.extensionPath, "dist", "mcp", "server.cjs")],
           { ELECTRON_RUN_AS_NODE: "1" },
-          VERSION,
+          generation === 0 ? VERSION : `${VERSION}+${generation}`,
         ),
       ];
     },

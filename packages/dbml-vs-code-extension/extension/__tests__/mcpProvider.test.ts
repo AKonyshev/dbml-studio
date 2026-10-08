@@ -108,6 +108,28 @@ describe("the MCP server definition provider", () => {
     expect(message).not.toContain("secret");
   });
 
+  it("changes the definition's version on every refresh, without secrets", async () => {
+    const secrets = memorySecrets();
+    await saveConnection(secrets, "staging", "postgres://reader:pw@h/library");
+    const provider = makeProvider(secrets, true);
+    const versionOf = async (): Promise<string | undefined> => {
+      const [definition] = (await provider.provideMcpServerDefinitions(
+        {} as never,
+      )) as McpStdioServerDefinition[];
+      expect(definition.env).toEqual({ ELECTRON_RUN_AS_NODE: "1" });
+      return definition.version;
+    };
+    const initial = await versionOf();
+    provider.refresh();
+    const first = await versionOf();
+    provider.refresh();
+    const second = await versionOf();
+    expect(first).not.toBe(initial);
+    expect(second).not.toBe(first);
+    expect(first?.startsWith(initial as string)).toBe(true);
+    expect(second?.startsWith(initial as string)).toBe(true);
+  });
+
   it("tells VS Code to look again on refresh", () => {
     const provider = makeProvider(memorySecrets(), true);
     const listener = jest.fn();
