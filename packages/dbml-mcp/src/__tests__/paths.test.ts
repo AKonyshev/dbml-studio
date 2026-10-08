@@ -1,4 +1,5 @@
 import {
+  chmod,
   lstat,
   mkdtemp,
   mkdir,
@@ -204,5 +205,42 @@ describe("readSource with symlinks", () => {
     expect(await codeOf(readSource(root, { path: "link.dbml" }))).toBe(
       "PATH_OUTSIDE_ROOT",
     );
+  });
+});
+
+describe("writeOutput when the file system refuses", () => {
+  it("names a folder in the way as WRITE_FAILED", async () => {
+    await mkdir(path.join(root, "out"));
+    const outcome = await writeOutput(root, "out", "x", true).then(
+      () => undefined,
+      (error: { code?: string; message?: string }) => error,
+    );
+    expect(outcome?.code).toBe("WRITE_FAILED");
+    expect(outcome?.message).toBe("Cannot write out: it is a folder.");
+  });
+
+  it("names a folder without write permission as WRITE_FAILED", async () => {
+    // A superuser writes anyway, so there is nothing to refuse.
+    if (process.getuid?.() === 0) return;
+    const locked = path.join(root, "locked");
+    await mkdir(locked);
+    await chmod(locked, 0o555);
+    try {
+      const outcome = await writeOutput(
+        root,
+        "locked/out.dbml",
+        "x",
+        false,
+      ).then(
+        () => undefined,
+        (error: { code?: string; message?: string }) => error,
+      );
+      expect(outcome?.code).toBe("WRITE_FAILED");
+      expect(outcome?.message).toBe(
+        "Cannot write locked/out.dbml: permission denied.",
+      );
+    } finally {
+      await chmod(locked, 0o755);
+    }
   });
 });

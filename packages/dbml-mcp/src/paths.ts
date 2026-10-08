@@ -147,7 +147,26 @@ export async function writeOutput(
       `${outputPath} exists; pass overwrite: true to replace it.`,
     );
   }
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, content, "utf8");
+  try {
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, content, "utf8");
+  } catch (error) {
+    const reason = WRITE_REFUSALS[(error as { code?: string }).code ?? ""];
+    if (reason === undefined) throw error;
+    throw new ToolError(
+      "WRITE_FAILED",
+      `Cannot write ${outputPath}: ${reason}.`,
+    );
+  }
   return file;
 }
+
+// The refusals a person can act on get a fixed reason; the system's own text
+// is not repeated. Anything else stays unexpected and becomes UNKNOWN.
+const WRITE_REFUSALS: Record<string, string> = {
+  EISDIR: "it is a folder",
+  EACCES: "permission denied",
+  EPERM: "permission denied",
+  EROFS: "the file system is read-only",
+  ENOSPC: "no space left on the device",
+};

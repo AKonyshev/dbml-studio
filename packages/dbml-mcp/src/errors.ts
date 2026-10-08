@@ -6,6 +6,7 @@ export type ErrorCode =
   | "NO_ROOT"
   | "FILE_NOT_FOUND"
   | "FILE_EXISTS"
+  | "WRITE_FAILED"
   | "INVALID_INPUT"
   | "SCHEMA_NOT_FOUND"
   | "DBML_PARSE_ERROR"
