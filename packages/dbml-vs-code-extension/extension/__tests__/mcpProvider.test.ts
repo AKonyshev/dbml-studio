@@ -251,7 +251,9 @@ describe("the MCP server definition provider", () => {
     const message = String(warn.mock.calls[0][0]);
     expect(message).toContain(PROD_RU_TITLE);
     expect(message).toContain(PROD_RU);
-    expect(message).toContain("differ only in letter case");
+    expect(message).toContain(
+      "match once letter case and surrounding spaces are ignored",
+    );
     expect(message).not.toContain("secret");
     expect(JSON.stringify(resolved.env)).not.toContain("secret");
   });

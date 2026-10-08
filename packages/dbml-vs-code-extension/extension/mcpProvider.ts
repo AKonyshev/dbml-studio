@@ -138,7 +138,7 @@ export function createMcpProvider(
       for (const names of collisions) {
         deps.warn(
           l10n.t(
-            "DBML Studio: the connections {0} cannot both be given to AI agents, because their names differ only in letter case. Rename one.",
+            "DBML Studio: the connections {0} cannot both be given to AI agents, because their names match once letter case and surrounding spaces are ignored. Rename one.",
             names.join(", "),
           ),
         );
