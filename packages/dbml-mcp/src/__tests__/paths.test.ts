@@ -1,4 +1,11 @@
-import { mkdtemp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdtemp,
+  mkdir,
+  readFile,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -25,6 +32,15 @@ const codeOf = async (p: Promise<unknown>): Promise<string> =>
     () => "resolved",
     (error: { code?: string }) => error.code ?? "no code",
   );
+
+const exists = async (filePath: string): Promise<boolean> => {
+  try {
+    await lstat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 describe("resolveInsideRoot", () => {
   it("resolves a relative path inside the root", async () => {
@@ -116,6 +132,70 @@ describe("writeOutput", () => {
     await mkdir(path.join(outside, "target"));
     await symlink(path.join(outside, "target"), path.join(root, "out"));
     expect(await codeOf(writeOutput(root, "out/file.dbml", "x", true))).toBe(
+      "PATH_OUTSIDE_ROOT",
+    );
+  });
+
+  it("refuses to write through a dangling file link", async () => {
+    const plantedPath = path.join(outside, "planted.dbml");
+    await symlink(plantedPath, path.join(root, "link.dbml"));
+    expect(await codeOf(writeOutput(root, "link.dbml", "x", false))).toBe(
+      "PATH_OUTSIDE_ROOT",
+    );
+    expect(await exists(plantedPath)).toBe(false);
+    // Also test with overwrite: true
+    expect(await codeOf(writeOutput(root, "link.dbml", "x", true))).toBe(
+      "PATH_OUTSIDE_ROOT",
+    );
+    expect(await exists(plantedPath)).toBe(false);
+  });
+
+  it("refuses to write through a dangling directory link", async () => {
+    const targetDir = path.join(outside, "newdir");
+    await symlink(targetDir, path.join(root, "dlink"));
+    expect(await codeOf(writeOutput(root, "dlink/x.dbml", "x", true))).toBe(
+      "PATH_OUTSIDE_ROOT",
+    );
+    expect(await exists(targetDir)).toBe(false);
+  });
+
+  it("refuses paths with symlink loops", async () => {
+    await symlink(path.join(root, "b"), path.join(root, "a"));
+    await symlink(path.join(root, "a"), path.join(root, "b"));
+    expect(await codeOf(resolveInsideRoot(root, "a/x.dbml"))).toBe(
+      "PATH_OUTSIDE_ROOT",
+    );
+  });
+});
+
+describe("nonexistent root", () => {
+  it("throws NO_ROOT when the root does not exist", async () => {
+    const fakePath = path.join(tmpdir(), "does-not-exist-" + Date.now());
+    expect(await codeOf(resolveInsideRoot(fakePath, "file.dbml"))).toBe(
+      "NO_ROOT",
+    );
+  });
+});
+
+describe("special file names", () => {
+  it("resolves ..hidden.dbml as a normal file inside the root", async () => {
+    await writeFile(path.join(root, "..hidden.dbml"), "Table a {}");
+    expect(await codeOf(resolveInsideRoot(root, "..hidden.dbml"))).toBe(
+      "resolved",
+    );
+    expect(await readSource(root, { path: "..hidden.dbml" })).toContain(
+      "Table a",
+    );
+  });
+});
+
+describe("readSource with symlinks", () => {
+  it("refuses to read through a symlink to a file outside the root", async () => {
+    await symlink(
+      path.join(outside, "secret.dbml"),
+      path.join(root, "link.dbml"),
+    );
+    expect(await codeOf(readSource(root, { path: "link.dbml" }))).toBe(
       "PATH_OUTSIDE_ROOT",
     );
   });
