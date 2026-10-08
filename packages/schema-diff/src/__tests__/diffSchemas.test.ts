@@ -1,5 +1,8 @@
+import { databaseSchemaToModel } from "../databaseSchemaToModel";
 import { diffSchemas } from "../diffSchemas";
+import { parseDbmlToModel } from "../parseDbmlToModel";
 
+import type { DatabaseSchema } from "db-to-dbml";
 import type { CanonSchema, CanonColumn } from "../model";
 
 function col(p: Partial<CanonColumn> & { name: string }): CanonColumn {
@@ -122,5 +125,56 @@ describe("diffSchemas", () => {
     const d = diffSchemas(s, s2);
     expect(d.identical).toBe(true);
     expect(d.columnDiffs).toEqual([]);
+  });
+
+  test("a [pk] without [not null] matches a primary key the database reports as NOT NULL", () => {
+    const dbml = parseDbmlToModel(`
+Table "s.t" {
+  "id" int4 [pk]
+}
+Table "s.link" {
+  "a" int4
+  "b" int4
+  Indexes {
+    (a, b) [pk]
+  }
+}
+`);
+    // Shaped the way the Postgres connector reports these two tables: a
+    // single-column key in tableConstraints, a composite one as an index, and
+    // every key column NOT NULL.
+    const db: DatabaseSchema = {
+      tables: [
+        { name: "t", schemaName: "s" },
+        { name: "link", schemaName: "s" },
+      ],
+      enums: [],
+      refs: [],
+      fields: {
+        "s.t": [{ name: "id", type: { type_name: "int4" }, not_null: true }],
+        "s.link": [
+          { name: "a", type: { type_name: "int4" }, not_null: true },
+          { name: "b", type: { type_name: "int4" }, not_null: true },
+        ],
+      },
+      tableConstraints: { "s.t": { id: { pk: true } } },
+      indexes: {
+        "s.link": [
+          {
+            name: "link_pkey",
+            type: "btree",
+            columns: [
+              { type: "column", value: "a" },
+              { type: "column", value: "b" },
+            ],
+          },
+        ],
+      },
+      checks: {},
+    };
+
+    const d = diffSchemas(dbml, databaseSchemaToModel(db, "s"));
+    expect(d.columnDiffs).toEqual([]);
+    expect(d.identical).toBe(true);
   });
 });
