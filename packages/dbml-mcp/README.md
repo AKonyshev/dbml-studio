@@ -49,7 +49,12 @@ In `.mcp.json` at the project root:
 ### Cursor
 
 The same shape, in `.cursor/mcp.json` (or `~/.cursor/mcp.json` for every
-project).
+project), with the project named as the working folder. Cursor expands
+`${workspaceFolder}` in `args` to the folder it has open:
+
+```json
+"args": ["-y", "dbml-mcp", "--root", "${workspaceFolder}"]
+```
 
 ### VS Code
 
@@ -77,12 +82,23 @@ The server starts with no connections at all. All eight tools are listed,
 
 ## The working folder
 
-Files are read and written only inside the working folder: the folder passed
-as `--root <dir>`, or else the folder the client started the server in.
+Files are read and written only inside the working folder. It is chosen, never
+guessed:
+
+- `--root <dir>` names it;
+- without `--root`, it is the folder the client started the server in, unless
+  that is the filesystem root or your home folder. A client with no project
+  open starts servers there, and neither is a folder anybody chose to hand to
+  an agent, so the server then has no working folder;
+- `--no-root` says there is none, whatever else is given.
 
 ```json
 "args": ["-y", "dbml-mcp", "--root", "/path/to/project"]
 ```
+
+Without a working folder, a `path` or an `outputPath` is refused with
+`NO_ROOT`; DBML and SQL passed as `text`, and results returned as text, still
+work. To work in your home folder all the same, name it with `--root`.
 
 A `path` that leaves the folder, by `../`, by an absolute path or through a
 symlink, is refused. Writing to an `outputPath` whose folders do not exist yet
@@ -111,7 +127,7 @@ A failed call answers `<CODE>: <message>`. The codes:
 | `DATABASE_NOT_FOUND`        | The server has no such database.                                                                           |
 | `ACCESS_DENIED`             | The user may not read what the call needs.                                                                 |
 | `SCHEMA_NOT_FOUND`          | A named schema is not in the database. The message lists the schemas that exist.                           |
-| `NO_ROOT`                   | A `path` was given, but the server has no usable working folder. Pass `text`.                              |
+| `NO_ROOT`                   | A `path` or `outputPath` was given, but the server has no usable working folder. Pass `text`.              |
 | `PATH_OUTSIDE_ROOT`         | The path leaves the working folder.                                                                        |
 | `FILE_NOT_FOUND`            | The file does not exist or cannot be read.                                                                 |
 | `FILE_EXISTS`               | The `outputPath` exists; pass `overwrite: true` to replace it.                                             |

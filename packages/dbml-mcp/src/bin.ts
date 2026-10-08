@@ -1,18 +1,13 @@
+import { homedir } from "node:os";
+
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
 import { postgresCatalog } from "./catalog";
 import { connectionsFromEnv } from "./connections";
+import { rootFromArgs } from "./root";
 import { createServer } from "./server";
 
 import type { ConnectionSource } from "./connections";
-
-// --root <dir> names the working folder; otherwise it is where the client
-// started the process.
-function rootFromArgs(argv: string[]): string {
-  const at = argv.indexOf("--root");
-  const value = at >= 0 ? argv[at + 1] : undefined;
-  return value ?? process.cwd();
-}
 
 // stdout is the protocol channel; anything for a person goes to stderr. A
 // failure here (two variables naming one connection) is reported as one line,
@@ -30,7 +25,7 @@ function connectionsOrExit(): ConnectionSource {
 }
 
 const connections = connectionsOrExit();
-const root = rootFromArgs(process.argv.slice(2));
+const root = rootFromArgs(process.argv.slice(2), process.cwd(), homedir());
 
 // serveStdio returns a handle at once (it does not return a promise).
 serveStdio(

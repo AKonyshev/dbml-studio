@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 
 import { Client } from "@modelcontextprotocol/client";
@@ -20,12 +20,13 @@ beforeAll(() => {
 async function connect(
   env: Record<string, string>,
   cwd: string,
+  args: string[] = [],
 ): Promise<Client> {
   const client = new Client({ name: "dbml-mcp-test", version: "0.0.0" });
   await client.connect(
     new StdioClientTransport({
       command: process.execPath,
-      args: [bundle],
+      args: [bundle, ...args],
       env,
       cwd,
     }),
@@ -88,6 +89,45 @@ describe("the bundled server over stdio", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.stringify(result.content)).toContain("CONNECTION_NOT_FOUND");
+  });
+});
+
+// The folder a tool may read and write is a choice: started with --no-root, or
+// in the home folder as clients without a project do, it has none.
+describe.each([
+  ["with --no-root", ["--no-root"], undefined],
+  ["started in the home folder", [], homedir()],
+])("the bundled server %s", (_label, args, cwd) => {
+  let client: Client;
+
+  beforeAll(async () => {
+    const start =
+      cwd ?? (await mkdtemp(path.join(tmpdir(), "dbml-mcp-noroot-")));
+    if (cwd === undefined) {
+      await writeFile(path.join(start, "x.dbml"), "Table member {\n}\n");
+    }
+    client = await connect({ PATH: process.env.PATH ?? "" }, start, args);
+  }, 30_000);
+
+  afterAll(async () => {
+    await client.close();
+  });
+
+  it("refuses a path with NO_ROOT", async () => {
+    const result = await client.callTool({
+      name: "validate_dbml",
+      arguments: { path: "x.dbml" },
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain("NO_ROOT");
+  });
+
+  it("still validates text", async () => {
+    const result = await client.callTool({
+      name: "validate_dbml",
+      arguments: { text: "Table member {\n  id integer [pk]\n}\n" },
+    });
+    expect(result.structuredContent).toMatchObject({ valid: true, tables: 1 });
   });
 });
 
