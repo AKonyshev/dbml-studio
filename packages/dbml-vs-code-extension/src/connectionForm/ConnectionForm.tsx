@@ -140,6 +140,7 @@ export function ConnectionForm() {
   // The pasted text goes to the host and is never kept: not in state, not in
   // the box.
   const sendPaste = (text: string): void => {
+    dispatch({ type: "pasting" });
     post({ type: "paste", text });
     if (pasteRef.current !== null) {
       pasteRef.current.value = "";
@@ -362,7 +363,7 @@ export function ConnectionForm() {
         <button
           type="button"
           className="secondary"
-          disabled={testing}
+          disabled={testing || state.pastePending}
           onClick={() =>
             post({
               type: "test",

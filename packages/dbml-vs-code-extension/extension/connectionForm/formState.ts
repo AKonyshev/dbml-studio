@@ -27,6 +27,10 @@ export interface FormState {
   testing: boolean;
   test?: { ok: true; databases: string[] } | { ok: false; message: string };
   pasteError?: string;
+  // A pasted string is with the host and its fields have not come back: the
+  // fields on screen are about to be replaced, so neither Save nor Test may
+  // run on them.
+  pastePending: boolean;
   // A failed save, kept apart from the test line: the test result stays valid.
   saveError?: string;
 }
@@ -35,6 +39,7 @@ export type FormAction =
   | { type: "init"; message: Extract<HostToForm, { type: "init" }> }
   | { type: "field"; key: keyof ConnectionFields; value: string | boolean }
   | { type: "password"; value: string }
+  | { type: "pasting" }
   | { type: "host"; message: Exclude<HostToForm, { type: "init" }> };
 
 export const initialState = (): FormState => ({
@@ -45,6 +50,7 @@ export const initialState = (): FormState => ({
   keepsPassword: false,
   savedNames: [],
   testing: false,
+  pastePending: false,
 });
 
 // A new action or message variant that reduce does not handle fails to compile
@@ -94,6 +100,8 @@ export function reduce(state: FormState, action: FormAction): FormState {
         fields: { ...state.fields, [action.key]: action.value },
       };
     }
+    case "pasting":
+      return { ...state, pastePending: true };
     case "password":
       return {
         ...state,
@@ -107,6 +115,7 @@ export function reduce(state: FormState, action: FormAction): FormState {
         case "pasted":
           return {
             ...state,
+            pastePending: false,
             pasteError: undefined,
             saveError: undefined,
             test: undefined,
@@ -118,7 +127,11 @@ export function reduce(state: FormState, action: FormAction): FormState {
             fields: { ...action.message.fields, name: state.fields.name },
           };
         case "pasteError":
-          return { ...state, pasteError: action.message.message };
+          return {
+            ...state,
+            pastePending: false,
+            pasteError: action.message.message,
+          };
         case "testing":
           return {
             ...state,
@@ -153,7 +166,7 @@ export const errors = (s: FormState): FieldErrors =>
   validateFields(s.fields, s.savedNames);
 
 export const canSave = (s: FormState): boolean =>
-  Object.keys(errors(s)).length === 0 && !s.testing;
+  Object.keys(errors(s)).length === 0 && !s.testing && !s.pastePending;
 
 export const persistable = ({
   password: _password,

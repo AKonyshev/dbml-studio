@@ -9,7 +9,6 @@ import { DbImportErrorCode, type DialectId } from "db-to-dbml";
 const table = () =>
   ({
     "New connection": l10n.t("New connection"),
-    "Edit connection": l10n.t("Edit connection"),
     "Edit connection: {0}": l10n.t("Edit connection: {0}"),
     Save: l10n.t("Save"),
     Test: l10n.t("Test"),

@@ -364,7 +364,7 @@ describe("openConnectionForm", () => {
       await expect(outcome).resolves.toBeUndefined();
     });
 
-    it("starts from empty fields and a fixed sentence when the stored string cannot be read", async () => {
+    it("starts from empty fields, no host, and a fixed sentence when the stored string cannot be read", async () => {
       const { deps } = setup({ shop: "nonsense Secr3t" });
       void openConnectionForm(deps, "shop");
       const panel = panels[0];
@@ -372,12 +372,30 @@ describe("openConnectionForm", () => {
       await flush();
       expect(lastOf(panel, "init")).toMatchObject({
         mode: "edit",
-        fields: { ...emptyFields(), name: "shop" },
+        fields: { ...emptyFields(), name: "shop", host: "" },
       });
       expect(lastOf(panel, "pasteError")).toEqual({
         type: "pasteError",
         message: "The connection string is not one DBML Studio can read.",
       });
+    });
+
+    it("refuses to save the untouched form of an unreadable stored string, leaving it as it was", async () => {
+      const { deps, secrets, refresh } = setup({ shop: "nonsense Secr3t" });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      expect(lastOf(panel, "saveError")).toMatchObject({
+        message: "Enter a host.",
+      });
+      expect(await getConnection(secrets, "shop")).toBe("nonsense Secr3t");
+      expect(refresh).not.toHaveBeenCalled();
+      expect(panel.dispose).not.toHaveBeenCalled();
+      panel.receive({ type: "cancel" });
+      await expect(outcome).resolves.toBeUndefined();
     });
 
     it("keeps the stored hidden parameters when the fields change", async () => {

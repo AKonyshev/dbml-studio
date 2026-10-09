@@ -118,12 +118,20 @@ export function parseConnection(text: string): ParsedConnection {
     : fromAdo(trimmed);
 }
 
+// What `pg-connection-string` does before it reads a URL: a space, or a `%` that
+// does not start an escape, is encoded, so `postgres://u:100%@h/db` has the
+// password `100%`. The adapter accepts such a string, and so must this.
+const pgReadable = (text: string): string =>
+  / |%[^a-f0-9]|%[a-f0-9][^a-f0-9]/i.test(text)
+    ? encodeURI(text).replace(/%25(\d\d)/g, "%$1")
+    : text;
+
 // `new URL` puts the whole string, password included, in the error it throws,
 // and `decodeURIComponent` throws on a malformed escape: anything that goes
 // wrong in here comes out as the dialect's fixed sentence.
 function fromUrl(text: string, dialect: DialectId): ParsedConnection {
   try {
-    const url = new URL(text);
+    const url = new URL(dialect === "postgres" ? pgReadable(text) : text);
     const fields = {
       ...emptyFields(dialect),
       host: decodeURIComponent(url.hostname).replace(/^\[(.*)\]$/, "$1"),
@@ -146,7 +154,7 @@ function fromUrl(text: string, dialect: DialectId): ParsedConnection {
         ? safeDecode(pair.slice(pair.indexOf("=") + 1))
         : "";
       if (PASSWORD_KEYS.has(key)) {
-        // The text in front of the host wins; a key it repeats is dropped.
+        // The first one counts; a key it repeats is dropped.
         queryPassword ??= hasValue
           ? queryDecode(pair.slice(pair.indexOf("=") + 1))
           : "";
@@ -162,7 +170,11 @@ function fromUrl(text: string, dialect: DialectId): ParsedConnection {
         visible.push(pair);
       }
     }
-    if (password === "") {
+    // The text in front of the host wins, except for PostgreSQL: pg takes the
+    // query's password first, unless that is empty.
+    if (dialect === "postgres") {
+      password = queryPassword || password;
+    } else if (password === "") {
       password = queryPassword ?? "";
     }
 

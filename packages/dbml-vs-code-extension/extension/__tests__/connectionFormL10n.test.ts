@@ -25,9 +25,40 @@ const literalKeys = (): string[] => {
     for (const match of source.matchAll(/l10n\.t\(\s*("(?:[^"\\]|\\.)*")/g)) {
       keys.add(JSON.parse(match[1]) as string);
     }
+    for (const match of source.matchAll(/l10n\.t\(\s*'((?:[^'\\]|\\.)*)'/g)) {
+      keys.add(match[1].replace(/\\(.)/g, "$1"));
+    }
   }
   return [...keys];
 };
+
+// Every non-test source a key may be written in: the extension itself, and
+// schema-diff, whose comparison report is translated through the same bundles.
+const sourceFiles = (dir: string): string[] =>
+  fs.existsSync(dir)
+    ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          return ["__tests__", "__mocks__", "node_modules"].includes(entry.name)
+            ? []
+            : sourceFiles(full);
+        }
+        return /\.tsx?$/.test(entry.name) ? [full] : [];
+      })
+    : [];
+
+const allSources = (): string =>
+  [
+    ...sourceFiles(EXTENSION),
+    ...sourceFiles(path.join(EXTENSION, "..", "..", "schema-diff", "src")),
+  ]
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
+
+// A key is used when it is written out as a string literal, in either quote.
+const isReferenced = (key: string, sources: string): boolean =>
+  sources.includes(JSON.stringify(key)) ||
+  sources.includes(`'${key.replace(/'/g, "\\'")}'`);
 
 const bundle = (locale: string): Record<string, string> =>
   JSON.parse(
@@ -55,6 +86,21 @@ describe("connection form / translation bundles", () => {
       ]),
     );
     expect(Object.keys(formStrings()).length).toBeGreaterThan(20);
+  });
+
+  test("finds single-quoted literals too", () => {
+    expect(literalKeys()).toContain('Delete connection "{0}"?');
+  });
+
+  test.each(LOCALES)("%s has no key that nothing refers to", (locale) => {
+    const sources = allSources();
+    expect(sources.length).toBeGreaterThan(10_000);
+    expect(isReferenced("Edit connection: {0}", sources)).toBe(true);
+    expect(isReferenced("No such key anywhere", sources)).toBe(false);
+
+    expect(
+      Object.keys(bundle(locale)).filter((key) => !isReferenced(key, sources)),
+    ).toEqual([]);
   });
 
   test.each(LOCALES)("every form string is translated in %s", (locale) => {

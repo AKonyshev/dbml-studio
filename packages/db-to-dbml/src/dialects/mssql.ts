@@ -84,6 +84,8 @@ const OWNED_KEYS = new Set([
   "instancename",
   "encrypt",
   "trustservercertificate",
+  // The connector's own schema filter, not the URL's to set.
+  "schemas",
 ]);
 const CONNECT_TIMEOUT_KEYS = [
   "connect timeout",

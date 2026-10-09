@@ -229,7 +229,10 @@ export function openConnectionForm(
     let pasteError: string | undefined;
     source = undefined;
     if (edit !== undefined) {
-      fields = { ...fields, name: edit };
+      // Without a host Save stays off until the fields are filled or a string
+      // is pasted, so the defaults cannot overwrite a stored string that could
+      // not be read.
+      fields = { ...fields, name: edit, host: "" };
       if (stored !== undefined) {
         try {
           const text = stored.trim();

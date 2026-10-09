@@ -41,6 +41,7 @@ export async function editConnectionCommand(
   if (node === undefined) {
     const saved = await listConnections(context.secrets);
     if (saved.length === 0) {
+      void window.showInformationMessage(l10n.t("No saved connections"));
       return;
     }
     name = await window.showQuickPick(saved, {

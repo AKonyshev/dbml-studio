@@ -57,6 +57,8 @@ describe("validateFields", () => {
     "h%",
     "h\\x",
     "tcp:h",
+    "h,1433",
+    "a,b",
   ])("refuses %s as a host", (host) => {
     expect(validateFields({ ...base, host }, []).host).toBe(
       "The host is a name or address, without a port or path.",

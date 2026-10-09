@@ -43,6 +43,7 @@ describe("panelCommands", () => {
     jest.mocked(window.showQuickPick).mockReset();
     jest.mocked(window.showInputBox).mockReset();
     jest.mocked(window.showWarningMessage).mockReset();
+    jest.mocked(window.showInformationMessage).mockReset();
   });
 
   describe("addConnection", () => {
@@ -118,14 +119,18 @@ describe("panelCommands", () => {
       );
 
       expect(openConnectionForm).not.toHaveBeenCalled();
+      expect(window.showInformationMessage).not.toHaveBeenCalled();
     });
 
-    test("does nothing when there is nothing to edit", async () => {
+    test("says so when there is nothing to edit", async () => {
       await editConnectionCommand(
         fakeContext(fakeSecrets()),
         fakeProvider().provider,
       );
 
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        "No saved connections",
+      );
       expect(window.showQuickPick).not.toHaveBeenCalled();
       expect(openConnectionForm).not.toHaveBeenCalled();
     });

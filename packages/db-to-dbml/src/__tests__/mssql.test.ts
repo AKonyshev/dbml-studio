@@ -172,6 +172,16 @@ describe("SQL Server connection strings", () => {
     },
   );
 
+  it("does not pass a `schemas` query key on: it is the connector's own filter, not the URL's", () => {
+    const text = mssql.normalize(
+      "sqlserver://u:p@h/db?schemas=dbo&packet%20size=4096",
+    );
+    const ado = parseAdo(text);
+    expect(ado.has("schemas")).toBe(false);
+    expect(ado.get("packet size")).toBe("4096");
+    expect(text).not.toMatch(/schemas/i);
+  });
+
   it("does not take a login from the query", () => {
     const ado = parseAdo(
       mssql.normalize("sqlserver://u@h/db?password=q%3Br&pwd=x"),

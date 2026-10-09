@@ -24,7 +24,6 @@
   "Database kind": "数据库类型",
   "Delete": "删除",
   "Delete connection \"{0}\"?": "确定要删除连接“{0}”吗？",
-  "Edit connection": "编辑连接",
   "Edit connection: {0}": "编辑连接：{0}",
   "Encrypt connection": "加密连接",
   "Enter a host.": "请输入主机。",

@@ -196,6 +196,47 @@ describe("formState", () => {
     ).toBeUndefined();
   });
 
+  it("holds Save back while a paste is in flight, and releases it on either answer", () => {
+    expect(canSave(init())).toBe(true);
+    const pending = reduce(init(), { type: "pasting" });
+    expect(pending.pastePending).toBe(true);
+    expect(canSave(pending)).toBe(false);
+
+    const pasted = reduce(pending, {
+      type: "host",
+      message: {
+        type: "pasted",
+        fields: emptyFields("mysql"),
+        hasPassword: false,
+      },
+    });
+    expect(pasted.pastePending).toBe(false);
+    expect(canSave(pasted)).toBe(true);
+
+    const refused = reduce(pending, {
+      type: "host",
+      message: { type: "pasteError", message: "unreadable" },
+    });
+    expect(refused.pastePending).toBe(false);
+    expect(canSave(refused)).toBe(true);
+  });
+
+  it("starts an init with no paste pending", () => {
+    const pending = reduce(init(), { type: "pasting" });
+    const again = reduce(pending, {
+      type: "init",
+      message: {
+        type: "init",
+        mode: "new",
+        fields: emptyFields(),
+        strings: {},
+        savedNames: [],
+        hasPassword: false,
+      },
+    });
+    expect(again.pastePending).toBe(false);
+  });
+
   it("keeps a password only while the host says it holds one", () => {
     expect(init().keepsPassword).toBe(false);
     const edit = reduce(initialState(), {

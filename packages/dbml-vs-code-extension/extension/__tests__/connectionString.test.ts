@@ -117,6 +117,41 @@ describe("parseConnection", () => {
     );
   });
 
+  describe("a literal % in a PostgreSQL URL, as pg reads it", () => {
+    it.each([
+      ["postgres://u:100%@h/db", "100%"],
+      ["postgres://u:p%ss@h/db", "p%ss"],
+      ["postgres://u:p%zz@h/db", "p%zz"],
+      ["postgresql://u:a%40b@h/db", "a@b"],
+    ])("reads the password of %s", (text, password) => {
+      expect(() => assertConnectionString(text)).not.toThrow();
+      const parsed = parseConnection(text);
+      expect(parsed.password).toBe(password);
+      expect(parsed.fields).toMatchObject({
+        host: "h",
+        user: "u",
+        database: "db",
+      });
+    });
+
+    it("reads a literal % in the user and the database too", () => {
+      const parsed = parseConnection("postgres://50%:p@h/db%");
+      expect(parsed.fields).toMatchObject({ user: "50%", database: "db%" });
+    });
+
+    it("round-trips: the rebuilt string encodes the % and the adapter accepts it", () => {
+      const parsed = parseConnection("postgres://u:100%@h/db");
+      const built = buildConnection(
+        named(parsed.fields),
+        parsed.password,
+        parsed.hiddenOptions,
+      );
+      expect(built).toBe("postgresql://u:100%25@h/db");
+      expect(() => assertConnectionString(built)).not.toThrow();
+      expect(parseConnection(built).password).toBe("100%");
+    });
+  });
+
   it("keeps the password out of the fields", () => {
     const { fields, password } = parseConnection("mysql://u:S%40cr%23t@h/db");
     expect(password).toBe("S@cr#t");
@@ -202,13 +237,24 @@ describe("parseConnection", () => {
       expect(hidden.fields.options).toBe("");
     });
 
-    it("lets the password in front of the host win over one in the query", () => {
+    it("lets the password in the query win for PostgreSQL, as pg reads it", () => {
       const { password, fields, hiddenOptions } = parseConnection(
         "postgresql://u:real@h/db?password=other&sslmode=require",
       );
-      expect(password).toBe("real");
+      expect(password).toBe("other");
       expect(fields.options).toBe("sslmode=require");
       expect(hiddenOptions).toBe("");
+      // An empty one does not: pg takes the first non-empty password.
+      expect(
+        parseConnection("postgresql://u:real@h/db?password=").password,
+      ).toBe("real");
+    });
+
+    it.each([
+      "mysql://u:real@h/db?password=other&ssl=true",
+      "sqlserver://sa:real@h/db?password=other",
+    ])("lets the password in front of the host win for %s", (text) => {
+      expect(parseConnection(text).password).toBe("real");
     });
 
     it.each([
@@ -277,10 +323,6 @@ describe("parseConnection", () => {
     });
 
     it.each([
-      [
-        "postgresql://u:p%@h/db",
-        "Connection string is not a readable PostgreSQL URL",
-      ],
       [
         "postgres://u:Secr3t#x@h/db",
         "Connection string is not a readable PostgreSQL URL",

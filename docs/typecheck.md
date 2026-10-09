@@ -101,6 +101,18 @@ contains files from outside the package. That is why its `tsconfig.json` sets no
 `extension/mcpProvider.ts` for the same reason it excludes `extension/index.ts`:
 both reach into other packages and are checked by `yarn typecheck` instead.
 
+## `virtual:vscode` is declared twice
+
+The module `virtual:vscode` (from `@tomjs/vite-plugin-vscode`) is declared in
+`extension-shared/globals.d.ts` for the repo-wide program that `yarn typecheck`
+builds, and again in `extension/vite-plugin-vscode.d.ts` for the integration
+compile (`tsconfig.tests.json`), which includes `extension/**/*.ts` but cannot
+see `extension-shared`. A future `virtual:` import under `extension/` is covered
+by the second file. The trap is that `yarn typecheck` passing does not prove
+`compile-tests` passes: the two are different programs with different files and
+ambient declarations, so a declaration that exists in only one of them shows up
+only in the other.
+
 ## Vendored JavaScript
 
 `packages/json-table-schema-visualizer/src/export/svg/svgcanvas.esm.js` is

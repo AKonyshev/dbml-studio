@@ -24,7 +24,6 @@
   "Database kind": "Тип базы данных",
   "Delete": "Удалить",
   "Delete connection \"{0}\"?": "Удалить подключение «{0}»?",
-  "Edit connection": "Изменить подключение",
   "Edit connection: {0}": "Изменить подключение: {0}",
   "Encrypt connection": "Шифровать соединение",
   "Enter a host.": "Укажите хост.",

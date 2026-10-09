@@ -54,9 +54,10 @@ const unbracketed = (host: string): string => host.replace(/^\[(.*)\]$/, "$1");
 
 // A host is a name or an address. Anything that would be read as a port, a
 // path, a login or a query once it is written into a URL is refused here, where
-// the field can say so.
+// the field can say so. A comma is the ADO `host,port` form, which the drivers
+// would read as part of the name.
 function hostIsUnusable(host: string): boolean {
-  if (/[\s/?#@%\\]/.test(host)) {
+  if (/[\s/?#@%\\,]/.test(host)) {
     return true;
   }
   const bare = unbracketed(host);
