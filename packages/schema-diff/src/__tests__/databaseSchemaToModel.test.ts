@@ -56,7 +56,7 @@ describe("databaseSchemaToModel", () => {
     });
   });
 
-  test("normalizes indexes (unique always false), enums, and refs", () => {
+  test("normalizes indexes (unique unless the database says so), enums, and refs", () => {
     const m = databaseSchemaToModel(dbFixture(), "s");
     expect(m.tables.get("t")?.indexes).toEqual([
       { columns: ["amount"], unique: false, name: "ix" },
@@ -64,5 +64,28 @@ describe("databaseSchemaToModel", () => {
     expect(m.enums.get("color")).toEqual({ name: "color", values: ["red"] });
     expect(m.refs).toHaveLength(1);
     expect([m.refs[0].fromTable, m.refs[0].toTable].sort()).toEqual(["t", "u"]);
+  });
+
+  test("carries a database index's unique flag through", () => {
+    const db = dbFixture();
+    db.indexes = {
+      "s.t": [
+        {
+          name: "ux",
+          unique: true,
+          columns: [{ type: "column", value: "amount" }],
+        },
+        {
+          name: "ix",
+          unique: false,
+          columns: [{ type: "column", value: "id" }],
+        },
+      ],
+    };
+
+    expect(databaseSchemaToModel(db, "s").tables.get("t")?.indexes).toEqual([
+      { columns: ["amount"], unique: true, name: "ux" },
+      { columns: ["id"], unique: false, name: "ix" },
+    ]);
   });
 });

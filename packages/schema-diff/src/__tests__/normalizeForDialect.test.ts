@@ -59,6 +59,64 @@ const loanToMember = {
   toColumns: ["id"],
 };
 
+describe("diffSchemas for SQL Server", () => {
+  const model = (values = ["active", "lapsed"]): CanonSchema =>
+    schema({
+      member: { status: "membership_status" },
+      enums: [{ name: "membership_status", values }],
+      refs: [loanToMember],
+    });
+  const database = (values = ["active", "lapsed"]): CanonSchema =>
+    schema({
+      member: { status: "ck__member__status__3b75d760_status" },
+      enums: [{ name: "CK__member__status__3B75D760_status", values }],
+      refs: [loanToMember],
+    });
+
+  it("compares a check-constraint enum by its values and not its name", () => {
+    expect(
+      diffSchemas(model(), database(), { dialect: "mssql" }).identical,
+    ).toBe(true);
+  });
+
+  it("does not care in which order the values come", () => {
+    expect(
+      diffSchemas(model(), database(["lapsed", "active"]), {
+        dialect: "mssql",
+      }).identical,
+    ).toBe(true);
+  });
+
+  it("reports different values as a change of the column's type", () => {
+    const difference = diffSchemas(model(), database(["active", "gone"]), {
+      dialect: "mssql",
+    });
+
+    expect(difference.enumsOnlyInDbml).toEqual([]);
+    expect(difference.enumsOnlyInDatabase).toEqual([]);
+    expect(difference.columnDiffs[0].changed).toEqual([
+      expect.objectContaining({ column: "status", differs: ["type"] }),
+    ]);
+  });
+
+  it("keeps an index SQL Server has and the file lacks", () => {
+    const withIndex = database();
+    withIndex.tables.get("loan")?.indexes.push(ix(["member_id"]));
+
+    const difference = diffSchemas(model(), withIndex, { dialect: "mssql" });
+
+    expect(difference.indexDiffs).toHaveLength(1);
+  });
+
+  it("leaves PostgreSQL's enums as they were", () => {
+    const difference = diffSchemas(model(), database(), {
+      dialect: "postgres",
+    });
+
+    expect(difference.enumsOnlyInDbml).toEqual(["membership_status"]);
+  });
+});
+
 describe("diffSchemas for MySQL", () => {
   describe("enums", () => {
     const model = (values = ["active", "lapsed"]): CanonSchema =>
@@ -88,12 +146,20 @@ describe("diffSchemas for MySQL", () => {
       expect(difference.enumsOnlyInDatabase).toEqual(["member_status_enum"]);
     });
 
-    it("reports other databases' enums as before", () => {
-      for (const dialect of ["postgres", "mssql"] as const) {
-        const difference = diffSchemas(model(), database(), { dialect });
+    it("reports PostgreSQL's enums as before", () => {
+      const difference = diffSchemas(model(), database(), {
+        dialect: "postgres",
+      });
 
-        expect(difference.enumsOnlyInDbml).toEqual(["membership_status"]);
-      }
+      expect(difference.enumsOnlyInDbml).toEqual(["membership_status"]);
+    });
+
+    it("cannot confuse a value containing a comma with two values", () => {
+      const difference = diffSchemas(model(["a,b"]), database(["a", "b"]), {
+        dialect: "mysql",
+      });
+
+      expect(difference.columnDiffs[0].changed[0].differs).toEqual(["type"]);
     });
 
     it("reports different values as a change of the column's type", () => {

@@ -106,6 +106,11 @@ describe("schemaToDbml", () => {
             name: "book_id",
             type: { type_name: "int" },
           },
+          // typed by an enum of the schema that goes unwritten
+          {
+            name: "kind",
+            type: { type_name: "book_status_enum", schemaName: "library" },
+          },
         ],
       };
       db.refs?.push({
@@ -132,6 +137,8 @@ describe("schemaToDbml", () => {
       expect(dbml).toContain('Table "book" {');
       expect(dbml).toContain('Table "audit"."log" {');
       expect(dbml).toContain('"audit"."log"."book_id"');
+      expect(dbml).toContain('"kind" book_status_enum');
+      expect(dbml).not.toContain("library.book_status_enum");
       expect(dbml).not.toContain('"library"');
     });
 

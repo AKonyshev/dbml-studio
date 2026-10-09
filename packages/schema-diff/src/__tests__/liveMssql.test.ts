@@ -10,12 +10,12 @@ import { parseDbmlToModel } from "../parseDbmlToModel";
 /**
  * The hand-written library file against a real SQL Server.
  *
- * Nothing here is normalised for SQL Server: this pins down what the
- * comparison reports today, so that what is left to a user (and what a later
- * change takes on) is a list in a test and not a surprise. Every difference
- * below is one the connector or SQL Server produces from a file that is
- * otherwise the database, which is why the test asserts them all, and not that
- * the diff is empty.
+ * Only the enums are normalised for SQL Server (by value, order aside). This
+ * pins down what the comparison reports today, so that what is left to a user,
+ * and what a later change takes on, is a list in a test and not a surprise.
+ * Every difference below is one the connector or SQL Server produces from a
+ * file that is otherwise the database, which is why the test asserts them all,
+ * and not that the diff is empty.
  *
  * Skipped unless `DBML_TEST_MSSQL_URL` is set; `docs/testing.md` says how to
  * raise a server to run it against. The schema is
@@ -49,21 +49,18 @@ describeLive("against a real SQL Server", () => {
 
     // SQL Server has no enum type. The connector reads one out of each CHECK
     // constraint and names it after the constraint, which SQL Server named
-    // itself (`CK__member__status__<hash>`) and which differs per server.
-    // A column typed by one carries that name.
-    expect(difference.enumsOnlyInDbml).toEqual([
-      "copy_condition",
-      "membership_status",
-    ]);
-    expect(difference.enumsOnlyInDatabase).toHaveLength(2);
-    for (const name of difference.enumsOnlyInDatabase) {
-      expect(name).toMatch(/^CK__(copy__condition|member__status)__[0-9A-F]+_/);
-    }
+    // itself (`CK__member__status__<hash>`), and returns its values in no
+    // particular order. The dialect compares them by their sorted values, so
+    // neither the names nor the order is a difference, and `copy.condition` and
+    // `member.status` match their enums in the file.
+    expect(difference.enumsOnlyInDbml).toEqual([]);
+    expect(difference.enumsOnlyInDatabase).toEqual([]);
     expect(difference.enumValueDiffs).toEqual([]);
 
-    // The same two columns, plus the two the file writes as `timestamp`, which
-    // SQL Server has no use for in that sense (it is a row version there) and
-    // the fixture creates as `datetime2`: a real difference between databases.
+    // What is left in the columns is the two the file writes as `timestamp`,
+    // which SQL Server has no use for in that sense (it is a row version there)
+    // and the fixture creates as `datetime2`: a real difference between
+    // databases.
     expect(
       difference.columnDiffs.map((t) => ({
         table: t.table,
@@ -73,38 +70,10 @@ describeLive("against a real SQL Server", () => {
           column: c.column,
           differs: c.differs,
           model: c.model.type,
-          database: /^ck__/.test(c.database.type)
-            ? "<generated check name>"
-            : c.database.type,
+          database: c.database.type,
         })),
       })),
     ).toEqual([
-      {
-        table: "copy",
-        onlyInDbml: [],
-        onlyInDatabase: [],
-        changed: [
-          {
-            column: "condition",
-            differs: ["type"],
-            model: "copy_condition",
-            database: "<generated check name>",
-          },
-        ],
-      },
-      {
-        table: "member",
-        onlyInDbml: [],
-        onlyInDatabase: [],
-        changed: [
-          {
-            column: "status",
-            differs: ["type"],
-            model: "membership_status",
-            database: "<generated check name>",
-          },
-        ],
-      },
       {
         table: "reservation",
         onlyInDbml: [],
