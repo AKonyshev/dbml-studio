@@ -161,6 +161,47 @@ it, not with `examples/library.dbml`: the connector names a MySQL `ENUM` column'
 type `<table>_<column>_enum` and MySQL indexes every foreign key on its own, so a
 hand-written file never matches a database exactly.
 
+### SQL Server
+
+`packages/db-to-dbml/src/__tests__/liveMssql.test.ts` does the same against a
+real SQL Server, and is skipped unless `DBML_TEST_MSSQL_URL` is set. The schema
+is the library sample of `examples/library.dbml`, as DDL, in
+`packages/db-to-dbml/src/__tests__/fixtures/library.mssql.sql`. That file was
+generated with `@dbml/core`'s exporter (`exporter.export(dbml, "mssql")`) and
+fixed by hand in three places, listed in its header: `timestamp` (which is
+`rowversion` in T-SQL) became `datetime2`, the composite index's `"` quoting
+became brackets, and the one-to-one foreign key was turned the right way round.
+
+The image is amd64 only. On Apple Silicon it runs under Docker Desktop's Rosetta
+emulation (enable "Use Rosetta for x86_64/amd64 emulation" in its settings):
+slow to start, about a minute, but it works.
+
+```bash
+docker run -d --name dbml-test-mssql --platform linux/amd64 \
+  -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Test_Passw0rd!' \
+  -p 51433:1433 mcr.microsoft.com/mssql/server:2022-latest
+
+# Wait until the server accepts logins (up to a minute or two under emulation).
+until docker exec dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost \
+  -U sa -P 'Test_Passw0rd!' -Q "SELECT 1" >/dev/null 2>&1; do sleep 3; done
+
+docker exec -i dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Test_Passw0rd!' -Q "CREATE DATABASE library"
+docker exec -i dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Test_Passw0rd!' -d library -b \
+  < packages/db-to-dbml/src/__tests__/fixtures/library.mssql.sql
+
+DBML_TEST_MSSQL_URL='sqlserver://sa:Test_Passw0rd!@localhost:51433/library?trustServerCertificate=true' \
+  yarn workspace db-to-dbml test liveMssql
+
+docker rm -f dbml-test-mssql
+```
+
+To seed again, `DROP DATABASE library` first. SQL Server has no enum type, so
+the suite does not assert on the enums the connector reads out of `CHECK`
+constraints: their names carry a hash SQL Server makes up, as do the names of
+the foreign keys. The suite also does not assert that a missing database is
+`DATABASE_NOT_FOUND`: to a SQL login the server answers "Login failed", the same
+as for a wrong password.
+
 `packages/dbml-mcp` has a second kind of suite that is not about a database but
 is in the sweep all the same: `protocol.test.ts` builds the bundle
 (`dist/server.cjs`) and spawns it with `node`, then speaks MCP to it over stdio

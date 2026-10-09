@@ -10,6 +10,10 @@ describe("dialectOf", () => {
     ["mysql://u:p@h/db", "mysql"],
     ["MySQL://u:p@h/db", "mysql"],
     ["mariadb://u:p@h/db", "mysql"],
+    ["sqlserver://u:p@h/db", "mssql"],
+    ["SQLSERVER://u:p@h/db", "mssql"],
+    ["mssql://u:p@h/db", "mssql"],
+    ["Server=h;Database=db;User Id=u;Password=p", "mssql"],
   ])("%s is %s", (connection, expected) => {
     expect(dialectOf(connection)).toBe(expected);
   });
