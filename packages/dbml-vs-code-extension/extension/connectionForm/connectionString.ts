@@ -44,9 +44,15 @@ const encryptOn = (value: string): boolean =>
 const trustOn = (value: string): boolean =>
   ["true", "yes", "1"].includes(value.trim().toLowerCase());
 
+// Query text as the drivers read it (URLSearchParams): `+` is a space. Used for
+// classifying keys and lifting the password; the options themselves stay as
+// written.
+const queryDecode = (value: string): string =>
+  decodeURIComponent(value.replace(/\+/g, " "));
+
 const safeDecode = (value: string): string => {
   try {
-    return decodeURIComponent(value);
+    return queryDecode(value);
   } catch {
     return value;
   }
@@ -135,12 +141,14 @@ function fromUrl(text: string, dialect: DialectId): ParsedConnection {
         continue;
       }
       const key = keyOf(pair);
-      const value = safeDecode(pair.slice(pair.indexOf("=") + 1));
       const hasValue = pair.includes("=");
+      const value = hasValue
+        ? safeDecode(pair.slice(pair.indexOf("=") + 1))
+        : "";
       if (PASSWORD_KEYS.has(key)) {
         // The text in front of the host wins; a key it repeats is dropped.
         queryPassword ??= hasValue
-          ? decodeURIComponent(pair.slice(pair.indexOf("=") + 1))
+          ? queryDecode(pair.slice(pair.indexOf("=") + 1))
           : "";
       } else if (SECRET_KEYS.has(key)) {
         hidden.push(pair);

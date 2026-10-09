@@ -63,6 +63,28 @@ const SERVER_KEYS = [
   "network address",
 ];
 const DATABASE_KEYS = ["database", "initial catalog"];
+// What a pass-through key may look like, and the keys a URL owns (compared
+// lower-cased and without spaces): the ones it spells itself, and every
+// spelling of the server, database, login and password the driver reads.
+const PLAIN_KEY = /^[a-z][a-z0-9 _.-]*$/i;
+const OWNED_KEYS = new Set([
+  "server",
+  "datasource",
+  "address",
+  "addr",
+  "networkaddress",
+  "database",
+  "initialcatalog",
+  "userid",
+  "uid",
+  "user",
+  "username",
+  "password",
+  "pwd",
+  "instancename",
+  "encrypt",
+  "trustservercertificate",
+]);
 const CONNECT_TIMEOUT_KEYS = [
   "connect timeout",
   "connection timeout",
@@ -102,15 +124,18 @@ function fromUrl(text: string): Map<string, string> {
     const options = new Map<string, string>();
     // Query keys with no name of their own here are ADO keys written in a URL
     // (`authentication`, `applicationIntent`, `packet size`…): the driver reads
-    // many of them, so they pass through. They are set only where the URL has
-    // not said it already, so a query cannot repoint the host or the login.
+    // many of them, so they pass through. Not every key does: `formatAdo` quotes
+    // values and not keys, so a key is let through only if it is a plain name
+    // (one holding `;` or `=` would write more keys than it is), and never if it
+    // is one the URL already owns, under any of its spellings. A query cannot
+    // repoint the host or the login.
     const extra = new Map<string, string>();
     for (const [key, value] of url.searchParams) {
       const name = key.toLowerCase();
       if (name === "instancename") instance = value;
       else if (URL_OPTIONS[name] !== undefined) {
         options.set(URL_OPTIONS[name], value);
-      } else extra.set(name, value);
+      } else extra.set(name.trim(), value);
     }
 
     // `host\instance,port`: the form ADO strings use for both at once.
@@ -125,9 +150,10 @@ function fromUrl(text: string): Map<string, string> {
     if (password !== "") map.set("password", password);
     map.set("encrypt", "true");
     for (const [key, value] of options) map.set(key, value);
-    const taken = [...SERVER_KEYS, ...DATABASE_KEYS];
     for (const [key, value] of extra) {
-      if (!map.has(key) && !taken.includes(key)) map.set(key, value);
+      if (PLAIN_KEY.test(key) && !OWNED_KEYS.has(key.replace(/\s/g, ""))) {
+        map.set(key, value);
+      }
     }
     return map;
   } catch {

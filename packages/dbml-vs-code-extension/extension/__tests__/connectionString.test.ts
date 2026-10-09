@@ -190,6 +190,18 @@ describe("parseConnection", () => {
       expect(ms.fields.options).toBe("");
     });
 
+    it("reads + in the query as a space, as the drivers do", () => {
+      const lifted = parseConnection("postgresql://u@h/db?password=a+b&x=1");
+      expect(lifted.password).toBe("a b");
+      expect(lifted.fields.options).toBe("x=1");
+
+      const hidden = parseConnection(
+        "sqlserver://sa:p@h/db?client+secret=x&Access+Token=y",
+      );
+      expect(hidden.hiddenOptions).toBe("client+secret=x&Access+Token=y");
+      expect(hidden.fields.options).toBe("");
+    });
+
     it("lets the password in front of the host win over one in the query", () => {
       const { password, fields, hiddenOptions } = parseConnection(
         "postgresql://u:real@h/db?password=other&sslmode=require",
