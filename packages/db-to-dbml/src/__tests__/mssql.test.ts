@@ -182,6 +182,17 @@ describe("SQL Server connection strings", () => {
     expect(text).not.toMatch(/schemas/i);
   });
 
+  it.each([
+    "sqlserver://u:p@h/db?xschemas=dbo",
+    "sqlserver://u:p@h/db?my%20schemas=dbo",
+    "sqlserver://u:p@h/db?application%20name=schemas%3Ddbo",
+  ])(
+    "passes nothing on that the connector would read as its filter: %s",
+    (url) => {
+      expect(mssql.normalize(url)).not.toMatch(/schemas/i);
+    },
+  );
+
   it("does not take a login from the query", () => {
     const ado = parseAdo(
       mssql.normalize("sqlserver://u@h/db?password=q%3Br&pwd=x"),

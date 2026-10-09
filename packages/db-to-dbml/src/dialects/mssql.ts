@@ -152,8 +152,14 @@ function fromUrl(text: string): Map<string, string> {
     if (password !== "") map.set("password", password);
     map.set("encrypt", "true");
     for (const [key, value] of options) map.set(key, value);
+    // The connector finds its schema filter by looking for `schemas=` anywhere
+    // in the string, so nothing passed through may spell it, in a key or a value.
     for (const [key, value] of extra) {
-      if (PLAIN_KEY.test(key) && !OWNED_KEYS.has(key.replace(/\s/g, ""))) {
+      if (
+        PLAIN_KEY.test(key) &&
+        !OWNED_KEYS.has(key.replace(/\s/g, "")) &&
+        !/schemas/i.test(`${key}=${value}`)
+      ) {
         map.set(key, value);
       }
     }
