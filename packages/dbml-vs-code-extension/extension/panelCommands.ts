@@ -1,6 +1,11 @@
 import { ExtensionContext, l10n, window } from "vscode";
 
 import { compareWithDatabase } from "./compareWithDatabase";
+import {
+  CONNECTION_PLACEHOLDER,
+  connectionPrompt,
+  validateConnectionInput,
+} from "./connectionInput";
 import type { ConnectionsTreeProvider } from "./connectionsTreeProvider";
 import {
   deleteConnection,
@@ -23,10 +28,9 @@ export async function addConnection(
     return;
   }
   const connectionString = await window.showInputBox({
-    prompt: l10n.t(
-      "PostgreSQL connection string (the database in it is only the entry point)",
-    ),
-    placeHolder: "postgres://user:password@host:5432/database",
+    prompt: connectionPrompt(),
+    placeHolder: CONNECTION_PLACEHOLDER,
+    validateInput: validateConnectionInput,
     password: true,
     ignoreFocusOut: true,
   });

@@ -298,4 +298,61 @@ describe("importFromDatabase", () => {
       JSON.stringify({ "saved-local": CONNECTION }),
     );
   });
+
+  test("writes a MySQL database's tables without its name in front", async () => {
+    // The real generator behind the mock, fed the shape a MySQL read has: every
+    // object is in a schema named after the database.
+    const actual = jest.requireActual(
+      "db-to-dbml",
+    ) as typeof import("db-to-dbml");
+    jest.mocked(schemaToDbml).mockImplementation(actual.schemaToDbml);
+    jest.mocked(fetchSchema).mockResolvedValue({
+      tables: [
+        { name: "member", schemaName: "library" },
+        { name: "book", schemaName: "library" },
+      ],
+      enums: [
+        {
+          name: "book_status_enum",
+          schemaName: "library",
+          values: [{ name: "available" }, { name: "lost" }],
+        },
+      ],
+      refs: [],
+      fields: {
+        "library.member": [
+          { name: "id", type: { type_name: "int" }, not_null: true },
+        ],
+        "library.book": [
+          { name: "id", type: { type_name: "int" }, not_null: true },
+          {
+            name: "status",
+            type: { type_name: "book_status_enum", schemaName: "library" },
+          },
+        ],
+      },
+      tableConstraints: {},
+      indexes: {},
+      checks: {},
+    } as never);
+    jest
+      .mocked(pickImportTargets)
+      .mockResolvedValue([
+        { databaseName: "library", schemaNames: ["library"] },
+      ]);
+    jest
+      .mocked(resolveImportDestination)
+      .mockResolvedValue(
+        new Map([["library", uriFor("library.dbml")]]) as never,
+      );
+
+    await importFromDatabase(fakeContext(), {
+      connectionString: "mysql://u:p@h:3306/entry",
+    });
+
+    const written = jest.mocked(workspace.fs.writeFile).mock.calls[0][1];
+    const dbml = Buffer.from(written).toString("utf-8");
+    expect(dbml).toContain('Table "book" {');
+    expect(dbml).not.toContain('"library".');
+  });
 });

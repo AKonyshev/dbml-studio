@@ -32,6 +32,14 @@ export async function listConnections(secrets: SecretStore): Promise<string[]> {
   return Object.keys(await readAll(secrets)).sort();
 }
 
+// Every saved connection with its string. For callers that need to look at all
+// of them at once and would otherwise read the one secret key once per name.
+export async function getAllConnections(
+  secrets: SecretStore,
+): Promise<Record<string, string>> {
+  return await readAll(secrets);
+}
+
 export async function getConnection(
   secrets: SecretStore,
   name: string,

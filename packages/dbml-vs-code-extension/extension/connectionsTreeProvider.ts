@@ -1,7 +1,13 @@
 import * as vscode from "vscode";
-import { listDatabases, listSchemas, withDatabase } from "db-to-dbml";
+import {
+  dialectOf,
+  listDatabases,
+  listSchemas,
+  withDatabase,
+  type DialectId,
+} from "db-to-dbml";
 
-import { getConnection, listConnections } from "./connectionStore";
+import { getAllConnections, getConnection } from "./connectionStore";
 import {
   ACTION_NODES,
   CONNECTION_UNAVAILABLE,
@@ -15,6 +21,14 @@ import {
   type PanelNode,
 } from "./panelNodes";
 
+function dialectOrNull(connectionString: string): DialectId | null {
+  try {
+    return dialectOf(connectionString);
+  } catch {
+    return null;
+  }
+}
+
 export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNode> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -25,10 +39,19 @@ export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNod
   // share one round trip. ⟳ is what empties it.
   private readonly children = new Map<string, Promise<PanelNode[]>>();
 
+  // The database behind each connection, by name. `getTreeItem` is synchronous
+  // and a connection string lives in SecretStorage, so the answer is learned
+  // while the connections are listed or expanded and read from here. `null` is
+  // a saved value that names no supported database; the connection stays in the
+  // tree, without a description, so it can still be deleted. Only the dialect is
+  // kept, never the string it came from.
+  private readonly dialects = new Map<string, DialectId | null>();
+
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   public refresh(): void {
     this.children.clear();
+    this.dialects.clear();
     this._onDidChangeTreeData.fire();
   }
 
@@ -64,6 +87,8 @@ export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNod
         item.contextValue = "dbmlConnection";
         // A connection is a server now, and its children are its databases.
         item.iconPath = new vscode.ThemeIcon("server");
+        // The database's name is a brand, not a sentence: it is not translated.
+        item.description = this.dialects.get(node.name) ?? undefined;
         return item;
       }
       case "database": {
@@ -112,7 +137,11 @@ export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNod
       return ACTION_NODES;
     }
     if (node.kind === "group" && node.id === "connections") {
-      return buildConnectionNodes(await listConnections(this.secrets));
+      const saved = await getAllConnections(this.secrets);
+      for (const [name, connectionString] of Object.entries(saved)) {
+        this.dialects.set(name, dialectOrNull(connectionString));
+      }
+      return buildConnectionNodes(Object.keys(saved).sort());
     }
     if (node.kind === "connection") {
       return await this.cached(
@@ -181,10 +210,19 @@ export class ConnectionsTreeProvider implements vscode.TreeDataProvider<PanelNod
       return [errorNode(CONNECTION_UNAVAILABLE)];
     }
 
+    // A string that names no supported database cannot be listed either; the
+    // error node below is what says so.
+    const dialect = dialectOrNull(connectionString);
+    this.dialects.set(connectionName, dialect);
+    if (dialect === null) {
+      return [errorNode(DATABASES_UNREADABLE)];
+    }
+
     try {
       return buildDatabaseNodes(
         connectionName,
         await listDatabases(connectionString),
+        dialect,
       );
     } catch (error) {
       console.error("[dbml] listing databases failed", error);

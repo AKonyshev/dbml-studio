@@ -12,7 +12,9 @@ const uiMessage = (code: DbImportErrorCode): string | null => {
     case DbImportErrorCode.AUTH_FAILED:
       return l10n.t("Authentication failed. Check the username and password.");
     case DbImportErrorCode.INVALID_CONNECTION_STRING:
-      return l10n.t("Invalid PostgreSQL connection string.");
+      return l10n.t(
+        "Invalid connection string. Check its format, and that it names a database.",
+      );
     case DbImportErrorCode.UNREACHABLE:
       return l10n.t("Could not reach the database host.");
     case DbImportErrorCode.DATABASE_NOT_FOUND:

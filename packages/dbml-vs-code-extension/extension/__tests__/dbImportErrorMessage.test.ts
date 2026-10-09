@@ -16,10 +16,10 @@ describe("dbImportErrorMessage", () => {
   test("maps INVALID_CONNECTION_STRING to the connection-string UI string", () => {
     const error = new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,
-      "mysql://x",
+      "Connection string must start with postgres://, postgresql://, mysql://, mariadb://, sqlserver:// or mssql://",
     );
     expect(dbImportErrorMessage(error, "fallback")).toBe(
-      "Invalid PostgreSQL connection string.",
+      "Invalid connection string. Check its format, and that it names a database.",
     );
   });
 

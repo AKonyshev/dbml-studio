@@ -31,15 +31,34 @@ describe("buildConnectionNodes", () => {
 
 describe("buildDatabaseNodes", () => {
   test("returns one database node per name, carrying its connection", () => {
-    expect(buildDatabaseNodes("prod", ["billing", "orders"])).toEqual([
+    expect(
+      buildDatabaseNodes("prod", ["billing", "orders"], "postgres"),
+    ).toEqual([
       { kind: "database", connectionName: "prod", databaseName: "billing" },
       { kind: "database", connectionName: "prod", databaseName: "orders" },
     ]);
   });
 
   test("returns a single empty node when the server has none", () => {
-    expect(buildDatabaseNodes("prod", [])).toEqual([
+    expect(buildDatabaseNodes("prod", [], "postgres")).toEqual([
       { kind: "empty", label: "No databases" },
+    ]);
+  });
+
+  test("goes straight to a schema node for MySQL, where a database is a schema", () => {
+    expect(buildDatabaseNodes("shop", ["library"], "mysql")).toEqual([
+      {
+        kind: "schema",
+        connectionName: "shop",
+        databaseName: "library",
+        schemaName: "library",
+      },
+    ]);
+  });
+
+  test("keeps the database level for SQL Server", () => {
+    expect(buildDatabaseNodes("shop", ["library"], "mssql")).toEqual([
+      { kind: "database", connectionName: "shop", databaseName: "library" },
     ]);
   });
 });
@@ -96,7 +115,7 @@ describe("panel labels / translation bundles", () => {
       ...GROUP_NODES,
       ...ACTION_NODES,
       ...buildConnectionNodes([]),
-      ...buildDatabaseNodes("c", []),
+      ...buildDatabaseNodes("c", [], "postgres"),
       ...buildSchemaNodes("c", "d", []),
       errorNode(CONNECTION_UNAVAILABLE),
       errorNode(DATABASES_UNREADABLE),

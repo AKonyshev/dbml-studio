@@ -117,6 +117,29 @@ describe("pickDatabaseConnection", () => {
     );
   });
 
+  test("checks the typed connection string as it is entered", async () => {
+    jest.mocked(window.showQuickPick).mockImplementation(pickNew() as never);
+    jest.mocked(window.showInputBox).mockResolvedValue("mysql://u:p@h/new");
+
+    await pickDatabaseConnection(fakeContext(fakeSecrets()));
+
+    const options = jest.mocked(window.showInputBox).mock.calls[0][0];
+    expect(options?.validateInput?.("mysql://u:p@h/db")).toBeUndefined();
+    expect(options?.validateInput?.("oracle://u:p@h/db")).toEqual(
+      expect.stringContaining("mysql://"),
+    );
+  });
+
+  test("keeps a typed SQL Server URL as typed", async () => {
+    jest.mocked(window.showQuickPick).mockImplementation(pickNew() as never);
+    const typed = "sqlserver://sa:Test_Passw0rd!@h:1433/library";
+    jest.mocked(window.showInputBox).mockResolvedValue(typed);
+
+    await expect(
+      pickDatabaseConnection(fakeContext(fakeSecrets())),
+    ).resolves.toEqual({ connectionString: typed, isNew: true });
+  });
+
   test("returns undefined when the user cancels the quick pick", async () => {
     jest.mocked(window.showQuickPick).mockResolvedValue(undefined);
 

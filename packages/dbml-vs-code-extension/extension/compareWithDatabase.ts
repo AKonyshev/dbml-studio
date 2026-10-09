@@ -10,6 +10,8 @@ import {
   type DatabaseSchema,
   DbImportError,
   DbImportErrorCode,
+  defaultSchema,
+  dialectOf,
   fetchSchema,
   listDatabases,
   listSchemaNames,
@@ -113,22 +115,36 @@ export async function compareWithDatabase(
     return;
   }
 
-  const schemas = listSchemaNames(db);
-  if (schemas.length === 0) {
-    void window.showWarningMessage(
-      l10n.t("No user schemas found in this database."),
-    );
-    return;
-  }
-  let schemaName = schemas[0];
-  if (schemas.length > 1) {
-    const picked = await window.showQuickPick(schemas, {
-      placeHolder: l10n.t("Select the database schema to compare against"),
-    });
-    if (picked === undefined) {
+  // MySQL has no schema level: the database is the schema, and the connector
+  // reports its tables under the database's name. Nothing to ask, and an empty
+  // database is still a database to compare against.
+  const dialect = dialectOf(connectionString);
+  let schemaName = database;
+  if (dialect !== "mysql") {
+    const schemas = listSchemaNames(db);
+    if (schemas.length === 0) {
+      void window.showWarningMessage(
+        l10n.t("No user schemas found in this database."),
+      );
       return;
     }
-    schemaName = picked;
+    // The schema a database puts a table in unless told otherwise is almost
+    // always the one wanted, so it comes first: Enter takes it.
+    const preferred = defaultSchema(withDatabase(connectionString, database));
+    const ordered = [
+      ...schemas.filter((name) => name === preferred),
+      ...schemas.filter((name) => name !== preferred),
+    ];
+    schemaName = ordered[0];
+    if (ordered.length > 1) {
+      const picked = await window.showQuickPick(ordered, {
+        placeHolder: l10n.t("Select the database schema to compare against"),
+      });
+      if (picked === undefined) {
+        return;
+      }
+      schemaName = picked;
+    }
   }
 
   try {
@@ -136,7 +152,7 @@ export async function compareWithDatabase(
     // Not `database`: that name is taken above by the database this compares
     // against, and this is the model read out of it.
     const databaseModel = databaseSchemaToModel(db, schemaName);
-    const diff = diffSchemas(model, databaseModel);
+    const diff = diffSchemas(model, databaseModel, { dialect });
     const markdown = renderDiffMarkdown(diff, l10n.t);
 
     const doc = await workspace.openTextDocument({
