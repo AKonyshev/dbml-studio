@@ -3,6 +3,7 @@ import {
   getConnection,
   saveConnection,
   deleteConnection,
+  renameConnection,
   type SecretStore,
 } from "../connectionStore";
 
@@ -44,5 +45,23 @@ describe("connectionStore", () => {
     const s = fakeSecrets();
     await s.store("dbml.connections", "[]");
     await expect(listConnections(s)).resolves.toEqual([]);
+  });
+
+  test("rename moves a connection in one write", async () => {
+    const s = fakeSecrets();
+    await saveConnection(s, "a", "postgres://a");
+    await saveConnection(s, "b", "postgres://b");
+    const store = jest.spyOn(s, "store");
+    await renameConnection(s, "a", "c", "postgres://c");
+    expect(store).toHaveBeenCalledTimes(1);
+    expect(await listConnections(s)).toEqual(["b", "c"]);
+    expect(await getConnection(s, "c")).toBe("postgres://c");
+  });
+
+  test("a case-only rename leaves only the new spelling", async () => {
+    const s = fakeSecrets();
+    await saveConnection(s, "shop", "postgres://a");
+    await renameConnection(s, "shop", "Shop", "postgres://a");
+    expect(await listConnections(s)).toEqual(["Shop"]);
   });
 });

@@ -17,10 +17,19 @@ export type HostToForm =
       mode: "new" | "edit";
       fields: ConnectionFields;
       strings: Record<string, string>;
+      // Every saved name except the one being edited, so the page validates
+      // against exactly the names a save would collide with.
       savedNames: string[];
       editing?: string;
+      // Whether the host holds a password for these fields. A flag, not the
+      // password: the page offers "leave empty to keep" only when it is true.
+      hasPassword: boolean;
     }
-  | { type: "pasted"; fields: Omit<ConnectionFields, "name"> }
+  | {
+      type: "pasted";
+      fields: Omit<ConnectionFields, "name">;
+      hasPassword: boolean;
+    }
   | { type: "pasteError"; message: string }
   | { type: "testing" }
   | { type: "testResult"; ok: true; databases: string[] }

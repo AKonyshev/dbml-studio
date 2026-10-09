@@ -33,9 +33,6 @@ const table = () =>
     "Leave empty to keep the current password": l10n.t(
       "Leave empty to keep the current password",
     ),
-    "Leave empty to keep the pasted password": l10n.t(
-      "Leave empty to keep the pasted password",
-    ),
     optional: l10n.t("optional"),
     "Paste a connection string (optional) — the fields below fill in": l10n.t(
       "Paste a connection string (optional) — the fields below fill in",
@@ -66,6 +63,9 @@ const table = () =>
     ),
     "Could not connect.": l10n.t("Could not connect."),
     "Could not save the connection.": l10n.t("Could not save the connection."),
+    "The connection no longer exists.": l10n.t(
+      "The connection no longer exists.",
+    ),
     "If the server uses a self-signed certificate, tick Trust server certificate.":
       l10n.t(
         "If the server uses a self-signed certificate, tick Trust server certificate.",
@@ -87,6 +87,9 @@ export const unreadableMessage = (): string =>
 
 export const saveFailedMessage = (): string =>
   text("Could not save the connection.");
+
+export const connectionGoneMessage = (): string =>
+  text("The connection no longer exists.");
 
 export const editTitle = (name: string): string =>
   l10n.t("Edit connection: {0}", name);

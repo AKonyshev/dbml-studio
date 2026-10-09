@@ -9,9 +9,9 @@ import {
 import { DbImportError, listDatabases } from "db-to-dbml";
 
 import {
-  deleteConnection,
   getConnection,
   listConnections,
+  renameConnection,
   saveConnection,
 } from "../connectionStore";
 
@@ -26,6 +26,7 @@ import { buildConnection, parseConnection } from "./connectionString";
 import type { FormToHost, HostToForm } from "./messages";
 import {
   editTitle,
+  connectionGoneMessage,
   fieldErrorMessage,
   formStrings,
   newTitle,
@@ -60,8 +61,16 @@ const open = new Map<
   { panel: WebviewPanel; outcome: Promise<FormOutcome> }
 >();
 
+// The edited connection is identified by its exact stored key: `shop` and
+// `SHOP` can both be saved, and each has its own tab.
 const tabKey = (edit?: string): string =>
-  edit === undefined ? "new" : `edit:${edit.toLowerCase()}`;
+  edit === undefined ? "new" : `edit:${edit}`;
+
+// Closes the edit tab for this saved name, if one is open (after the
+// connection was deleted, so the tab cannot write it back).
+export function closeConnectionForm(name: string): void {
+  open.get(tabKey(name))?.panel.dispose();
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -157,7 +166,9 @@ export function openConnectionForm(
   // The string the connection was read from (stored, or pasted over it), with
   // what was parsed out of it. Held here and never posted.
   let source: Source | undefined;
-  let saving = false;
+  // The save in flight or done: its outcome is the panel's, even when the tab
+  // is closed while the write is under way.
+  let pendingSave: Promise<FormOutcome> | undefined;
   let testRun = 0;
 
   const post = (message: HostToForm): void => {
@@ -174,7 +185,11 @@ export function openConnectionForm(
     if (open.get(key)?.panel === panel) {
       open.delete(key);
     }
-    resolveOutcome(undefined);
+    if (pendingSave === undefined) {
+      resolveOutcome(undefined);
+    } else {
+      void pendingSave.then(resolveOutcome);
+    }
   });
 
   // The password in a message wins; then the one that came with the string.
@@ -197,17 +212,29 @@ export function openConnectionForm(
     );
   };
 
+  // Every saved name but the one being edited: the names a save would collide
+  // with. `shop` and `SHOP` are different keys, so editing one does not waive
+  // the other.
+  const otherNames = async (): Promise<string[]> =>
+    (await listConnections(secrets)).filter((name) => name !== edit);
+
   const ready = async (): Promise<void> => {
+    const savedNames = await otherNames();
+    const stored =
+      edit === undefined ? undefined : await getConnection(secrets, edit);
+    // Nothing awaits from here to the post: the page starts from what `init`
+    // says, so the host's idea of the connection is reset to match it,
+    // dropping whatever an earlier paste left.
     let fields = emptyFields();
     let pasteError: string | undefined;
+    source = undefined;
     if (edit !== undefined) {
       fields = { ...fields, name: edit };
-      const stored = await getConnection(secrets, edit);
       if (stored !== undefined) {
         try {
-          const parsed = parseConnection(stored);
-          // A paste that got in first stays the original.
-          source ??= { text: stored, ...parsed };
+          const text = stored.trim();
+          const parsed = parseConnection(text);
+          source = { text, ...parsed };
           fields = { ...parsed.fields, name: edit };
         } catch {
           pasteError = unreadableMessage();
@@ -219,8 +246,9 @@ export function openConnectionForm(
       mode: edit === undefined ? "new" : "edit",
       fields,
       strings: formStrings(),
-      savedNames: await listConnections(secrets),
+      savedNames,
       editing: edit,
+      hasPassword: (source?.password ?? "") !== "",
     });
     if (pasteError !== undefined) {
       post({ type: "pasteError", message: pasteError });
@@ -229,9 +257,14 @@ export function openConnectionForm(
 
   const paste = (text: string): void => {
     try {
-      const parsed = parseConnection(text);
-      source = { text, ...parsed };
-      post({ type: "pasted", fields: parsed.fields });
+      const trimmed = text.trim();
+      const parsed = parseConnection(trimmed);
+      source = { text: trimmed, ...parsed };
+      post({
+        type: "pasted",
+        fields: parsed.fields,
+        hasPassword: parsed.password !== "",
+      });
     } catch {
       post({ type: "pasteError", message: unreadableMessage() });
     }
@@ -272,41 +305,68 @@ export function openConnectionForm(
     }
   };
 
+  // Resolves the outcome when the connection was stored, `undefined` when
+  // nothing was.
   const save = async (
     fields: ConnectionFields,
     password: string | undefined,
-  ): Promise<void> => {
-    if (saving) {
-      return;
-    }
-    saving = true;
+  ): Promise<FormOutcome> => {
+    let saved: FormOutcome;
     try {
+      const existing = await listConnections(secrets);
+      if (edit !== undefined && !existing.includes(edit)) {
+        post({ type: "saveError", message: connectionGoneMessage() });
+        return undefined;
+      }
       const errors = validateFields(
         fields,
-        await listConnections(secrets),
-        edit,
+        existing.filter((name) => name !== edit),
       );
       const firstError = errors.name ?? errors.host ?? errors.port;
       if (firstError !== undefined) {
         post({ type: "saveError", message: fieldErrorMessage(firstError) });
-        saving = false;
-        return;
+        return undefined;
       }
       const name = fields.name.trim();
       const string = connectionString(fields, password);
-      await saveConnection(secrets, name, string);
-      // After the new spelling is stored, so a case-only rename ends with the
-      // new key and without the old one.
+      // A rename is one write that drops the old key and sets the new one, so
+      // it cannot be left half done.
       if (edit !== undefined && edit !== name) {
-        await deleteConnection(secrets, edit);
+        await renameConnection(secrets, edit, name, string);
+      } else {
+        await saveConnection(secrets, name, string);
       }
-      deps.refresh();
-      resolveOutcome({ name, connectionString: string });
-      panel.dispose();
+      saved = { name, connectionString: string };
     } catch {
-      saving = false;
       post({ type: "saveError", message: saveFailedMessage() });
+      return undefined;
     }
+    try {
+      deps.refresh();
+    } catch {
+      // The connection is stored; a tree that failed to refresh is not a failed
+      // save.
+    }
+    resolveOutcome(saved);
+    panel.dispose();
+    return saved;
+  };
+
+  const startSave = (
+    fields: ConnectionFields,
+    password: string | undefined,
+  ): void => {
+    if (pendingSave !== undefined) {
+      return;
+    }
+    const run = save(fields, password);
+    pendingSave = run;
+    void run.then((result) => {
+      // A failed save leaves the form usable, and a later close is a plain close.
+      if (result === undefined && pendingSave === run) {
+        pendingSave = undefined;
+      }
+    });
   };
 
   panel.webview.onDidReceiveMessage((raw: unknown) => {
@@ -325,10 +385,10 @@ export function openConnectionForm(
         void test(message.fields, message.password);
         break;
       case "save":
-        void save(message.fields, message.password);
+        startSave(message.fields, message.password);
         break;
       case "cancel":
-        resolveOutcome(undefined);
+        // The outcome follows from the dispose, so a save under way still counts.
         panel.dispose();
         break;
     }

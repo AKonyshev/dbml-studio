@@ -7,11 +7,16 @@ import {
   type ConnectionFields,
 } from "../connectionForm/connectionFields";
 import { buildConnection } from "../connectionForm/connectionString";
-import { openConnectionForm } from "../connectionForm/connectionFormPanel";
+import {
+  closeConnectionForm,
+  openConnectionForm,
+} from "../connectionForm/connectionFormPanel";
 import { formStrings } from "../connectionForm/strings";
 import {
+  deleteConnection,
   getConnection,
   listConnections,
+  saveConnection,
   type SecretStore,
 } from "../connectionStore";
 
@@ -190,6 +195,7 @@ describe("openConnectionForm", () => {
       fields: emptyFields(),
       savedNames: ["legacy"],
       strings: formStrings(),
+      hasPassword: false,
     });
 
     panel.receive({
@@ -412,15 +418,17 @@ describe("openConnectionForm", () => {
       expect(window.createWebviewPanel).toHaveBeenCalledTimes(2);
     });
 
-    it("opens one tab per edited name, whatever its case", () => {
-      const { deps } = setup({ shop: SHOP, other: SHOP });
+    it("opens one tab per edited name, told apart by its exact spelling", () => {
+      const { deps } = setup({ shop: SHOP, SHOP: SHOP, other: SHOP });
       const first = openConnectionForm(deps, "shop");
       const again = openConnectionForm(deps, "shop");
       expect(again).toBe(first);
       expect(window.createWebviewPanel).toHaveBeenCalledTimes(1);
+      const upper = openConnectionForm(deps, "SHOP");
+      expect(upper).not.toBe(first);
       void openConnectionForm(deps, "other");
       void openConnectionForm(deps);
-      expect(window.createWebviewPanel).toHaveBeenCalledTimes(3);
+      expect(window.createWebviewPanel).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -593,6 +601,7 @@ describe("openConnectionForm", () => {
       const outcome = openConnectionForm(deps);
       const panel = panels[0];
       panel.receive({ type: "ready" });
+      await flush();
       panel.receive({ type: "paste", text: PG });
       await flush();
       const pasted = lastOf(panel, "pasted") as unknown as {
@@ -675,6 +684,7 @@ describe("openConnectionForm", () => {
       const { deps, secrets } = setup({ shop: SHOP });
       const outcome = openConnectionForm(deps, "shop");
       const panel = panels[0];
+      await flush();
       panel.receive({ type: "ready" });
       panel.receive({ type: "paste", text: PG });
       await flush();
@@ -685,6 +695,348 @@ describe("openConnectionForm", () => {
       await flush();
       await outcome;
       expect(await getConnection(secrets, "shop")).toBe(PG);
+    });
+  });
+
+  describe("names that differ only in case or padding", () => {
+    const PG = "postgresql://u:p@h/db?sslmode=require";
+
+    it("lists every other name as taken, and refuses a rename onto a variant", async () => {
+      const { deps, secrets } = setup({ shop: SHOP, SHOP: PG });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      expect(lastOf(panel, "init")).toMatchObject({ savedNames: ["SHOP"] });
+      panel.receive({
+        type: "save",
+        fields: { ...initFields(panel), name: "SHOP" },
+      });
+      await flush();
+      expect(lastOf(panel, "saveError")).toMatchObject({
+        message: "A connection with this name already exists.",
+      });
+      expect(await getConnection(secrets, "SHOP")).toBe(PG);
+      expect(await getConnection(secrets, "shop")).toBe(SHOP);
+      panel.receive({ type: "cancel" });
+      await expect(outcome).resolves.toBeUndefined();
+    });
+
+    it("does not erase a neighbour when a padded name is saved unchanged", async () => {
+      const { deps, secrets } = setup({ "shop ": SHOP, shop: PG });
+      const outcome = openConnectionForm(deps, "shop ");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      expect(lastOf(panel, "saveError")).toBeDefined();
+      expect(await getConnection(secrets, "shop")).toBe(PG);
+      expect(await getConnection(secrets, "shop ")).toBe(SHOP);
+      panel.receive({ type: "cancel" });
+      await outcome;
+    });
+  });
+
+  describe("what the host holds after init", () => {
+    const PG = "postgresql://u:pg_pw@h/db?sslmode=require";
+
+    it("tells the page whether a password is held, never what it is", async () => {
+      const { deps } = setup({ shop: SHOP, bare: "postgresql://u@h/db" });
+      void openConnectionForm(deps, "shop");
+      void openConnectionForm(deps, "bare");
+      void openConnectionForm(deps);
+      for (const panel of panels) {
+        panel.receive({ type: "ready" });
+      }
+      await flush();
+      expect(lastOf(panels[0], "init")).toMatchObject({ hasPassword: true });
+      expect(lastOf(panels[1], "init")).toMatchObject({ hasPassword: false });
+      expect(lastOf(panels[2], "init")).toMatchObject({ hasPassword: false });
+      panels[2].receive({ type: "paste", text: PG });
+      await flush();
+      expect(lastOf(panels[2], "pasted")).toMatchObject({ hasPassword: true });
+      panels[2].receive({ type: "paste", text: "postgresql://u@h/db" });
+      await flush();
+      expect(lastOf(panels[2], "pasted")).toMatchObject({
+        hasPassword: false,
+      });
+    });
+
+    it("forgets a paste that came before init, so the page and host agree", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(SHOP);
+    });
+
+    it("holds nothing from a paste when the stored string cannot be read", async () => {
+      const { deps, secrets } = setup({ shop: "nonsense" });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      panel.receive({ type: "ready" });
+      await flush();
+      expect(lastOf(panel, "init")).toMatchObject({ hasPassword: false });
+      panel.receive({ type: "save", fields: fieldsOf() });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(
+        buildConnection(fieldsOf(), ""),
+      );
+    });
+
+    it("returns to the stored connection on a second ready", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(SHOP);
+    });
+
+    it("stores the pasted string, trimmed, when the fields are edited and put back", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({ type: "paste", text: `  ${PG}\n` });
+      await flush();
+      const { fields } = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      // A save of other fields would rebuild; the same fields give the original.
+      const edited = { ...fields, name: "shop", host: "elsewhere" };
+      listDatabasesMock.mockResolvedValue([]);
+      panel.receive({ type: "test", fields: edited });
+      await flush();
+      expect(listDatabasesMock).toHaveBeenLastCalledWith(
+        expect.stringContaining("elsewhere"),
+      );
+      panel.receive({ type: "save", fields: { ...edited, host: fields.host } });
+      await flush();
+      await expect(outcome).resolves.toEqual({
+        name: "shop",
+        connectionString: PG,
+      });
+      expect(await getConnection(secrets, "shop")).toBe(PG);
+    });
+
+    it("trims a stored string it keeps, and tests the trimmed original", async () => {
+      const { deps, secrets } = setup({ shop: `  ${SHOP}\n` });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      listDatabasesMock.mockResolvedValue(["db"]);
+      panel.receive({ type: "test", fields: initFields(panel) });
+      await flush();
+      expect(listDatabasesMock).toHaveBeenCalledWith(SHOP);
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(SHOP);
+    });
+
+    it("stores a padded paste trimmed, in the store and in the outcome", async () => {
+      const { deps, secrets } = setup();
+      const outcome = openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "paste", text: `  ${PG}\n` });
+      await flush();
+      const { fields } = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      panel.receive({ type: "save", fields: { ...fields, name: "pg" } });
+      await flush();
+      await expect(outcome).resolves.toEqual({
+        name: "pg",
+        connectionString: PG,
+      });
+      expect(await getConnection(secrets, "pg")).toBe(PG);
+    });
+  });
+
+  describe("a save under way", () => {
+    // A store whose writes wait until the test lets them through.
+    function gatedStore(initial: Record<string, string>) {
+      const inner = memoryStore(initial);
+      const gate = { open: false, fail: false, release: (): void => undefined };
+      let waiting: Array<() => void> = [];
+      gate.release = () => {
+        gate.open = true;
+        waiting.forEach((resume) => {
+          resume();
+        });
+        waiting = [];
+      };
+      const secrets: SecretStore = {
+        get: inner.get.bind(inner),
+        store: async (key, value) => {
+          if (!gate.open) {
+            await new Promise<void>((resolve) => {
+              waiting.push(resolve);
+            });
+          }
+          if (gate.fail) {
+            throw new Error("disk full");
+          }
+          await inner.store(key, value);
+        },
+      };
+      return { secrets, gate };
+    }
+
+    const gatedDeps = (secrets: SecretStore) => ({
+      context: {
+        secrets,
+        extensionUri: { path: "/ext" },
+      } as unknown as ExtensionContext,
+      refresh: jest.fn(),
+    });
+
+    it("still resolves the saved connection when the tab is closed mid-write", async () => {
+      const { secrets, gate } = gatedStore({});
+      const deps = gatedDeps(secrets);
+      const outcome = openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "save", fields: fieldsOf(), password: "hunter2" });
+      await flush();
+      const before = panel.webview.postMessage.mock.calls.length;
+      panel.dispose();
+      gate.release();
+      const expected = buildConnection(fieldsOf(), "hunter2");
+      await expect(outcome).resolves.toEqual({
+        name: "shop",
+        connectionString: expected,
+      });
+      expect(await getConnection(secrets, "shop")).toBe(expected);
+      expect(deps.refresh).toHaveBeenCalled();
+      expect(panel.webview.postMessage).toHaveBeenCalledTimes(before);
+    });
+
+    it("keeps the save when Cancel arrives during the write", async () => {
+      const { secrets, gate } = gatedStore({});
+      const outcome = openConnectionForm(gatedDeps(secrets));
+      const panel = panels[0];
+      panel.receive({ type: "save", fields: fieldsOf(), password: "hunter2" });
+      await flush();
+      panel.receive({ type: "cancel" });
+      gate.release();
+      await expect(outcome).resolves.toMatchObject({ name: "shop" });
+    });
+
+    it("resolves undefined when the tab is closed and the write fails", async () => {
+      const { secrets, gate } = gatedStore({});
+      gate.fail = true;
+      const deps = gatedDeps(secrets);
+      const outcome = openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "save", fields: fieldsOf(), password: "hunter2" });
+      await flush();
+      panel.dispose();
+      gate.release();
+      await expect(outcome).resolves.toBeUndefined();
+      expect(deps.refresh).not.toHaveBeenCalled();
+    });
+
+    it("lets the form be used again after a failed write", async () => {
+      const { secrets, gate } = gatedStore({});
+      gate.fail = true;
+      gate.open = true;
+      const outcome = openConnectionForm(gatedDeps(secrets));
+      const panel = panels[0];
+      panel.receive({ type: "save", fields: fieldsOf(), password: "hunter2" });
+      await flush();
+      expect(lastOf(panel, "saveError")).toEqual({
+        type: "saveError",
+        message: "Could not save the connection.",
+      });
+      gate.fail = false;
+      panel.receive({ type: "save", fields: fieldsOf(), password: "hunter2" });
+      await flush();
+      await expect(outcome).resolves.toMatchObject({ name: "shop" });
+    });
+
+    it("renames with a single write", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const store = jest.spyOn(secrets, "store");
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({
+        type: "save",
+        fields: { ...initFields(panel), name: "renamed" },
+      });
+      await flush();
+      await outcome;
+      expect(store).toHaveBeenCalledTimes(1);
+      expect(await listConnections(secrets)).toEqual(["renamed"]);
+    });
+
+    it("does not call a stored connection failed because the tree refresh threw", async () => {
+      const { deps, secrets, refresh } = setup();
+      refresh.mockImplementation(() => {
+        throw new Error("tree");
+      });
+      const outcome = openConnectionForm(deps);
+      panels[0].receive({ type: "save", fields: fieldsOf() });
+      await flush();
+      await expect(outcome).resolves.toMatchObject({ name: "shop" });
+      expect(await listConnections(secrets)).toEqual(["shop"]);
+    });
+  });
+
+  describe("closing and stale tabs", () => {
+    it("closeConnectionForm disposes the edit tab of that exact name only", async () => {
+      const { deps } = setup({ shop: SHOP, SHOP: SHOP });
+      const lower = openConnectionForm(deps, "shop");
+      const upper = openConnectionForm(deps, "SHOP");
+      closeConnectionForm("shop");
+      await expect(lower).resolves.toBeUndefined();
+      expect(panels[0].dispose).toHaveBeenCalled();
+      expect(panels[1].dispose).not.toHaveBeenCalled();
+      closeConnectionForm("nothing open");
+      closeConnectionForm("shop");
+      panels[1].receive({ type: "cancel" });
+      await expect(upper).resolves.toBeUndefined();
+    });
+
+    it("refuses to save an edit whose connection has been deleted, writing nothing", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      await deleteConnection(secrets, "shop");
+      // Someone else took the name since.
+      await saveConnection(secrets, "orders", "postgresql://o@h/db");
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      expect(lastOf(panel, "saveError")).toEqual({
+        type: "saveError",
+        message: "The connection no longer exists.",
+      });
+      expect(await listConnections(secrets)).toEqual(["orders"]);
+      panel.receive({ type: "cancel" });
+      await expect(outcome).resolves.toBeUndefined();
     });
   });
 });

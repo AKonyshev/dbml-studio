@@ -65,3 +65,17 @@ export async function deleteConnection(
   delete all[name];
   await writeAll(secrets, all);
 }
+
+// A rename in one read and one write: the old key goes and the new one is set
+// together, so a failure cannot leave both, and watchers see one change.
+export async function renameConnection(
+  secrets: SecretStore,
+  from: string,
+  to: string,
+  connectionString: string,
+): Promise<void> {
+  const all = await readAll(secrets);
+  delete all[from];
+  all[to] = connectionString;
+  await writeAll(secrets, all);
+}

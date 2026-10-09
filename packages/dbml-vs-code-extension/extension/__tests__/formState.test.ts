@@ -17,6 +17,7 @@ const init = (mode: "new" | "edit" = "new") =>
       fields: { ...emptyFields("postgres"), name: "shop" },
       strings: {},
       savedNames: ["legacy"],
+      hasPassword: false,
     },
   });
 
@@ -49,6 +50,7 @@ describe("formState", () => {
       message: {
         type: "pasted",
         fields: { ...emptyFields("mysql"), host: "db", port: "3307" },
+        hasPassword: false,
       },
     });
     expect(s.fields).toMatchObject({
@@ -82,7 +84,11 @@ describe("formState", () => {
     let s = reduce(init(), { type: "password", value: "a" });
     s = reduce(s, {
       type: "host",
-      message: { type: "pasted", fields: emptyFields("mysql") },
+      message: {
+        type: "pasted",
+        fields: emptyFields("mysql"),
+        hasPassword: false,
+      },
     });
     expect(s.password).toBe("");
   });
@@ -94,7 +100,11 @@ describe("formState", () => {
     });
     s = reduce(s, {
       type: "host",
-      message: { type: "pasted", fields: emptyFields("mysql") },
+      message: {
+        type: "pasted",
+        fields: emptyFields("mysql"),
+        hasPassword: false,
+      },
     });
     expect(s.test).toBeUndefined();
   });
@@ -109,6 +119,7 @@ describe("formState", () => {
         strings: {},
         savedNames: [],
         editing: "old",
+        hasPassword: false,
       },
     });
     s = reduce(s, { type: "field", key: "dialect", value: "mysql" });
@@ -123,8 +134,9 @@ describe("formState", () => {
         mode: "edit",
         fields: { ...emptyFields("postgres"), name: "old", port: "6543" },
         strings: {},
-        savedNames: ["old"],
+        savedNames: [],
         editing: "old",
+        hasPassword: true,
       },
     });
     s = reduce(s, { type: "field", key: "dialect", value: "mysql" });
@@ -161,7 +173,11 @@ describe("formState", () => {
     expect(
       reduce(failed, {
         type: "host",
-        message: { type: "pasted", fields: emptyFields("mysql") },
+        message: {
+          type: "pasted",
+          fields: emptyFields("mysql"),
+          hasPassword: false,
+        },
       }).saveError,
     ).toBeUndefined();
   });
@@ -178,5 +194,49 @@ describe("formState", () => {
     expect(
       reduce(failed, { type: "password", value: "x" }).pasteError,
     ).toBeUndefined();
+  });
+
+  it("keeps a password only while the host says it holds one", () => {
+    expect(init().keepsPassword).toBe(false);
+    const edit = reduce(initialState(), {
+      type: "init",
+      message: {
+        type: "init",
+        mode: "edit",
+        fields: { ...emptyFields("postgres"), name: "old" },
+        strings: {},
+        savedNames: [],
+        editing: "old",
+        hasPassword: true,
+      },
+    });
+    expect(edit.keepsPassword).toBe(true);
+    const pasted = (hasPassword: boolean) =>
+      reduce(edit, {
+        type: "host",
+        message: { type: "pasted", fields: emptyFields("mysql"), hasPassword },
+      });
+    expect(pasted(false).keepsPassword).toBe(false);
+    expect(pasted(true).keepsPassword).toBe(true);
+    // Typing a password does not change what the host holds.
+    expect(reduce(edit, { type: "password", value: "x" }).keepsPassword).toBe(
+      true,
+    );
+  });
+
+  it("validates against the saved names it was given, edit or not", () => {
+    const s = reduce(initialState(), {
+      type: "init",
+      message: {
+        type: "init",
+        mode: "edit",
+        fields: { ...emptyFields("postgres"), name: "shop" },
+        strings: {},
+        savedNames: ["SHOP"],
+        editing: "shop",
+        hasPassword: false,
+      },
+    });
+    expect(errors(s).name).toBeDefined();
   });
 });

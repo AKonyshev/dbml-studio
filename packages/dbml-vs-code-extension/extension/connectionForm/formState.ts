@@ -19,6 +19,9 @@ export interface FormState {
   portTouched: boolean;
   // Only in memory, never persisted.
   password: string;
+  // The host holds a password for these fields (stored or pasted), which stays
+  // in force until one is typed. A flag from the host, not the password.
+  keepsPassword: boolean;
   savedNames: string[];
   editing?: string;
   testing: boolean;
@@ -39,6 +42,7 @@ export const initialState = (): FormState => ({
   fields: emptyFields(),
   portTouched: false,
   password: "",
+  keepsPassword: false,
   savedNames: [],
   testing: false,
 });
@@ -56,6 +60,7 @@ export function reduce(state: FormState, action: FormAction): FormState {
         fields: action.message.fields,
         savedNames: action.message.savedNames,
         editing: action.message.editing,
+        keepsPassword: action.message.hasPassword,
         // A stored connection on its kind's default port follows a kind change
         // like a new one; so does one that could not be read (empty fields).
         portTouched:
@@ -108,6 +113,7 @@ export function reduce(state: FormState, action: FormAction): FormState {
             // The pasted string's own password, if any, is held by the host and
             // applies unless one is typed afterwards.
             password: "",
+            keepsPassword: action.message.hasPassword,
             portTouched: true,
             fields: { ...action.message.fields, name: state.fields.name },
           };
@@ -142,8 +148,9 @@ export function reduce(state: FormState, action: FormAction): FormState {
   }
 }
 
+// `savedNames` already leaves out the connection being edited.
 export const errors = (s: FormState): FieldErrors =>
-  validateFields(s.fields, s.savedNames, s.editing);
+  validateFields(s.fields, s.savedNames);
 
 export const canSave = (s: FormState): boolean =>
   Object.keys(errors(s)).length === 0 && !s.testing;
