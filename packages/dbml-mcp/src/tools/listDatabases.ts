@@ -15,7 +15,8 @@ export const listDatabases: ToolDefinition<
 > = {
   name: "list_databases",
   title: "List databases",
-  description: "Databases on the server a connection points at.",
+  description:
+    "Databases on the PostgreSQL, MySQL or SQL Server server a connection points at.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: true },

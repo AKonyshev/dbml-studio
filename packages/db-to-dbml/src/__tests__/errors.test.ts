@@ -1,4 +1,8 @@
-import { DbImportError, DbImportErrorCode, toDbImportError } from "../errors";
+import { postgres } from "../dialects/postgres";
+import { DbImportError, DbImportErrorCode } from "../errors";
+
+// The mapping is the dialect's own.
+const toDbImportError = postgres.toDbImportError;
 
 describe("toDbImportError", () => {
   test("maps postgres auth failure 28P01", () => {

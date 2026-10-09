@@ -242,6 +242,45 @@ describe("ConnectionsTreeProvider", () => {
     ]);
   });
 
+  test("expands a MySQL connection straight into its databases as schemas", async () => {
+    get
+      .mockReset()
+      .mockResolvedValue(JSON.stringify({ shop: "mysql://u:p@h:3306/entry" }));
+    jest.mocked(listDatabases).mockResolvedValue(["library"]);
+
+    const children = await new ConnectionsTreeProvider(secrets).getChildren({
+      kind: "connection",
+      name: "shop",
+    });
+
+    expect(children).toEqual([
+      {
+        kind: "schema",
+        connectionName: "shop",
+        databaseName: "library",
+        schemaName: "library",
+      },
+    ]);
+  });
+
+  test("shows the dialect beside a connection, never the connection string", async () => {
+    get.mockReset().mockResolvedValue(
+      JSON.stringify({
+        shop: "mysql://u:Secr3t@h:3306/library",
+        broken: "not a connection string",
+      }),
+    );
+    const provider = new ConnectionsTreeProvider(secrets);
+    await provider.getChildren({ kind: "group", id: "connections", label: "" });
+
+    const shop = provider.getTreeItem({ kind: "connection", name: "shop" });
+    const broken = provider.getTreeItem({ kind: "connection", name: "broken" });
+
+    expect(shop.description).toBe("mysql");
+    expect(String(shop.description)).not.toContain("Secr3t");
+    expect(broken.description).toBeUndefined();
+  });
+
   test("marks the node kinds so the context menus can tell them apart", () => {
     const provider = new ConnectionsTreeProvider(secrets);
 

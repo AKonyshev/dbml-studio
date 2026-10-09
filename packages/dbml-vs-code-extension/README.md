@@ -1,6 +1,6 @@
 # DBML Studio
 
-A DBML workbench for VS Code: read a schema as an entity-relationship diagram, import one from a live PostgreSQL database, and diff a `.dbml` file against the database it describes.
+A DBML workbench for VS Code: read a schema as an entity-relationship diagram, import one from a live PostgreSQL, MySQL or SQL Server database, and diff a `.dbml` file against the database it describes.
 
 ![DBML Studio: a DBML file on the left, its diagram on the right — tables chosen with a marquee and moved together, keys and mandatory columns marked, relations painted by their source table](https://raw.githubusercontent.com/AKonyshev/dbml-studio/main/assets/demo.gif)
 
@@ -10,12 +10,25 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 ## What this fork adds
 
-- **Import from PostgreSQL** — command palette → **DBML: Import from database**. A saved connection stands for a whole server: the side bar opens it into its databases and their schemas, and one import can take several databases at once, writing one `.dbml` file per database with every schema you picked inside it. Connections live in the DBML side bar and their credentials go to the VS Code secret store.
+- **Import from a database** — command palette → **DBML: Import from database**. A saved connection stands for a whole server: the side bar opens it into its databases and their schemas, and one import can take several databases at once, writing one `.dbml` file per database with every schema you picked inside it. Connections live in the DBML side bar and their credentials go to the VS Code secret store.
 - **Compare with a live database** — open a `.dbml` file, then **DBML: Compare with database**, and see where the file and the database have drifted apart.
 - **A layout that lives in the file** — drag tables about and the positions are written into a `MetaInfo` block in the DBML itself, one arrangement per detail level, so the diagram opens as you left it on any machine.
 - **Export** the diagram as PNG, SVG, AsciiDoc, or Markdown.
 - **Interface in English, Russian, and Simplified Chinese**, following your VS Code display language.
 - **Keyboard shortcuts** for every view action, with a built-in legend (`?`).
+
+### Connecting to a database
+
+Import and compare take a connection string for PostgreSQL, MySQL or SQL Server (MariaDB counts as MySQL). The input box checks it as you type. Whichever of these you save is stored as typed, in the VS Code secret store.
+
+| Database   | Form                                                               |
+| ---------- | ------------------------------------------------------------------ |
+| PostgreSQL | `postgres://user:password@host:5432/database` (or `postgresql://`) |
+| MySQL      | `mysql://user:password@host:3306/database` (or `mariadb://`)       |
+| SQL Server | `sqlserver://user:password@host:1433/database` (or `mssql://`)     |
+| SQL Server | `Server=host;Database=database;User Id=user;Password=password`     |
+
+The database in the string is only the entry point: the side bar lists every database on the server. In MySQL a database is a schema, so a connection opens straight into its databases, without a schema level. Comparison has a few caveats per database; see [Known limitations](https://github.com/AKonyshev/dbml-studio/blob/main/packages/dbml-mcp/README.md#known-limitations) in the `dbml-mcp` README.
 
 ## Diagram
 

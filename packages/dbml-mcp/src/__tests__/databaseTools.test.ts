@@ -84,6 +84,69 @@ const LIBRARY_DB: DatabaseSchema = {
   },
 };
 
+// The same library as MySQL's connector reports it: the database is the
+// schema, an ENUM column gets an enum named `<table>_<column>_enum`, and the
+// foreign key is backed by a non-unique index MySQL made itself.
+const mysqlColumn = (name: string, typeName: string): object => ({
+  name,
+  type: { type_name: typeName, schemaName: null },
+  dbdefault: null,
+  not_null: true,
+  increment: false,
+  note: { value: "" },
+});
+
+const LIBRARY_MYSQL_DB: DatabaseSchema = {
+  tables: [
+    { name: "member", schemaName: "library", note: { value: "" } },
+    { name: "loan", schemaName: "library", note: { value: "" } },
+  ],
+  fields: {
+    "library.member": [
+      mysqlColumn("id", "int"),
+      mysqlColumn("status", "member_status_enum"),
+    ],
+    "library.loan": [mysqlColumn("id", "int"), mysqlColumn("member_id", "int")],
+  },
+  refs: [
+    {
+      name: "loan_ibfk_1",
+      endpoints: [
+        {
+          tableName: "loan",
+          schemaName: "library",
+          fieldNames: ["member_id"],
+          relation: "*",
+        },
+        {
+          tableName: "member",
+          schemaName: "library",
+          fieldNames: ["id"],
+          relation: "1",
+        },
+      ],
+      onDelete: null,
+      onUpdate: null,
+    },
+  ],
+  enums: [
+    {
+      name: "member_status_enum",
+      schemaName: "library",
+      values: [{ name: "active" }, { name: "lapsed" }],
+    },
+  ],
+  indexes: {
+    "library.loan": [
+      { name: "member_id", columns: [{ value: "member_id", type: "column" }] },
+    ],
+  },
+  tableConstraints: {
+    "library.loan": { id: { pk: true } },
+    "library.member": { id: { pk: true } },
+  },
+};
+
 const fakeCatalog = (overrides: Partial<Catalog> = {}): Catalog => ({
   listDatabases: async () => ["archive", "library"],
   listSchemas: async () => ["public"],
@@ -92,20 +155,56 @@ const fakeCatalog = (overrides: Partial<Catalog> = {}): Catalog => ({
 });
 
 const env = { DBML_CONNECTION_LOCAL: URL_WITH_PASSWORD };
+const URL_MYSQL = "mysql://reader:Pa55-w0rd@db.example:3306/library";
+const mysqlCatalog = (): Catalog =>
+  fakeCatalog({ fetchSchema: async () => LIBRARY_MYSQL_DB });
 
 describe("list_connections", () => {
-  it("lists names only", async () => {
-    const ctx = await makeContext({ connections: connectionsFromEnv(env) });
+  it("lists each connection with its database kind", async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({
+        ...env,
+        DBML_CONNECTION_SHOP: URL_MYSQL,
+      }),
+    });
     const result = await listConnections.run({}, ctx);
-    expect(result.structured).toEqual({ connections: ["local"] });
+    expect(result.structured).toEqual({
+      connections: [
+        { name: "local", database: "postgres" },
+        { name: "shop", database: "mysql" },
+      ],
+    });
     expect(result.structured).not.toHaveProperty("hint");
+    expect(result.text).toBe("Connections: local (postgres), shop (mysql).");
     expect(result.text).not.toContain("Pa55-w0rd");
+    expect(() =>
+      listConnections.outputSchema.parse(result.structured),
+    ).not.toThrow();
+  });
+
+  it('lists a value no database accepts as "unknown"', async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({
+        DBML_CONNECTION_ODD: "snowflake://u:Pa55-w0rd@a/db",
+      }),
+    });
+    const result = await listConnections.run({}, ctx);
+    expect(result.structured.connections).toEqual([
+      { name: "odd", database: "unknown" },
+    ]);
+    expect(result.text).not.toContain("Pa55-w0rd");
+    expect(() =>
+      listConnections.outputSchema.parse(result.structured),
+    ).not.toThrow();
   });
 
   it("answers an empty list when nothing is configured", async () => {
     const result = await listConnections.run({}, await makeContext());
     expect(result.structured.connections).toEqual([]);
     expect(result.structured.hint).toContain("DBML_CONNECTION_<NAME>");
+    expect(result.structured.hint).toMatch(
+      /postgres:\/\/, mysql:\/\/ or sqlserver:\/\//,
+    );
     expect(result.text).toContain("DBML_CONNECTION_<NAME>");
   });
 });
@@ -198,6 +297,20 @@ describe("import_schema", () => {
     });
     expect(result.text).toContain("membership_status");
     expect(result.text).toContain("member_id");
+  });
+
+  it("writes a MySQL database's own schema without a prefix", async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({ DBML_CONNECTION_SHOP: URL_MYSQL }),
+      catalog: mysqlCatalog(),
+    });
+    const result = await importSchema.run(
+      { connection: "shop", schemas: ["library"], overwrite: false },
+      ctx,
+    );
+    expect(result.structured.tables).toBe(2);
+    expect(result.text).toContain('Table "member"');
+    expect(result.text).not.toContain('"library".');
   });
 
   it("writes a file and answers with a summary when outputPath is given", async () => {
@@ -356,6 +469,69 @@ Table fine {
     ).not.toThrow();
   });
 
+  it("compares against the database's default schema when none is given", async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv(env),
+      catalog: fakeCatalog(),
+    });
+    const result = await compareWithDatabase.run(
+      { text: LIBRARY_DBML, connection: "local" },
+      ctx,
+    );
+    expect(result.structured.identical).toBe(true);
+  });
+
+  it("takes the database itself as MySQL's default schema, and compares by MySQL's rules", async () => {
+    let fetched = 0;
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({ DBML_CONNECTION_SHOP: URL_MYSQL }),
+      catalog: fakeCatalog({
+        fetchSchema: async () => {
+          fetched += 1;
+          return LIBRARY_MYSQL_DB;
+        },
+      }),
+    });
+    // The model names its enum and declares no index for the foreign key;
+    // MySQL names the enum after the column and indexes the key itself.
+    const result = await compareWithDatabase.run(
+      { text: LIBRARY_DBML, connection: "shop" },
+      ctx,
+    );
+    expect(fetched).toBe(1);
+    expect(result.structured.identical).toBe(true);
+  });
+
+  it("still lets MySQL's schema be named", async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({ DBML_CONNECTION_SHOP: URL_MYSQL }),
+      catalog: mysqlCatalog(),
+    });
+    expect(
+      await codeOf(
+        compareWithDatabase.run(
+          { text: LIBRARY_DBML, connection: "shop", schema: "public" },
+          ctx,
+        ),
+      ),
+    ).toBe("SCHEMA_NOT_FOUND");
+  });
+
+  it("answers INVALID_CONNECTION_STRING for a configured value no database accepts", async () => {
+    const ctx = await makeContext({
+      connections: connectionsFromEnv({
+        DBML_CONNECTION_ODD: "snowflake://u:Pa55-w0rd@a/db",
+      }),
+      catalog: fakeCatalog(),
+    });
+    await expect(
+      compareWithDatabase.run({ text: LIBRARY_DBML, connection: "odd" }, ctx),
+    ).rejects.toMatchObject({
+      code: "INVALID_CONNECTION_STRING",
+      message: expect.not.stringContaining("Pa55-w0rd"),
+    });
+  });
+
   it("reads the model from a file inside the working folder", async () => {
     const ctx = await makeContext({
       connections: connectionsFromEnv(env),
@@ -403,30 +579,36 @@ describe("a failing raw connection never shows its password", () => {
     ],
   ];
 
-  it.each(failures)("%s", async (_label, catalog) => {
-    const ctx = await makeContext({ catalog });
-    const calls = [
-      importSchema.run(
-        {
-          connection: URL_WITH_PASSWORD,
-          schemas: ["public"],
-          overwrite: false,
-        },
-        ctx,
-      ),
-      compareWithDatabase.run(
-        { text: LIBRARY_DBML, connection: URL_WITH_PASSWORD, schema: "public" },
-        ctx,
-      ),
-      listDatabases.run({ connection: URL_WITH_PASSWORD }, ctx),
-      listSchemas.run({ connection: URL_WITH_PASSWORD, database: "x#y" }, ctx),
-    ];
-    for (const call of calls) {
-      const outcome = await call.then(
-        (r: unknown) => JSON.stringify(r),
-        (e: Error) => `${(e as { code?: string }).code}: ${e.message}`,
-      );
-      expect(outcome).not.toContain("Pa55-w0rd");
-    }
+  const raw = [
+    URL_WITH_PASSWORD,
+    "mysql://u:Pa55-w0rd@h/db",
+    "sqlserver://u:Pa55-w0rd@h/db",
+    "Server=h;Database=db;User Id=u;Password=Pa55-w0rd",
+  ];
+
+  describe.each(failures)("%s", (_label, catalog) => {
+    it.each(raw)("%s", async (connection) => {
+      const ctx = await makeContext({ catalog });
+      const calls = [
+        importSchema.run(
+          { connection, schemas: ["public"], overwrite: false },
+          ctx,
+        ),
+        compareWithDatabase.run(
+          { text: LIBRARY_DBML, connection, schema: "public" },
+          ctx,
+        ),
+        compareWithDatabase.run({ text: LIBRARY_DBML, connection }, ctx),
+        listDatabases.run({ connection }, ctx),
+        listSchemas.run({ connection, database: "x#y" }, ctx),
+      ];
+      for (const call of calls) {
+        const outcome = await call.then(
+          (r: unknown) => JSON.stringify(r),
+          (e: Error) => `${(e as { code?: string }).code}: ${e.message}`,
+        );
+        expect(outcome).not.toContain("Pa55-w0rd");
+      }
+    });
   });
 });

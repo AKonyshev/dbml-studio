@@ -69,7 +69,7 @@ so it passes either way. `scripts/test.js`, `scripts/typecheck.js` and
 `scripts/workspace-packages.js` do not call git: they find the repository from
 `__dirname` and walk the file system.
 
-## Three suites want a database, and skip without one
+## Suites that want a database, and skip without one
 
 `packages/db-to-dbml` and `packages/schema-diff` each have a
 `liveDatabase.test.ts` that talks to a real PostgreSQL, and `packages/dbml-mcp`
@@ -80,7 +80,7 @@ written `serial` comes back as `int4` with `increment`, that a foreign key
 arrives with the table it points at. Those are the things a fixture agrees with
 by construction.
 
-They are skipped unless `DBML_TEST_DATABASE_URL` is set, so the sweep on every
+The PostgreSQL ones are skipped unless `DBML_TEST_DATABASE_URL` is set, so the sweep on every
 commit stays offline and needs nothing installed. To run them:
 
 ```bash
@@ -124,6 +124,93 @@ docker rm -f dbml-test-pg
 
 The schema above is what the assertions are written against; changing it means
 changing them.
+
+### MySQL
+
+`packages/db-to-dbml/src/__tests__/liveMysql.test.ts` and
+`packages/schema-diff/src/__tests__/liveMysql.test.ts` do the same against a
+real MySQL (or MariaDB), and are skipped unless `DBML_TEST_MYSQL_URL` is set.
+The schema is the library sample of `examples/library.dbml`, as DDL, in
+`packages/db-to-dbml/src/__tests__/fixtures/library.mysql.sql`. That file was
+generated with `@dbml/core`'s exporter (`exporter.export(dbml, "mysql")`), which
+writes the one-to-one `reservation.fulfilled_by_loan_id - loan.id` the wrong way
+round; the foreign key is on `reservation` by hand.
+
+```bash
+docker run -d --name dbml-test-mysql -e MYSQL_ROOT_PASSWORD=test \
+  -e MYSQL_DATABASE=library -p 53306:3306 mysql:8.4
+
+# Wait until the server accepts connections (about 20 seconds the first time).
+until docker exec dbml-test-mysql mysqladmin -uroot -ptest ping >/dev/null 2>&1; do sleep 2; done
+
+docker exec -i dbml-test-mysql mysql -uroot -ptest library \
+  < packages/db-to-dbml/src/__tests__/fixtures/library.mysql.sql
+
+DBML_TEST_MYSQL_URL=mysql://root:test@localhost:53306/library \
+  yarn workspace db-to-dbml test liveMysql
+DBML_TEST_MYSQL_URL=mysql://root:test@localhost:53306/library \
+  yarn workspace schema-diff test liveMysql
+
+docker rm -f dbml-test-mysql
+```
+
+The comparison lives in `schema-diff`, not in `db-to-dbml`: that package already
+maps `db-to-dbml` in its jest config, and the reverse would need a mapping the
+dependency graph does not have. It compares the database with the DBML read from
+it, and with the hand-written `examples/library.dbml`. The second needs
+`{ dialect: "mysql" }` to come back clean: the connector names a MySQL `ENUM`
+column's type `<table>_<column>_enum` and MySQL indexes every foreign key on its
+own, and the file has neither.
+
+### SQL Server
+
+`packages/db-to-dbml/src/__tests__/liveMssql.test.ts` does the same against a
+real SQL Server, and is skipped unless `DBML_TEST_MSSQL_URL` is set. The schema
+is the library sample of `examples/library.dbml`, as DDL, in
+`packages/db-to-dbml/src/__tests__/fixtures/library.mssql.sql`. That file was
+generated with `@dbml/core`'s exporter (`exporter.export(dbml, "mssql")`) and
+fixed by hand in three places, listed in its header: `timestamp` (which is
+`rowversion` in T-SQL) became `datetime2`, the composite index's `"` quoting
+became brackets, and the one-to-one foreign key was turned the right way round.
+
+The image is amd64 only. On Apple Silicon it runs under Docker Desktop's Rosetta
+emulation (enable "Use Rosetta for x86_64/amd64 emulation" in its settings):
+slow to start, about a minute, but it works.
+
+```bash
+docker run -d --name dbml-test-mssql --platform linux/amd64 \
+  -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Test_Passw0rd!' \
+  -p 51433:1433 mcr.microsoft.com/mssql/server:2022-latest
+
+# Wait until the server accepts logins (up to a minute or two under emulation).
+until docker exec dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost \
+  -U sa -P 'Test_Passw0rd!' -Q "SELECT 1" >/dev/null 2>&1; do sleep 3; done
+
+docker exec -i dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Test_Passw0rd!' -Q "CREATE DATABASE library"
+docker exec -i dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Test_Passw0rd!' -d library -b \
+  < packages/db-to-dbml/src/__tests__/fixtures/library.mssql.sql
+
+DBML_TEST_MSSQL_URL='sqlserver://sa:Test_Passw0rd!@localhost:51433/library?trustServerCertificate=true' \
+  yarn workspace db-to-dbml test liveMssql
+DBML_TEST_MSSQL_URL='sqlserver://sa:Test_Passw0rd!@localhost:51433/library?trustServerCertificate=true' \
+  yarn workspace schema-diff test liveMssql
+
+docker rm -f dbml-test-mssql
+```
+
+To seed again, `DROP DATABASE library` first. SQL Server has no enum type, so
+the suite does not assert on the enums the connector reads out of `CHECK`
+constraints: their names carry a hash SQL Server makes up, as do the names of
+the foreign keys. The suite also does not assert that a missing database is
+`DATABASE_NOT_FOUND`: to a SQL login the server answers "Login failed", the same
+as for a wrong password.
+
+`packages/schema-diff/src/__tests__/liveMssql.test.ts` compares the hand-written
+`examples/library.dbml` with the `dbo` schema, with only SQL
+Server's check-constraint enums compared by value, and asserts the whole
+remaining difference (`timestamp` against `datetime2`, and the composite unique
+index), so a change to the connector or to the comparison that moves it shows
+up there.
 
 `packages/dbml-mcp` has a second kind of suite that is not about a database but
 is in the sweep all the same: `protocol.test.ts` builds the bundle

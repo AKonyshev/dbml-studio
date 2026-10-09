@@ -1,3 +1,4 @@
+import { defaultSchema, dialectOf } from "db-to-dbml";
 import {
   databaseSchemaToModel,
   DbmlParseError,
@@ -46,8 +47,10 @@ const inputSchema = z.object({
   ...connectionShape,
   schema: z
     .string()
-    .default("public")
-    .describe("The database schema to compare the model with."),
+    .optional()
+    .describe(
+      "The database schema to compare with. Defaults to public (PostgreSQL), the database itself (MySQL) or dbo (SQL Server).",
+    ),
 });
 
 const outputSchema = z.object({
@@ -99,7 +102,7 @@ export const compareWithDatabase: ToolDefinition<
   name: "compare_with_database",
   title: "Compare DBML with a database",
   description:
-    "Compare a DBML model with one schema of a live Postgres database: tables, columns, enums, references and indexes on either side only, or different.",
+    "Compare a DBML model with one schema of a live PostgreSQL, MySQL or SQL Server database: tables, columns, enums, references and indexes on either side only, or different.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: true },
@@ -117,14 +120,22 @@ export const compareWithDatabase: ToolDefinition<
       }
       throw error;
     }
-    const db = await onDatabase(
-      async () =>
-        await ctx.catalog.fetchSchema(
-          resolveConnection(ctx.connections, input.connection, input.database),
-        ),
+    const resolved = resolveConnection(
+      ctx.connections,
+      input.connection,
+      input.database,
     );
-    assertSchemasExist(db, [input.schema]);
-    const diff = diffSchemas(model, databaseSchemaToModel(db, input.schema));
+    const db = await onDatabase(
+      async () => await ctx.catalog.fetchSchema(resolved),
+    );
+    const schema =
+      input.schema ?? (await onDatabase(async () => defaultSchema(resolved)));
+    assertSchemasExist(db, [schema]);
+    // The database's own rules (MySQL has no named enums, SQL Server keeps them
+    // as check constraints) decide what counts as a difference.
+    const diff = diffSchemas(model, databaseSchemaToModel(db, schema), {
+      dialect: dialectOf(resolved),
+    });
     const report = renderDiffMarkdown(diff);
     return { text: report, structured: { report, ...diff } };
   },

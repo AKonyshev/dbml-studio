@@ -1,5 +1,7 @@
+import { normalizeForDialect } from "./normalizeForDialect";
 import { indexKey, refKey } from "./util";
 
+import type { DialectId } from "db-to-dbml";
 import type {
   CanonSchema,
   ColumnChange,
@@ -21,10 +23,26 @@ function mustGet<K, V>(map: Map<K, V>, key: K): V {
   return v;
 }
 
+export interface DiffOptions {
+  /**
+   * The database the live side was read from. A database says some things a
+   * hand-written file cannot (MySQL has no named enums and indexes its foreign
+   * keys on its own); naming it lets those pass. Absent, the comparison is
+   * the same for every database.
+   */
+  dialect?: DialectId;
+}
+
 export function diffSchemas(
-  model: CanonSchema,
-  database: CanonSchema,
+  rawModel: CanonSchema,
+  rawDatabase: CanonSchema,
+  options: DiffOptions = {},
 ): SchemaDiff {
+  const { model, database } = normalizeForDialect(
+    rawModel,
+    rawDatabase,
+    options.dialect,
+  );
   const mTables = new Set(model.tables.keys());
   const dTables = new Set(database.tables.keys());
 

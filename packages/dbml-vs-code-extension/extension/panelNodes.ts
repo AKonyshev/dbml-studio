@@ -1,3 +1,5 @@
+import type { DialectId } from "db-to-dbml";
+
 export type PanelNode =
   | { kind: "group"; id: "actions" | "connections"; label: string }
   | { kind: "action"; label: string; commandId: string; icon: string }
@@ -51,12 +53,25 @@ export function buildConnectionNodes(names: string[]): PanelNode[] {
 // A node carries the whole path down to itself: a command invoked on a schema
 // has to know which database of which connection it belongs to, and a tree item
 // is the only thing VS Code hands the command.
+//
+// MySQL has no level between a server and its tables: a database there is what
+// other servers call a schema. So its databases come out as schema nodes, named
+// the same either way, and the tree has no empty middle level.
 export function buildDatabaseNodes(
   connectionName: string,
   databaseNames: string[],
+  dialect: DialectId,
 ): PanelNode[] {
   if (databaseNames.length === 0) {
     return [{ kind: "empty", label: "No databases" }];
+  }
+  if (dialect === "mysql") {
+    return databaseNames.map((databaseName) => ({
+      kind: "schema",
+      connectionName,
+      databaseName,
+      schemaName: databaseName,
+    }));
   }
   return databaseNames.map((databaseName) => ({
     kind: "database",

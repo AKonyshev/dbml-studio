@@ -12,7 +12,8 @@ import {
 import {
   DbImportError,
   DbImportErrorCode,
-  fetchPostgresSchema,
+  defaultSchema,
+  fetchSchema,
   schemaToDbml,
   withDatabase,
 } from "db-to-dbml";
@@ -81,10 +82,13 @@ async function importOne(
   let dbml: string;
   let droppedCrossSchemaRefs: number;
   try {
-    const db = await fetchPostgresSchema(
-      withDatabase(connectionString, target.databaseName),
-    );
-    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, target.schemaNames));
+    // The same string for both: it names the database, and so the schema that
+    // is written without a prefix (public, dbo, or the MySQL database itself).
+    const scoped = withDatabase(connectionString, target.databaseName);
+    const db = await fetchSchema(scoped);
+    ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, target.schemaNames, {
+      unqualified: defaultSchema(scoped),
+    }));
   } catch (error) {
     console.error(
       "[dbml] importing a database failed",

@@ -6,13 +6,15 @@ import { DbImportError, DbImportErrorCode } from "db-to-dbml";
 // `string | null` return type over every enum member makes a newly added code a
 // compile error rather than a silent fall-through to the caller's fallback.
 // Never include error.message here — it may carry connection details (see
-// toDbImportError in db-to-dbml).
+// each dialect's toDbImportError in db-to-dbml).
 const uiMessage = (code: DbImportErrorCode): string | null => {
   switch (code) {
     case DbImportErrorCode.AUTH_FAILED:
       return l10n.t("Authentication failed. Check the username and password.");
     case DbImportErrorCode.INVALID_CONNECTION_STRING:
-      return l10n.t("Invalid PostgreSQL connection string.");
+      return l10n.t(
+        "Invalid connection string. Check its format, and that it names a database.",
+      );
     case DbImportErrorCode.UNREACHABLE:
       return l10n.t("Could not reach the database host.");
     case DbImportErrorCode.DATABASE_NOT_FOUND:

@@ -1,9 +1,9 @@
 import { withDatabase } from "../connectionString";
-import { fetchPostgresSchema } from "../fetchPostgresSchema";
+import { fetchSchema } from "../fetchSchema";
 import { listDatabases } from "../listDatabases";
 import { listSchemaNames } from "../listSchemaNames";
 import { listSchemas } from "../listSchemas";
-import { postgresToDbml } from "../postgresToDbml";
+import { schemaToDbml } from "../schemaToDbml";
 
 /**
  * The one suite that talks to a real PostgreSQL.
@@ -24,13 +24,19 @@ const describeLive = url === undefined ? describe.skip : describe;
 // guarantee `describe.skip` gives and the type system does not see.
 const connection = url as unknown as string;
 
+const toDbml = async (
+  connectionString: string,
+  schemas: string[],
+): Promise<string> =>
+  schemaToDbml(await fetchSchema(connectionString), schemas).dbml;
+
 describeLive("against a real PostgreSQL", () => {
   // The connector opens a socket; the default five seconds is tight for a
   // container that has just started.
   jest.setTimeout(30_000);
 
   it("lists the schemas the database actually has", async () => {
-    const names = listSchemaNames(await fetchPostgresSchema(connection));
+    const names = listSchemaNames(await fetchSchema(connection));
 
     expect(names).toContain("public");
     // Postgres' own schemas are not the reader's business.
@@ -38,7 +44,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("reads a live schema into DBML that carries its keys and relations", async () => {
-    const dbml = await postgresToDbml(connection, ["public"]);
+    const dbml = await toDbml(connection, ["public"]);
 
     expect(dbml).toContain('Table "authors"');
     expect(dbml).toContain('Table "books"');
@@ -57,7 +63,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("brings back the types the database gave the columns", async () => {
-    const dbml = await postgresToDbml(connection, ["public"]);
+    const dbml = await toDbml(connection, ["public"]);
 
     // Asserted on the DBML rather than on the connector's own output, which is
     // deliberately untyped here — it is whatever `@dbml/connector` returns, and
@@ -102,22 +108,22 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("keeps a live cross-schema reference when both schemas are exported", async () => {
-    const both = await postgresToDbml(connection, ["public", "audit"]);
+    const both = await toDbml(connection, ["public", "audit"]);
 
     expect(both).toContain('Table "audit"."logs"');
     expect(both).toMatch(/"authors"\."id" < "audit"\."logs"\."author_id"/);
 
     // And the same reference is gone when only one end was asked for.
-    const onlyPublic = await postgresToDbml(connection, ["public"]);
+    const onlyPublic = await toDbml(connection, ["public"]);
     expect(onlyPublic).not.toContain("audit");
   });
 
   it("refuses a database that is not there, without leaking the password", async () => {
     const wrong = connection.replace(/\/\/[^@]*@/, "//nobody:secret@");
 
-    await expect(postgresToDbml(wrong, ["public"])).rejects.toThrow();
+    await expect(toDbml(wrong, ["public"])).rejects.toThrow();
 
-    await postgresToDbml(wrong, ["public"]).catch((error: unknown) => {
+    await toDbml(wrong, ["public"]).catch((error: unknown) => {
       expect(String((error as Error).message)).not.toContain("secret");
     });
   });

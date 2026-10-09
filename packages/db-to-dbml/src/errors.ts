@@ -17,29 +17,23 @@ export class DbImportError extends Error {
   }
 }
 
-// The @dbml/connector postgres submodule catches connection-phase errors and
-// re-throws `new Error(\`PostgreSQL connection error: ${err}\`)`, which drops
-// the original `.code`. When that happens we fall back to matching on the
-// (still-original, un-redacted-by-us) message text. We only ever MATCH on the
-// incoming message here — we never echo/interpolate it into the returned
-// error, since it may contain connection details.
-function inferCodeFromMessage(message: string): DbImportErrorCode {
-  if (/password authentication failed/i.test(message)) {
-    return DbImportErrorCode.AUTH_FAILED;
-  }
-  if (/database .* does not exist/i.test(message)) {
-    return DbImportErrorCode.DATABASE_NOT_FOUND;
-  }
-  if (/permission denied for database/i.test(message)) {
-    return DbImportErrorCode.ACCESS_DENIED;
-  }
-  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|getaddrinfo/i.test(message)) {
+// A connector that wraps the driver's error keeps only its message; each
+// dialect lists the phrases its driver uses. Only matched, never echoed.
+export function inferCodeFromMessage(
+  message: string,
+  patterns: Array<[RegExp, DbImportErrorCode]>,
+): DbImportErrorCode {
+  for (const [pattern, code] of patterns)
+    if (pattern.test(message)) return code;
+  if (
+    /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|getaddrinfo/i.test(message)
+  ) {
     return DbImportErrorCode.UNREACHABLE;
   }
   return DbImportErrorCode.UNKNOWN;
 }
 
-function dbImportErrorForCode(code: DbImportErrorCode): DbImportError {
+export function dbImportErrorForCode(code: DbImportErrorCode): DbImportError {
   switch (code) {
     case DbImportErrorCode.AUTH_FAILED:
       return new DbImportError(
@@ -66,28 +60,5 @@ function dbImportErrorForCode(code: DbImportErrorCode): DbImportError {
         DbImportErrorCode.UNKNOWN,
         "Failed to import schema from the database",
       );
-  }
-}
-
-export function toDbImportError(err: unknown): DbImportError {
-  if (err instanceof DbImportError) return err;
-
-  const code = (err as { code?: string })?.code;
-
-  switch (code) {
-    case "28P01":
-      return dbImportErrorForCode(DbImportErrorCode.AUTH_FAILED);
-    case "3D000":
-      return dbImportErrorForCode(DbImportErrorCode.DATABASE_NOT_FOUND);
-    case "42501":
-      return dbImportErrorForCode(DbImportErrorCode.ACCESS_DENIED);
-    case "ECONNREFUSED":
-    case "ETIMEDOUT":
-    case "ENOTFOUND":
-      return dbImportErrorForCode(DbImportErrorCode.UNREACHABLE);
-    default: {
-      const message = (err as { message?: string })?.message ?? "";
-      return dbImportErrorForCode(inferCodeFromMessage(message));
-    }
   }
 }

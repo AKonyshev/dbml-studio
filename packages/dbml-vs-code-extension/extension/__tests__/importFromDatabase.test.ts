@@ -4,7 +4,7 @@ jest.mock("db-to-dbml", () => {
   ) as typeof import("db-to-dbml");
   return {
     ...actual,
-    fetchPostgresSchema: jest.fn(),
+    fetchSchema: jest.fn(),
     schemaToDbml: jest.fn(),
   };
 });
@@ -17,7 +17,7 @@ import { commands, window, workspace } from "vscode";
 import {
   DbImportError,
   DbImportErrorCode,
-  fetchPostgresSchema,
+  fetchSchema,
   schemaToDbml,
 } from "db-to-dbml";
 
@@ -72,7 +72,7 @@ describe("importFromDatabase", () => {
 
   beforeEach(() => {
     jest
-      .mocked(fetchPostgresSchema)
+      .mocked(fetchSchema)
       .mockReset()
       .mockResolvedValue({} as never);
     jest.mocked(schemaToDbml).mockReset().mockReturnValue({
@@ -116,11 +116,11 @@ describe("importFromDatabase", () => {
 
     await importFromDatabase(fakeContext(), { connectionString: CONNECTION });
 
-    expect(fetchPostgresSchema).toHaveBeenNthCalledWith(
+    expect(fetchSchema).toHaveBeenNthCalledWith(
       1,
       "postgres://u:p@h:5432/billing",
     );
-    expect(fetchPostgresSchema).toHaveBeenNthCalledWith(
+    expect(fetchSchema).toHaveBeenNthCalledWith(
       2,
       "postgres://u:p@h:5432/orders",
     );
@@ -150,7 +150,7 @@ describe("importFromDatabase", () => {
       .mocked(resolveImportDestination)
       .mockResolvedValue(twoDestinations() as never);
     jest
-      .mocked(fetchPostgresSchema)
+      .mocked(fetchSchema)
       .mockRejectedValueOnce(
         new DbImportError(DbImportErrorCode.ACCESS_DENIED, "denied"),
       )
@@ -199,21 +199,19 @@ describe("importFromDatabase", () => {
       .mocked(resolveImportDestination)
       .mockResolvedValue(twoDestinations() as never);
     const report = jest.fn();
-    jest
-      .mocked(window.withProgress)
-      .mockImplementationOnce(
-        (async (
-          _options: unknown,
-          task: (progress: unknown, token: unknown) => Promise<unknown>,
-        ) =>
-          await task(
-            { report },
-            {
-              isCancellationRequested: false,
-              onCancellationRequested: jest.fn(),
-            },
-          )) as never,
-      );
+    jest.mocked(window.withProgress).mockImplementationOnce(
+      (async (
+        _options: unknown,
+        task: (progress: unknown, token: unknown) => Promise<unknown>,
+      ) =>
+        await task(
+          { report },
+          {
+            isCancellationRequested: false,
+            onCancellationRequested: jest.fn(),
+          },
+        )) as never,
+    );
 
     await importFromDatabase(fakeContext(), { connectionString: CONNECTION });
 
@@ -262,7 +260,7 @@ describe("importFromDatabase", () => {
       .mocked(resolveImportDestination)
       .mockResolvedValue(new Map([["orders", uriFor("public.dbml")]]) as never);
     jest
-      .mocked(fetchPostgresSchema)
+      .mocked(fetchSchema)
       .mockRejectedValue(
         new DbImportError(DbImportErrorCode.UNREACHABLE, "down"),
       );
@@ -299,5 +297,62 @@ describe("importFromDatabase", () => {
     expect(map.get("dbml.connections")).toBe(
       JSON.stringify({ "saved-local": CONNECTION }),
     );
+  });
+
+  test("writes a MySQL database's tables without its name in front", async () => {
+    // The real generator behind the mock, fed the shape a MySQL read has: every
+    // object is in a schema named after the database.
+    const actual = jest.requireActual(
+      "db-to-dbml",
+    ) as typeof import("db-to-dbml");
+    jest.mocked(schemaToDbml).mockImplementation(actual.schemaToDbml);
+    jest.mocked(fetchSchema).mockResolvedValue({
+      tables: [
+        { name: "member", schemaName: "library" },
+        { name: "book", schemaName: "library" },
+      ],
+      enums: [
+        {
+          name: "book_status_enum",
+          schemaName: "library",
+          values: [{ name: "available" }, { name: "lost" }],
+        },
+      ],
+      refs: [],
+      fields: {
+        "library.member": [
+          { name: "id", type: { type_name: "int" }, not_null: true },
+        ],
+        "library.book": [
+          { name: "id", type: { type_name: "int" }, not_null: true },
+          {
+            name: "status",
+            type: { type_name: "book_status_enum", schemaName: "library" },
+          },
+        ],
+      },
+      tableConstraints: {},
+      indexes: {},
+      checks: {},
+    } as never);
+    jest
+      .mocked(pickImportTargets)
+      .mockResolvedValue([
+        { databaseName: "library", schemaNames: ["library"] },
+      ]);
+    jest
+      .mocked(resolveImportDestination)
+      .mockResolvedValue(
+        new Map([["library", uriFor("library.dbml")]]) as never,
+      );
+
+    await importFromDatabase(fakeContext(), {
+      connectionString: "mysql://u:p@h:3306/entry",
+    });
+
+    const written = jest.mocked(workspace.fs.writeFile).mock.calls[0][1];
+    const dbml = Buffer.from(written).toString("utf-8");
+    expect(dbml).toContain('Table "book" {');
+    expect(dbml).not.toContain('"library".');
   });
 });

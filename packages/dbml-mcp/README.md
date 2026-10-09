@@ -1,23 +1,23 @@
 # dbml-mcp
 
 An [MCP](https://modelcontextprotocol.io) server from [DBML Studio](https://github.com/AKonyshev/dbml-studio).
-It lets an AI agent read the structure of a PostgreSQL database as DBML,
-compare a DBML file with a live database, validate DBML and convert between
-DBML and SQL. It speaks MCP over stdio and needs Node 20 or later; the package
+It lets an AI agent read the structure of a PostgreSQL, MySQL (MariaDB) or SQL
+Server database as DBML, compare a DBML file with a live database, validate
+DBML and convert between DBML and SQL. It speaks MCP over stdio and needs Node 20 or later; the package
 is a single bundled file with no dependencies to install.
 
 ## Tools
 
-| Tool                    | What it does                                                                                                                                 |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_connections`      | The names of the database connections the server knows.                                                                                      |
-| `list_databases`        | The databases on the server a connection points at.                                                                                          |
-| `list_schemas`          | The schemas in a database, system schemas left out.                                                                                          |
-| `import_schema`         | Reads the structure (not the data) of schemas in a database and returns it as DBML, or writes it to a file.                                  |
-| `compare_with_database` | Compares a DBML model with one schema of a database: tables, columns, enums, references and indexes on either side only, or different.       |
-| `validate_dbml`         | Checks DBML with the DBML compiler and reports errors with line and column. Invalid DBML is a normal answer (`valid: false`), not a failure. |
-| `dbml_to_sql`           | DBML to `CREATE` statements: `postgres`, `mysql`, `mssql` or `oracle`.                                                                       |
-| `sql_to_dbml`           | `CREATE` statements to DBML: `postgres`, `mysql`, `mssql`, `oracle` or `snowflake`.                                                          |
+| Tool                    | What it does                                                                                                                                                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_connections`      | The database connections the server knows: each one's `name` and its `database` (`postgres`, `mysql`, `mssql`, or `unknown` for a value that is no supported connection string).                                                              |
+| `list_databases`        | The databases on the server a connection points at.                                                                                                                                                                                           |
+| `list_schemas`          | The schemas in a database, system schemas left out.                                                                                                                                                                                           |
+| `import_schema`         | Reads the structure (not the data) of schemas in a database and returns it as DBML, or writes it to a file.                                                                                                                                   |
+| `compare_with_database` | Compares a DBML model with one schema of a database: tables, columns, enums, references and indexes on either side only, or different. Without `schema` it compares `public` (PostgreSQL), the database itself (MySQL) or `dbo` (SQL Server). |
+| `validate_dbml`         | Checks DBML with the DBML compiler and reports errors with line and column. Invalid DBML is a normal answer (`valid: false`), not a failure.                                                                                                  |
+| `dbml_to_sql`           | DBML to `CREATE` statements: `postgres`, `mysql`, `mssql` or `oracle`.                                                                                                                                                                        |
+| `sql_to_dbml`           | `CREATE` statements to DBML: `postgres`, `mysql`, `mssql`, `oracle` or `snowflake`.                                                                                                                                                           |
 
 `validate_dbml`, `dbml_to_sql`, `sql_to_dbml` and `compare_with_database` take
 the DBML or SQL either as `text` or as a `path` to a file in the working
@@ -27,7 +27,7 @@ a large database. The result comes back as structured content (`sql` for
 `dbml_to_sql`, `dbml` for `sql_to_dbml` and `import_schema`, `report` for
 `compare_with_database`, next to the diff fields), omitted when written to
 `outputPath`; the text content repeats it. Everything that reads a database takes a `connection`: a name
-from `list_connections`, or a `postgres://` URL.
+from `list_connections`, or a connection string (see [Connections](#connections)).
 
 ## Set up
 
@@ -52,7 +52,7 @@ In `.mcp.json` at the project root:
 `.mcp.json` is usually committed, so it names an environment variable rather
 than holding the connection string: Claude Code expands `${DBML_LOCAL_URL}`
 from the environment it was started in, where you set it to
-`postgresql://…`. A server added at user scope (`claude mcp add --scope user`)
+a connection string such as `postgresql://…`. A server added at user scope (`claude mcp add --scope user`)
 keeps its config out of the project, and can hold the string itself.
 
 ### Cursor
@@ -96,8 +96,34 @@ itself. A value that is not a JSON object of non-empty strings stops the server
 at start with a message naming the variable. The VS Code extension hands its
 saved connections over this way.
 
-A tool also accepts a raw `postgres://` or `postgresql://` URL as the
-`connection`. That works, but the URL, password included, is then part of the
+A connection string is one of:
+
+| Database          | Forms                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------ |
+| PostgreSQL        | `postgres://user:password@host:5432/library` or `postgresql://…`                           |
+| MySQL and MariaDB | `mysql://user:password@host:3306/library` or `mariadb://…`                                 |
+| SQL Server        | `sqlserver://user:password@host:1433/library` or `mssql://…`, or an ADO string (see below) |
+
+SQL Server also takes the ADO form, `Server=host;Database=library;User Id=sa;Password=…`
+(`Data Source=` and `Address=` work for `Server=`; a named instance is
+`Server=host\SQLEXPRESS`). A value with `;`, `=` or `}` in it is quoted in `{…}`
+or `"…"` as ADO does; in a URL, percent-encode it. A server with a
+self-signed certificate (a container, a development machine) needs
+`trustServerCertificate=true` in the URL, or `TrustServerCertificate=true` in
+the ADO string; `encrypt=false` turns TLS off for a server that has none.
+
+```json
+"env": {
+  "DBML_CONNECTION_SHOP": "mysql://reader@localhost:3306/shop",
+  "DBML_CONNECTION_ERP": "sqlserver://reader:secret@localhost:1433/erp?trustServerCertificate=true",
+  "DBML_CONNECTION_LEDGER": "Server=localhost;Database=ledger;User Id=reader;Password=secret;TrustServerCertificate=true"
+}
+```
+
+A MySQL URL may name no database (`mysql://user@host`): `list_databases`
+works, `list_schemas` answers an empty list, and `import_schema` and
+`compare_with_database` need a `database`. A tool also accepts a raw
+connection string of any of these forms as the `connection`. That works, but the URL, password included, is then part of the
 conversation with the model. Prefer a name: the connection string stays in the
 server's environment and the agent only ever sees the name.
 
@@ -146,10 +172,10 @@ A failed call answers `<CODE>: <message>`. The codes:
 
 | Code                        | Meaning                                                                                                                                                                                                                                                                          |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONNECTION_NOT_FOUND`      | No connection has that name, and the value is not a `postgres://` URL. The message lists the known names.                                                                                                                                                                        |
-| `INVALID_CONNECTION_STRING` | The connection string, or the database name given with it, is not usable.                                                                                                                                                                                                        |
-| `AUTH_FAILED`               | The database refused the user or the password.                                                                                                                                                                                                                                   |
-| `UNREACHABLE`               | The server could not be reached.                                                                                                                                                                                                                                                 |
+| `CONNECTION_NOT_FOUND`      | No connection has that name, and the value is not a connection string of a supported database. The message lists the known names.                                                                                                                                                |
+| `INVALID_CONNECTION_STRING` | The connection string, or the database name given with it, is not usable. A configured value no supported database accepts is reported this way when a tool uses it, and listed as `unknown` by `list_connections`.                                                              |
+| `AUTH_FAILED`               | The database refused the user or the password. SQL Server answers a database the login cannot open the same way, so that is reported as `AUTH_FAILED` too.                                                                                                                       |
+| `UNREACHABLE`               | The server could not be reached. For SQL Server this is also what a self-signed certificate looks like without `trustServerCertificate=true`.                                                                                                                                    |
 | `DATABASE_NOT_FOUND`        | The server has no such database.                                                                                                                                                                                                                                                 |
 | `ACCESS_DENIED`             | The user may not read what the call needs.                                                                                                                                                                                                                                       |
 | `SCHEMA_NOT_FOUND`          | The named schema has no tables or enums, or does not exist; the message lists those that do.                                                                                                                                                                                     |
@@ -168,6 +194,27 @@ A failed call answers `<CODE>: <message>`. The codes:
 - `compare_with_database` ignores type parameters: `varchar(120)` and
   `varchar(200)` compare equal, as do `numeric(10,2)` and `numeric(12,4)`.
   Type names are compared after synonyms are folded (`int4` is `integer`).
+- Comparison works within one database kind. A model written in PostgreSQL
+  types, compared with a SQL Server database, reports type differences; in
+  T-SQL, `timestamp` is rowversion, not a date-time.
+- MySQL:
+  - Enums compare by their values, because MySQL enums have no names.
+  - A non-unique index exactly on a foreign key's columns, when the file does
+    not declare it, is not reported: MySQL creates one itself.
+  - A foreign key into another database is shown as if it pointed into this
+    one.
+- SQL Server:
+  - `CHECK … IN` enums compare by their set of values.
+  - The connector reads a composite `UNIQUE` as one unique per column, so a
+    composite unique in the file shows as only in the file.
+  - A database the login cannot open is reported as `AUTH_FAILED`, because SQL
+    Server answers it as a failed login.
+  - A server with a self-signed certificate needs `trustServerCertificate=true`
+    in the URL (or `TrustServerCertificate=true` in the ADO string), or it is
+    reported as `UNREACHABLE`.
+- Snowflake, BigQuery and Oracle databases cannot be connected to.
+  `sql_to_dbml` still reads Snowflake and Oracle SQL, and `dbml_to_sql` writes
+  Oracle.
 - `dbml_to_sql` comes from `@dbml/core` and keeps its behaviour:
   - For a one-to-one reference (`-`) it emits the foreign key in the opposite
     direction: `Ref: b.a_id - a.id` makes `a.id` reference `b.a_id`. Postgres

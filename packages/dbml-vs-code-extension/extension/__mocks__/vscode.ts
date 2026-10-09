@@ -143,6 +143,7 @@ export const TreeItemCollapsibleState = {
 
 export class TreeItem {
   public contextValue?: string;
+  public description?: string | boolean;
   public iconPath?: unknown;
   public command?: unknown;
 

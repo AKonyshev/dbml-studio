@@ -87,8 +87,8 @@ describe("catalog queries", () => {
     expect(end).toHaveBeenCalled();
   });
 
-  test("rejects a non-postgres string without opening a client", async () => {
-    await expect(listDatabases("mysql://u:p@h/db")).rejects.toBeInstanceOf(
+  test("rejects an unsupported string without opening a client", async () => {
+    await expect(listDatabases("snowflake://u:p@h/db")).rejects.toBeInstanceOf(
       DbImportError,
     );
     expect(Client).not.toHaveBeenCalled();

@@ -1,4 +1,4 @@
-import { fetchPostgresSchema } from "db-to-dbml";
+import { fetchSchema } from "db-to-dbml";
 
 import { databaseSchemaToModel } from "../databaseSchemaToModel";
 import { diffSchemas } from "../diffSchemas";
@@ -45,10 +45,7 @@ describeLive("against a real PostgreSQL", () => {
   jest.setTimeout(30_000);
 
   it("finds nothing to report when the file describes the database", async () => {
-    const live = databaseSchemaToModel(
-      await fetchPostgresSchema(connection),
-      "public",
-    );
+    const live = databaseSchemaToModel(await fetchSchema(connection), "public");
     const difference = diffSchemas(parseDbmlToModel(MATCHING), live);
 
     // The point of the whole feature: a file that matches must come back clean.
@@ -60,10 +57,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("reports a table the database does not have", async () => {
-    const live = databaseSchemaToModel(
-      await fetchPostgresSchema(connection),
-      "public",
-    );
+    const live = databaseSchemaToModel(await fetchSchema(connection), "public");
     const withExtra = parseDbmlToModel(
       `${MATCHING}\nTable "reviews" {\n  "id" int4 [pk]\n}\n`,
     );
@@ -74,10 +68,7 @@ describeLive("against a real PostgreSQL", () => {
   });
 
   it("reports a column the database does not have", async () => {
-    const live = databaseSchemaToModel(
-      await fetchPostgresSchema(connection),
-      "public",
-    );
+    const live = databaseSchemaToModel(await fetchSchema(connection), "public");
     const withExtra = parseDbmlToModel(
       MATCHING.replace('"bio" text', '"bio" text\n  "twitter" varchar(64)'),
     );
