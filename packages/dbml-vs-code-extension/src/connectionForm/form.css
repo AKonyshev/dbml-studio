@@ -49,8 +49,7 @@ body {
   align-items: start;
 }
 
-.grid > label,
-.grid > .label {
+.grid > label {
   padding-top: 5px;
 }
 
@@ -60,7 +59,12 @@ body {
 
 .hostport {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.port-label {
+  flex: 0 0 auto;
 }
 
 .hostport input:first-child {
@@ -69,8 +73,8 @@ body {
 }
 
 .hostport input:last-child {
-  flex: 0 0 90px;
-  width: 90px;
+  flex: 0 0 80px;
+  width: 80px;
 }
 
 .check {
@@ -206,8 +210,7 @@ button:disabled {
     row-gap: 4px;
   }
 
-  .grid > label,
-  .grid > .label {
+  .grid > label {
     padding-top: 6px;
   }
 }

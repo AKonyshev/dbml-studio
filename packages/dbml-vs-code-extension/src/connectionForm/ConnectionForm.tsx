@@ -59,6 +59,7 @@ export function ConnectionForm() {
   // A field shows its error once the user has been in it, not on a blank form.
   const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
   const pasteRef = useRef<HTMLTextAreaElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<unknown>): void => {
@@ -69,7 +70,9 @@ export function ConnectionForm() {
       if (message.type === "init") {
         setStrings(message.strings ?? {});
         setDatabases([]);
-        setTouched(new Set());
+        // An edit starts with its errors visible: a stored connection that
+        // could not be read opens with empty fields, and Save says why it is off.
+        setTouched(new Set(message.mode === "edit" ? ["name", "host"] : []));
         dispatch({ type: "init", message });
       } else {
         dispatch({ type: "host", message });
@@ -91,6 +94,14 @@ export function ConnectionForm() {
     }
   }, [state.test]);
 
+  // Starting a test disables the focused Test button and the fieldset; focus
+  // moves to Cancel so keyboard users stay in the page.
+  useEffect(() => {
+    if (state.testing) {
+      cancelRef.current?.focus();
+    }
+  }, [state.testing]);
+
   const fieldErrors = useMemo(() => errors(state), [state]);
 
   if (strings === undefined) {
@@ -109,10 +120,18 @@ export function ConnectionForm() {
     touch(key);
     dispatch({ type: "field", key, value });
   };
+  // The error a field shows: only once it has been touched.
+  const shownError = (key: "name" | "host" | "port"): string | undefined =>
+    touched.has(key) ? fieldErrors[key] : undefined;
+  // Props that tie an input to its error element.
+  const invalidProps = (key: "name" | "host" | "port") =>
+    shownError(key) === undefined
+      ? {}
+      : { "aria-invalid": true, "aria-describedby": `e-${key}` };
   const errorFor = (key: "name" | "host" | "port"): ReactNode => {
-    const error = fieldErrors[key];
-    return error !== undefined && touched.has(key) ? (
-      <div className="field-error" role="alert">
+    const error = shownError(key);
+    return error !== undefined ? (
+      <div id={`e-${key}`} className="field-error" role="alert">
         {t(error)}
       </div>
     ) : null;
@@ -128,15 +147,19 @@ export function ConnectionForm() {
   };
   const onPaste = (event: ClipboardEvent<HTMLTextAreaElement>): void => {
     const text = event.clipboardData.getData("text");
-    if (text.trim() !== "") {
+    if (text !== "") {
       event.preventDefault();
-      sendPaste(text);
+      if (text.trim() !== "") {
+        sendPaste(text);
+      }
     }
   };
   const onPasteBlur = (): void => {
     const text = pasteRef.current?.value ?? "";
     if (text.trim() !== "") {
       sendPaste(text);
+    } else if (pasteRef.current !== null) {
+      pasteRef.current.value = "";
     }
   };
 
@@ -161,6 +184,7 @@ export function ConnectionForm() {
           placeholder={options.placeholder}
           spellCheck={false}
           autoComplete="off"
+          {...(key === "name" ? invalidProps("name") : {})}
           onChange={(event) => setField(key, event.target.value)}
           onBlur={() => touch(key)}
         />
@@ -253,18 +277,21 @@ export function ConnectionForm() {
                 value={fields.host}
                 spellCheck={false}
                 autoComplete="off"
+                {...invalidProps("host")}
                 onChange={(event) => setField("host", event.target.value)}
                 onBlur={() => touch("host")}
               />
+              <label htmlFor="f-port" className="port-label">
+                {t("Port")}
+              </label>
               <input
                 id="f-port"
                 type="text"
                 inputMode="numeric"
-                aria-label={t("Port")}
-                title={t("Port")}
                 value={fields.port}
                 spellCheck={false}
                 autoComplete="off"
+                {...invalidProps("port")}
                 onChange={(event) => setField("port", event.target.value)}
                 onBlur={() => touch("port")}
               />
@@ -349,6 +376,7 @@ export function ConnectionForm() {
         <button
           type="button"
           className="secondary"
+          ref={cancelRef}
           // Outside the disabled fieldset: Cancel always works.
           onClick={() => post({ type: "cancel" })}
         >
