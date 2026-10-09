@@ -1,4 +1,13 @@
-import { DbImportError, DbImportErrorCode, toDbImportError } from "../errors";
+import { postgres } from "../dialects/postgres";
+import {
+  DbImportError,
+  DbImportErrorCode,
+  toDbImportError as genericToDbImportError,
+} from "../errors";
+
+// The mapping is the dialect's own; the module-level `toDbImportError` only
+// passes a DbImportError through.
+const toDbImportError = postgres.toDbImportError;
 
 describe("toDbImportError", () => {
   test("maps postgres auth failure 28P01", () => {
@@ -105,5 +114,15 @@ describe("toDbImportError", () => {
       "bad",
     );
     expect(toDbImportError(original)).toBe(original);
+  });
+});
+
+describe("toDbImportError without a dialect", () => {
+  test("passes a DbImportError through and makes UNKNOWN of anything else", () => {
+    const original = new DbImportError(DbImportErrorCode.AUTH_FAILED, "bad");
+    expect(genericToDbImportError(original)).toBe(original);
+    expect(genericToDbImportError({ code: "28P01" }).code).toBe(
+      DbImportErrorCode.UNKNOWN,
+    );
   });
 });

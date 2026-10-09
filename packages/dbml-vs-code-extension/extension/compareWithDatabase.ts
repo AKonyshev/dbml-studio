@@ -10,7 +10,7 @@ import {
   type DatabaseSchema,
   DbImportError,
   DbImportErrorCode,
-  fetchPostgresSchema,
+  fetchSchema,
   listDatabases,
   listSchemaNames,
   withDatabase,
@@ -100,8 +100,7 @@ export async function compareWithDatabase(
         location: ProgressLocation.Notification,
         title: l10n.t("Reading database schema…"),
       },
-      async () =>
-        await fetchPostgresSchema(withDatabase(connectionString, database)),
+      async () => await fetchSchema(withDatabase(connectionString, database)),
     );
   } catch (error) {
     console.error("[dbml] reading the database schema failed", error);

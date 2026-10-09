@@ -1,22 +1,19 @@
-import {
-  assertPostgresConnectionString,
-  withDatabase,
-} from "../connectionString";
+import { assertConnectionString, withDatabase } from "../connectionString";
 import { DbImportError, DbImportErrorCode } from "../errors";
 
-describe("assertPostgresConnectionString", () => {
+describe("assertConnectionString", () => {
   test("returns the trimmed string for both accepted schemes", () => {
-    expect(assertPostgresConnectionString("  postgres://u:p@h/db  ")).toBe(
+    expect(assertConnectionString("  postgres://u:p@h/db  ")).toBe(
       "postgres://u:p@h/db",
     );
-    expect(assertPostgresConnectionString("postgresql://u:p@h/db")).toBe(
+    expect(assertConnectionString("postgresql://u:p@h/db")).toBe(
       "postgresql://u:p@h/db",
     );
   });
 
   test("rejects anything else as INVALID_CONNECTION_STRING", () => {
     try {
-      assertPostgresConnectionString("mysql://u:p@h/db");
+      assertConnectionString("snowflake://u:p@h/db");
       throw new Error("expected a DbImportError");
     } catch (error) {
       expect(error).toBeInstanceOf(DbImportError);
@@ -56,8 +53,8 @@ describe("withDatabase", () => {
     );
   });
 
-  test("rejects a non-postgres string before rewriting anything", () => {
-    expect(() => withDatabase("mysql://u:p@h/db", "orders")).toThrow(
+  test("rejects an unsupported string before rewriting anything", () => {
+    expect(() => withDatabase("snowflake://u:p@h/db", "orders")).toThrow(
       DbImportError,
     );
   });

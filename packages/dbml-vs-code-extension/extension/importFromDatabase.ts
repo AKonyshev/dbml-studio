@@ -12,7 +12,7 @@ import {
 import {
   DbImportError,
   DbImportErrorCode,
-  fetchPostgresSchema,
+  fetchSchema,
   schemaToDbml,
   withDatabase,
 } from "db-to-dbml";
@@ -81,7 +81,7 @@ async function importOne(
   let dbml: string;
   let droppedCrossSchemaRefs: number;
   try {
-    const db = await fetchPostgresSchema(
+    const db = await fetchSchema(
       withDatabase(connectionString, target.databaseName),
     );
     ({ dbml, droppedCrossSchemaRefs } = schemaToDbml(db, target.schemaNames));
