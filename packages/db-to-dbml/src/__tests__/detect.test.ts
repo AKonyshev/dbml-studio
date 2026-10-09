@@ -7,6 +7,9 @@ describe("dialectOf", () => {
     ["postgresql://u:p@h/db", "postgres"],
     ["POSTGRES://u:p@h/db", "postgres"],
     ["  postgres://u:p@h/db  ", "postgres"],
+    ["mysql://u:p@h/db", "mysql"],
+    ["MySQL://u:p@h/db", "mysql"],
+    ["mariadb://u:p@h/db", "mysql"],
   ])("%s is %s", (connection, expected) => {
     expect(dialectOf(connection)).toBe(expected);
   });

@@ -1,13 +1,14 @@
 import { DbImportError, DbImportErrorCode } from "../errors";
 
 import { UNSUPPORTED_CONNECTION } from "./catalog";
+import { mysql } from "./mysql";
 import { postgres } from "./postgres";
 
 import type { Dialect, DialectId } from "./types";
 
-// Ordered; the first dialect that accepts the string owns it. Tasks 3 and 4
-// add mysql and mssql here.
-const DIALECTS: Dialect[] = [postgres];
+// Ordered; the first dialect that accepts the string owns it. Task 4 adds mssql
+// here.
+const DIALECTS: Dialect[] = [postgres, mysql];
 
 export { UNSUPPORTED_CONNECTION };
 
