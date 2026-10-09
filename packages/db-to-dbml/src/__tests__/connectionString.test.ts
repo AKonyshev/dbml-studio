@@ -1,4 +1,5 @@
 import { assertConnectionString, withDatabase } from "../connectionString";
+import { postgres } from "../dialects/postgres";
 import { DbImportError, DbImportErrorCode } from "../errors";
 
 describe("assertConnectionString", () => {
@@ -106,6 +107,33 @@ describe("withDatabase", () => {
       expect(JSON.stringify(error)).not.toContain("assw0rd");
       expect((error as DbImportError).message).not.toContain("assw0rd");
       expect(error).not.toHaveProperty("input");
+    }
+  });
+});
+
+describe("postgres databaseOf", () => {
+  test("decodes the database name and reports none for an empty path", () => {
+    expect(postgres.databaseOf("postgres://u:p@h/my%20db")).toBe("my db");
+    expect(postgres.databaseOf("postgres://u:p@h")).toBeUndefined();
+    expect(postgres.databaseOf("postgres://u:p@h/")).toBeUndefined();
+  });
+
+  test("refuses a malformed % escape with the fixed sentence, never the input", () => {
+    const secret = "postgres://u:sEcr3t@h/db%ZZ";
+
+    try {
+      postgres.databaseOf(secret);
+      throw new Error("expected a DbImportError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DbImportError);
+      expect((error as DbImportError).code).toBe(
+        DbImportErrorCode.INVALID_CONNECTION_STRING,
+      );
+      expect((error as DbImportError).message).toBe(
+        "Connection string is not a readable PostgreSQL URL",
+      );
+      expect(JSON.stringify(error)).not.toContain("sEcr3t");
+      expect(JSON.stringify(error)).not.toContain("%ZZ");
     }
   });
 });

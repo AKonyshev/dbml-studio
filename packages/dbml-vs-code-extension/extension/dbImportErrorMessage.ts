@@ -6,7 +6,7 @@ import { DbImportError, DbImportErrorCode } from "db-to-dbml";
 // `string | null` return type over every enum member makes a newly added code a
 // compile error rather than a silent fall-through to the caller's fallback.
 // Never include error.message here — it may carry connection details (see
-// toDbImportError in db-to-dbml).
+// each dialect's toDbImportError in db-to-dbml).
 const uiMessage = (code: DbImportErrorCode): string | null => {
   switch (code) {
     case DbImportErrorCode.AUTH_FAILED:

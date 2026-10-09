@@ -174,7 +174,17 @@ export const postgres: Dialect = {
 
   databaseOf: (connection) => {
     const path = parseUrl(connection).pathname.slice(1);
-    return path === "" ? undefined : decodeURIComponent(path);
+    if (path === "") return undefined;
+    // A malformed `%` escape makes `decodeURIComponent` throw a URIError whose
+    // message quotes the offending text; say it in the fixed sentence instead.
+    try {
+      return decodeURIComponent(path);
+    } catch {
+      throw new DbImportError(
+        DbImportErrorCode.INVALID_CONNECTION_STRING,
+        "Connection string is not a readable PostgreSQL URL",
+      );
+    }
   },
 
   defaultSchema: () => "public",

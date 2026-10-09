@@ -62,14 +62,3 @@ export function dbImportErrorForCode(code: DbImportErrorCode): DbImportError {
       );
   }
 }
-
-// Errors that reach callers without a connection to tell their dialect apart
-// (they are already DbImportErrors, or something unexpected) pass through or
-// become UNKNOWN. Dialect-aware mapping happens inside each adapter. This lives
-// here rather than in a module of its own: an adapter imports `errors.ts`, so a
-// re-export from the adapters' side would make the two import each other.
-export function toDbImportError(err: unknown): DbImportError {
-  return err instanceof DbImportError
-    ? err
-    : dbImportErrorForCode(DbImportErrorCode.UNKNOWN);
-}
