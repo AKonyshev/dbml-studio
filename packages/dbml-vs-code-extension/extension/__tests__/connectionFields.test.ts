@@ -8,17 +8,20 @@ import {
 describe("validateFields", () => {
   const base = { ...emptyFields("postgres"), name: "shop" };
 
+  // `savedNames` is every saved name except the edited connection's own key.
   it("wants a name, unique ignoring case and spaces", () => {
     expect(validateFields({ ...base, name: "  " }, []).name).toBeDefined();
     expect(
       validateFields({ ...base, name: " Shop " }, ["shop"]).name,
     ).toBeDefined();
+    // Renaming `shop` to `Shop`: the edited key is not among the saved names.
+    expect(validateFields({ ...base, name: "Shop" }, []).name).toBeUndefined();
     expect(
-      validateFields({ ...base, name: "Shop" }, ["shop"], "shop").name,
-    ).toBeUndefined();
+      validateFields({ ...base, name: "legacy" }, ["legacy"]).name,
+    ).toBeDefined();
+    // A case variant that is another saved key is a collision.
     expect(
-      validateFields({ ...base, name: "legacy" }, ["shop", "legacy"], "shop")
-        .name,
+      validateFields({ ...base, name: "SHOP" }, ["SHOP"]).name,
     ).toBeDefined();
   });
 

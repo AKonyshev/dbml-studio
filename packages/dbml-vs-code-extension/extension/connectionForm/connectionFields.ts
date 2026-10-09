@@ -69,22 +69,17 @@ function hostIsUnusable(host: string): boolean {
   return /[[\]]/.test(bare);
 }
 
+// `savedNames` is every saved name except the edited connection's own key: that
+// key is not a collision, and any other key, a case variant included, is.
 export function validateFields(
   fields: ConnectionFields,
   savedNames: string[],
-  editing?: string,
 ): FieldErrors {
   const errors: FieldErrors = {};
   const name = normalized(fields.name);
   if (name === "") {
     errors.name = "Give the connection a name.";
-  } else if (
-    savedNames.some(
-      (saved) =>
-        normalized(saved) === name &&
-        (editing === undefined || normalized(editing) !== name),
-    )
-  ) {
+  } else if (savedNames.some((saved) => normalized(saved) === name)) {
     errors.name = "A connection with this name already exists.";
   }
 

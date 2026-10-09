@@ -224,6 +224,25 @@ describe("formState", () => {
     );
   });
 
+  it("lets an edit be renamed to a case variant of its own name", () => {
+    const s = reduce(
+      reduce(initialState(), {
+        type: "init",
+        message: {
+          type: "init",
+          mode: "edit",
+          fields: { ...emptyFields("postgres"), name: "shop" },
+          strings: {},
+          savedNames: [],
+          editing: "shop",
+          hasPassword: false,
+        },
+      }),
+      { type: "field", key: "name", value: "Shop" },
+    );
+    expect(errors(s).name).toBeUndefined();
+  });
+
   it("validates against the saved names it was given, edit or not", () => {
     const s = reduce(initialState(), {
       type: "init",

@@ -684,9 +684,11 @@ describe("openConnectionForm", () => {
       const { deps, secrets } = setup({ shop: SHOP });
       const outcome = openConnectionForm(deps, "shop");
       const panel = panels[0];
-      await flush();
+      // A password unlike the stored one, so a dropped paste cannot pass.
+      const pasted = "postgresql://u:other@h/db?sslmode=require";
       panel.receive({ type: "ready" });
-      panel.receive({ type: "paste", text: PG });
+      await flush();
+      panel.receive({ type: "paste", text: pasted });
       await flush();
       const { fields } = lastOf(panel, "pasted") as unknown as {
         fields: Omit<ConnectionFields, "name">;
@@ -694,7 +696,7 @@ describe("openConnectionForm", () => {
       panel.receive({ type: "save", fields: { ...fields, name: "shop" } });
       await flush();
       await outcome;
-      expect(await getConnection(secrets, "shop")).toBe(PG);
+      expect(await getConnection(secrets, "shop")).toBe(pasted);
     });
   });
 
@@ -1005,6 +1007,55 @@ describe("openConnectionForm", () => {
   });
 
   describe("closing and stale tabs", () => {
+    it("writes nothing when the edited connection is deleted between the check and the write", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const realGet = secrets.get.bind(secrets);
+      const realStore = secrets.store.bind(secrets);
+      const store = jest.spyOn(secrets, "store");
+      let reads = 0;
+      jest.spyOn(secrets, "get").mockImplementation(async (key) => {
+        reads += 1;
+        // The save's own read-modify-write is its second read.
+        if (reads === 2) {
+          await deleteConnection({ get: realGet, store: realStore }, "shop");
+        }
+        return await realGet(key);
+      });
+      store.mockClear();
+      panel.receive({ type: "save", fields: initFields(panel) });
+      await flush();
+      expect(lastOf(panel, "saveError")).toEqual({
+        type: "saveError",
+        message: "The connection no longer exists.",
+      });
+      // The delete went through the unspied store: any call is the panel's.
+      expect(store).not.toHaveBeenCalled();
+      expect(await listConnections({ get: realGet, store: realStore })).toEqual(
+        [],
+      );
+      panel.receive({ type: "cancel" });
+      await expect(outcome).resolves.toBeUndefined();
+    });
+
+    it("saves an edit that keeps its name through the same guarded write", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      panel.receive({
+        type: "save",
+        fields: { ...initFields(panel), host: "other" },
+      });
+      await flush();
+      await expect(outcome).resolves.toMatchObject({ name: "shop" });
+      expect(await listConnections(secrets)).toEqual(["shop"]);
+    });
+
     it("closeConnectionForm disposes the edit tab of that exact name only", async () => {
       const { deps } = setup({ shop: SHOP, SHOP: SHOP });
       const lower = openConnectionForm(deps, "shop");

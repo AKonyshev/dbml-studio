@@ -313,15 +313,7 @@ export function openConnectionForm(
   ): Promise<FormOutcome> => {
     let saved: FormOutcome;
     try {
-      const existing = await listConnections(secrets);
-      if (edit !== undefined && !existing.includes(edit)) {
-        post({ type: "saveError", message: connectionGoneMessage() });
-        return undefined;
-      }
-      const errors = validateFields(
-        fields,
-        existing.filter((name) => name !== edit),
-      );
+      const errors = validateFields(fields, await otherNames());
       const firstError = errors.name ?? errors.host ?? errors.port;
       if (firstError !== undefined) {
         post({ type: "saveError", message: fieldErrorMessage(firstError) });
@@ -329,10 +321,14 @@ export function openConnectionForm(
       }
       const name = fields.name.trim();
       const string = connectionString(fields, password);
-      // A rename is one write that drops the old key and sets the new one, so
-      // it cannot be left half done.
-      if (edit !== undefined && edit !== name) {
-        await renameConnection(secrets, edit, name, string);
+      // An edit is one read-modify-write that drops the old key and sets the new
+      // one, so a rename cannot be left half done, and a connection deleted in
+      // the meantime is not written back.
+      if (edit !== undefined) {
+        if (!(await renameConnection(secrets, edit, name, string))) {
+          post({ type: "saveError", message: connectionGoneMessage() });
+          return undefined;
+        }
       } else {
         await saveConnection(secrets, name, string);
       }

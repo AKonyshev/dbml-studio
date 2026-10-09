@@ -66,16 +66,24 @@ export async function deleteConnection(
   await writeAll(secrets, all);
 }
 
-// A rename in one read and one write: the old key goes and the new one is set
-// together, so a failure cannot leave both, and watchers see one change.
+// Replaces the connection stored under `from` with `connectionString` under
+// `to` (the same key for a plain edit), in one read and one write: the old key
+// goes and the new one is set together, so a failure cannot leave both, and
+// watchers see one change. When `from` is no longer stored nothing is written
+// and the result is false, so a connection deleted meanwhile is not brought
+// back.
 export async function renameConnection(
   secrets: SecretStore,
   from: string,
   to: string,
   connectionString: string,
-): Promise<void> {
+): Promise<boolean> {
   const all = await readAll(secrets);
+  if (!Object.hasOwn(all, from)) {
+    return false;
+  }
   delete all[from];
   all[to] = connectionString;
   await writeAll(secrets, all);
+  return true;
 }
