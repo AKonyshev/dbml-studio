@@ -206,9 +206,11 @@ the foreign keys. The suite also does not assert that a missing database is
 as for a wrong password.
 
 `packages/schema-diff/src/__tests__/liveMssql.test.ts` compares the hand-written
-`examples/library.dbml` with the `dbo` schema, with nothing normalised for SQL
-Server, and asserts the whole remaining difference, so a change to the
-connector or to the comparison that moves it shows up there.
+`examples/library.dbml` with the `dbo` schema, with only SQL
+Server's check-constraint enums compared by value, and asserts the whole
+remaining difference (`timestamp` against `datetime2`, and the composite unique
+index), so a change to the connector or to the comparison that moves it shows
+up there.
 
 `packages/dbml-mcp` has a second kind of suite that is not about a database but
 is in the sweep all the same: `protocol.test.ts` builds the bundle
