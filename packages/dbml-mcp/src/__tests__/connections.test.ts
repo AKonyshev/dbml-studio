@@ -44,6 +44,32 @@ describe("connectionsFromEnv", () => {
   });
 });
 
+describe("ConnectionSource.entries", () => {
+  it("reports the database kind of each connection, sorted by name", () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_SHOP: "mysql://u:p@h/shop",
+      DBML_CONNECTION_LOCAL: URL_LOCAL,
+      DBML_CONNECTION_ERP: "Server=h;Database=erp;User Id=u;Password=p",
+      DBML_CONNECTION_WEB: "mariadb://u:p@h/web",
+      DBML_CONNECTION_MSSQL: "sqlserver://u:p@h/erp",
+    });
+    expect(source.entries()).toEqual([
+      { name: "erp", database: "mssql" },
+      { name: "local", database: "postgres" },
+      { name: "mssql", database: "mssql" },
+      { name: "shop", database: "mysql" },
+      { name: "web", database: "mysql" },
+    ]);
+  });
+
+  it('lists a value no database accepts as "unknown"', () => {
+    const source = connectionsFromEnv({
+      DBML_CONNECTION_ODD: "snowflake://u:Secr3t@a/db",
+    });
+    expect(source.entries()).toEqual([{ name: "odd", database: "unknown" }]);
+  });
+});
+
 describe("connectionsFromEnv with DBML_CONNECTION_NAMES", () => {
   const URL_PROD = "postgresql://reader:pr0d@prod/library";
 
@@ -154,6 +180,51 @@ describe("resolveConnection", () => {
     expect(resolveConnection(source, "postgres://u@h/db")).toBe(
       "postgres://u@h/db",
     );
+  });
+
+  it.each([
+    "mysql://u:p@h/db",
+    "sqlserver://u:p@h/db",
+    "Server=h;Database=db;User Id=u;Password=p",
+  ])("accepts the raw connection string %s", (value) => {
+    expect(resolveConnection(source, value)).toBe(value);
+  });
+
+  it("gives a raw string of a database it does not know CONNECTION_NOT_FOUND, without echoing it", () => {
+    expect.assertions(3);
+    try {
+      resolveConnection(source, "snowflake://u:Secr3t@a/db");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ToolError);
+      expect((error as ToolError).code).toBe("CONNECTION_NOT_FOUND");
+      expect((error as ToolError).message).not.toContain("Secr3t");
+    }
+  });
+
+  it("names the three URL forms when a value matches nothing and nothing is configured", () => {
+    expect(() =>
+      resolveConnection(connectionsFromEnv({}), "snowflake://u:Secr3t@a/db"),
+    ).toThrow(/postgres:\/\/, mysql:\/\/ or sqlserver:\/\/ URL/);
+  });
+
+  it("adds a database to a MySQL URL that names none", () => {
+    expect(resolveConnection(source, "mysql://u:p@h", "library")).toBe(
+      "mysql://u:p@h/library",
+    );
+  });
+
+  it("answers INVALID_CONNECTION_STRING for a configured value no database accepts", async () => {
+    const bad = connectionsFromEnv({
+      DBML_CONNECTION_ODD: "snowflake://u:Secr3t@a/db",
+    });
+    expect.assertions(3);
+    try {
+      resolveConnection(bad, "odd");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ToolError);
+      expect((error as ToolError).code).toBe("INVALID_CONNECTION_STRING");
+      expect((error as ToolError).message).not.toContain("Secr3t");
+    }
   });
 
   it("switches the database when one is given", () => {

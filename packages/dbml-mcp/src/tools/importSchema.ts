@@ -1,4 +1,4 @@
-import { filterDatabaseSchema, schemaToDbml } from "db-to-dbml";
+import { defaultSchema, filterDatabaseSchema, schemaToDbml } from "db-to-dbml";
 import { z } from "zod";
 
 import { resolveConnection } from "../connections";
@@ -18,7 +18,9 @@ const inputSchema = z.object({
   schemas: z
     .array(z.string())
     .min(1)
-    .describe('Schemas to import, e.g. ["public"]. See list_schemas.'),
+    .describe(
+      'Schemas to import, e.g. ["public"] (PostgreSQL), ["shop"] (MySQL: the database) or ["dbo"] (SQL Server). See list_schemas.',
+    ),
   ...outputShape,
 });
 const outputSchema = z.object({
@@ -40,19 +42,25 @@ export const importSchema: ToolDefinition<
   name: "import_schema",
   title: "Import a database schema as DBML",
   description:
-    "Read the structure (not the data) of schemas in a live Postgres database and return it as DBML. For large databases pass outputPath to write a file instead of returning the text.",
+    "Read the structure (not the data) of schemas in a live PostgreSQL, MySQL or SQL Server database and return it as DBML. For large databases pass outputPath to write a file instead of returning the text.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: false, destructiveHint: true },
   run: async (input, ctx) => {
+    const resolved = resolveConnection(
+      ctx.connections,
+      input.connection,
+      input.database,
+    );
     const db = await onDatabase(
-      async () =>
-        await ctx.catalog.fetchSchema(
-          resolveConnection(ctx.connections, input.connection, input.database),
-        ),
+      async () => await ctx.catalog.fetchSchema(resolved),
     );
     assertSchemasExist(db, input.schemas);
-    const { dbml, droppedCrossSchemaRefs } = schemaToDbml(db, input.schemas);
+    // The database's default schema is written without a prefix, the way
+    // PostgreSQL's public is: the database itself for MySQL, dbo for SQL Server.
+    const { dbml, droppedCrossSchemaRefs } = schemaToDbml(db, input.schemas, {
+      unqualified: await onDatabase(async () => defaultSchema(resolved)),
+    });
     const { schema } = filterDatabaseSchema(db, input.schemas);
     const counts = {
       tables: schema.tables.length,

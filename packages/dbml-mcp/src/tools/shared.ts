@@ -76,7 +76,9 @@ export const describeProblems = (problems: ParseProblem[]): string =>
 export const connectionShape = {
   connection: z
     .string()
-    .describe("A connection name from list_connections, or a postgres:// URL."),
+    .describe(
+      "A connection name from list_connections, or a postgres://, mysql:// or sqlserver:// URL (or a SQL Server connection string).",
+    ),
   database: z
     .string()
     .optional()

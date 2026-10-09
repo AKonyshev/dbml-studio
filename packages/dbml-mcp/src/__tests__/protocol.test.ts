@@ -132,6 +132,42 @@ describe("the bundled server over stdio", () => {
   });
 });
 
+describe("the bundled server with a MySQL connection", () => {
+  let client: Client;
+  let root: string;
+
+  beforeAll(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "dbml-mcp-proto-"));
+    client = await connect(
+      {
+        PATH: process.env.PATH ?? "",
+        DBML_CONNECTION_SHOP: "mysql://u:p@localhost/shop",
+      },
+      root,
+    );
+  }, 30_000);
+
+  afterAll(async () => {
+    await client.close();
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("lists it with its database kind", async () => {
+    const result = await client.callTool({
+      name: "list_connections",
+      arguments: {},
+    });
+    expect(result.isError).not.toBe(true);
+    const connections = (
+      result.structuredContent as {
+        connections: Array<{ name: string; database: string }>;
+      }
+    ).connections;
+    expect(connections[0].database).toBe("mysql");
+    expect(connections).toEqual([{ name: "shop", database: "mysql" }]);
+  });
+});
+
 // The folder a tool may read and write is a choice: started with --no-root, or
 // in the home folder as clients without a project do, it has none.
 describe.each([

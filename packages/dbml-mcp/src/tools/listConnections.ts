@@ -4,7 +4,16 @@ import type { ToolDefinition } from "../context";
 
 const inputSchema = z.object({});
 const outputSchema = z.object({
-  connections: z.array(z.string()),
+  connections: z.array(
+    z.object({
+      name: z.string(),
+      database: z
+        .enum(["postgres", "mysql", "mssql", "unknown"])
+        .describe(
+          "The kind of database the connection speaks to; unknown when its value is not a supported connection string.",
+        ),
+    }),
+  ),
   hint: z
     .string()
     .optional()
@@ -12,7 +21,7 @@ const outputSchema = z.object({
 });
 
 const NONE_CONFIGURED =
-  "No connections configured. Set DBML_CONNECTION_<NAME>=postgres://… in the server's environment, or pass a postgres:// URL as `connection`.";
+  "No connections configured. Set DBML_CONNECTION_<NAME>=<postgres://, mysql:// or sqlserver:// URL> in the server's environment, or pass such a URL (or a SQL Server connection string) as `connection`.";
 
 export const listConnections: ToolDefinition<
   typeof inputSchema,
@@ -21,12 +30,12 @@ export const listConnections: ToolDefinition<
   name: "list_connections",
   title: "List database connections",
   description:
-    "Names of the database connections this server knows. Pass one as `connection` to the other tools.",
+    "The database connections this server knows, each with its name and the kind of database it speaks to (PostgreSQL, MySQL or SQL Server). Pass a name as `connection` to the other tools.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: true },
   run: async (_input, ctx) => {
-    const connections = ctx.connections.names();
+    const connections = ctx.connections.entries();
     if (connections.length === 0) {
       return {
         text: NONE_CONFIGURED,
@@ -34,7 +43,9 @@ export const listConnections: ToolDefinition<
       };
     }
     return {
-      text: `Connections: ${connections.join(", ")}.`,
+      text: `Connections: ${connections
+        .map((c) => `${c.name} (${c.database})`)
+        .join(", ")}.`,
       structured: { connections },
     };
   },

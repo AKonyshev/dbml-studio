@@ -15,7 +15,8 @@ export const listSchemas: ToolDefinition<
 > = {
   name: "list_schemas",
   title: "List schemas",
-  description: "Schemas in a database, system schemas left out.",
+  description:
+    "Schemas in a PostgreSQL, MySQL or SQL Server database, system schemas left out. MySQL has no schemas apart from the database itself, so it answers that one.",
   inputSchema,
   outputSchema,
   annotations: { readOnlyHint: true },
