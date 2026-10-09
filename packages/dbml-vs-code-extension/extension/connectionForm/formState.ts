@@ -24,6 +24,8 @@ export interface FormState {
   testing: boolean;
   test?: { ok: true; databases: string[] } | { ok: false; message: string };
   pasteError?: string;
+  // A failed save, kept apart from the test line: the test result stays valid.
+  saveError?: string;
 }
 
 export type FormAction =
@@ -41,6 +43,10 @@ export const initialState = (): FormState => ({
   testing: false,
 });
 
+// A new action or message variant that reduce does not handle fails to compile
+// here; a malformed one from the host is still ignored at runtime.
+const unhandled = (state: FormState, _action: never): FormState => state;
+
 export function reduce(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "init":
@@ -50,7 +56,12 @@ export function reduce(state: FormState, action: FormAction): FormState {
         fields: action.message.fields,
         savedNames: action.message.savedNames,
         editing: action.message.editing,
-        portTouched: action.message.mode === "edit",
+        // A stored connection on its kind's default port follows a kind change
+        // like a new one; so does one that could not be read (empty fields).
+        portTouched:
+          action.message.mode === "edit" &&
+          action.message.fields.port !==
+            DEFAULT_PORTS[action.message.fields.dialect],
       };
     case "field": {
       if (action.key === "dialect") {
@@ -58,6 +69,8 @@ export function reduce(state: FormState, action: FormAction): FormState {
         return {
           ...state,
           test: undefined,
+          saveError: undefined,
+          pasteError: undefined,
           fields: {
             ...state.fields,
             dialect,
@@ -70,25 +83,43 @@ export function reduce(state: FormState, action: FormAction): FormState {
       return {
         ...state,
         test: undefined,
+        saveError: undefined,
+        pasteError: undefined,
         portTouched: state.portTouched || action.key === "port",
         fields: { ...state.fields, [action.key]: action.value },
       };
     }
     case "password":
-      return { ...state, test: undefined, password: action.value };
+      return {
+        ...state,
+        test: undefined,
+        saveError: undefined,
+        pasteError: undefined,
+        password: action.value,
+      };
     case "host":
       switch (action.message.type) {
         case "pasted":
           return {
             ...state,
             pasteError: undefined,
+            saveError: undefined,
+            test: undefined,
+            // The pasted string's own password, if any, is held by the host and
+            // applies unless one is typed afterwards.
+            password: "",
             portTouched: true,
             fields: { ...action.message.fields, name: state.fields.name },
           };
         case "pasteError":
           return { ...state, pasteError: action.message.message };
         case "testing":
-          return { ...state, testing: true, test: undefined };
+          return {
+            ...state,
+            testing: true,
+            test: undefined,
+            saveError: undefined,
+          };
         case "testResult":
           return {
             ...state,
@@ -101,13 +132,13 @@ export function reduce(state: FormState, action: FormAction): FormState {
           return {
             ...state,
             testing: false,
-            test: { ok: false, message: action.message.message },
+            saveError: action.message.message,
           };
         default:
-          return state;
+          return unhandled(state, action.message);
       }
     default:
-      return state;
+      return unhandled(state, action);
   }
 }
 

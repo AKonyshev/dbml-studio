@@ -77,4 +77,106 @@ describe("formState", () => {
       test: { ok: true, databases: ["a", "b"] },
     });
   });
+
+  it("drops a typed password when a string is pasted", () => {
+    let s = reduce(init(), { type: "password", value: "a" });
+    s = reduce(s, {
+      type: "host",
+      message: { type: "pasted", fields: emptyFields("mysql") },
+    });
+    expect(s.password).toBe("");
+  });
+
+  it("clears a stale test result when a string is pasted", () => {
+    let s = reduce(init(), {
+      type: "host",
+      message: { type: "testResult", ok: true, databases: ["a"] },
+    });
+    s = reduce(s, {
+      type: "host",
+      message: { type: "pasted", fields: emptyFields("mysql") },
+    });
+    expect(s.test).toBeUndefined();
+  });
+
+  it("lets an unreadable stored connection follow the kind's default port", () => {
+    let s = reduce(initialState(), {
+      type: "init",
+      message: {
+        type: "init",
+        mode: "edit",
+        fields: emptyFields("postgres"),
+        strings: {},
+        savedNames: [],
+        editing: "old",
+      },
+    });
+    s = reduce(s, { type: "field", key: "dialect", value: "mysql" });
+    expect(s.fields.port).toBe("3306");
+  });
+
+  it("keeps a stored connection's own port when the kind changes", () => {
+    let s = reduce(initialState(), {
+      type: "init",
+      message: {
+        type: "init",
+        mode: "edit",
+        fields: { ...emptyFields("postgres"), name: "old", port: "6543" },
+        strings: {},
+        savedNames: ["old"],
+        editing: "old",
+      },
+    });
+    s = reduce(s, { type: "field", key: "dialect", value: "mysql" });
+    expect(s.fields.port).toBe("6543");
+  });
+
+  it("keeps a save error apart from the test result, and clears it on an edit", () => {
+    let s = reduce(init(), {
+      type: "host",
+      message: { type: "testResult", ok: true, databases: ["a"] },
+    });
+    s = reduce(s, {
+      type: "host",
+      message: { type: "saveError", message: "taken" },
+    });
+    expect(s.test).toEqual({ ok: true, databases: ["a"] });
+    expect(s.saveError).toBe("taken");
+    expect(s.testing).toBe(false);
+    s = reduce(s, { type: "field", key: "host", value: "db" });
+    expect(s.saveError).toBeUndefined();
+  });
+
+  it("clears a save error on a password edit, a test and a paste", () => {
+    const failed = reduce(init(), {
+      type: "host",
+      message: { type: "saveError", message: "taken" },
+    });
+    expect(
+      reduce(failed, { type: "password", value: "x" }).saveError,
+    ).toBeUndefined();
+    expect(
+      reduce(failed, { type: "host", message: { type: "testing" } }).saveError,
+    ).toBeUndefined();
+    expect(
+      reduce(failed, {
+        type: "host",
+        message: { type: "pasted", fields: emptyFields("mysql") },
+      }).saveError,
+    ).toBeUndefined();
+  });
+
+  it("clears the paste error on the first edit", () => {
+    const failed = reduce(init(), {
+      type: "host",
+      message: { type: "pasteError", message: "unreadable" },
+    });
+    expect(failed.pasteError).toBe("unreadable");
+    expect(
+      reduce(failed, { type: "field", key: "host", value: "db" }).pasteError,
+    ).toBeUndefined();
+    expect(
+      reduce(failed, { type: "password", value: "x" }).pasteError,
+    ).toBeUndefined();
+  });
 });
