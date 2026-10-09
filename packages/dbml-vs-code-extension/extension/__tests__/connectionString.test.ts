@@ -302,7 +302,8 @@ describe("buildConnection", () => {
     "p@ss",
     "a:b/c?d#e%f",
     "x;y",
-    "'quoted", // Not Latin, spelled by code point: sources hold no non-English text.
+    "'quoted",
+    // Not Latin, spelled by code point: sources hold no non-English text.
     String.fromCodePoint(0x43f, 0x430, 0x440, 0x43e, 0x43b, 0x44c),
   ];
 
