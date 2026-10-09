@@ -102,6 +102,21 @@ describeLive("against a real MySQL", () => {
     );
   });
 
+  it("writes the library without the database's name on request", async () => {
+    const { dbml } = schemaToDbml(await fetchSchema(connection), ["library"], {
+      unqualified: "library",
+    });
+
+    expect(dbml).toContain('Table "book"');
+    expect(dbml).toContain('Enum "member_status_enum"');
+    expect(dbml).toMatch(/"status" member_status_enum/);
+    expect(dbml).toMatch(
+      /Ref "book_ibfk_1":"author"\."id" < "book"\."author_id"/,
+    );
+    // "library" still appears in a table note; as a prefix it must not.
+    expect(dbml).not.toMatch(/"library"\.|library\.[a-z_]+_enum/);
+  });
+
   it("reads a server-level URL's databases, refuses to read it, and can name one", async () => {
     const server = serverOnly();
     expect(server).not.toMatch(/\/library$/);

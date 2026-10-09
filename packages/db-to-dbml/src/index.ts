@@ -6,7 +6,7 @@ export { fetchSchema } from "./fetchSchema";
 export { listDatabases } from "./listDatabases";
 export { listSchemaNames } from "./listSchemaNames";
 export { listSchemas } from "./listSchemas";
-export { schemaToDbml } from "./schemaToDbml";
+export { schemaToDbml, type SchemaToDbmlOptions } from "./schemaToDbml";
 export { filterDatabaseSchema } from "./filterDatabaseSchema";
 export { DbImportError, DbImportErrorCode } from "./errors";
 export type { DatabaseSchema } from "./types";
