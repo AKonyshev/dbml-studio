@@ -16,12 +16,22 @@ const {
 
 const connect = jest.fn();
 const poolConfigs: string[] = [];
+const pools: Array<{ emit: (event: string, ...args: unknown[]) => boolean }> =
+  [];
 const closeGlobal = jest.fn();
+const onGlobal = jest.fn();
 jest.mock("mssql", () => ({
   __esModule: true,
   default: {
-    ConnectionPool: class {
+    // A real emitter, as the driver's pools are: one that emits 'error' with no
+    // listener throws.
+    ConnectionPool: class
+      extends jest.requireActual<{ EventEmitter: new () => object }>("events")
+        .EventEmitter
+    {
       constructor(config: string) {
+        super();
+        pools.push(this as never);
         poolConfigs.push(config);
         // The driver parses the string in its constructor, and throws from it.
         if (config.includes("explode"))
@@ -32,6 +42,7 @@ jest.mock("mssql", () => ({
       }
     },
     close: () => closeGlobal(),
+    on: (event: string, listener: unknown) => onGlobal(event, listener),
   },
 }));
 const fetchSchemaJson = jest.fn();
@@ -45,6 +56,8 @@ beforeEach(() => {
   closeGlobal.mockReset();
   closeGlobal.mockResolvedValue(undefined);
   poolConfigs.length = 0;
+  pools.length = 0;
+  onGlobal.mockReset();
 });
 
 const catchError = (run: () => unknown): unknown => {
@@ -243,6 +256,53 @@ describe("SQL Server passwords with ; = and }", () => {
   });
 });
 
+describe("SQL Server passwords that start with a quote", () => {
+  it.each(["'abc", '"abc', "it's", "a'", "'", '"'])(
+    "reaches the driver intact, and survives withDatabase: %s",
+    (password) => {
+      for (const original of [
+        `sqlserver://u:${encodeURIComponent(password)}@h/a`,
+        `Server=h;Database=a;User Id=u;Password={${password.replace(/}/g, "}}")}}`,
+      ]) {
+        const normalized = mssql.normalize(original);
+        expect(RealPool.parseConnectionString(normalized).password).toBe(
+          password,
+        );
+        const switched = mssql.withDatabase(original, "library");
+        const config = RealPool.parseConnectionString(switched);
+        expect(config.password).toBe(password);
+        expect(config.database).toBe("library");
+      }
+    },
+  );
+
+  it("reads a quoted ADO value too", () => {
+    const config = RealPool.parseConnectionString(
+      mssql.withDatabase(
+        `Server=h;Database=a;User Id=u;Password='it''s'`,
+        "library",
+      ),
+    );
+    expect(config.password).toBe("it's");
+  });
+});
+
+describe("SQL Server strings with stray segments", () => {
+  it.each([
+    "Server=h;;Database=a;Password=p",
+    "Server=h;foo;Database=a;Password=p",
+    "Server=h;Database=a;;Password=p;",
+  ])("keeps the database of %s", (original) => {
+    expect(mssql.databaseOf(original)).toBe("a");
+    const config = RealPool.parseConnectionString(
+      mssql.withDatabase(original, "library"),
+    );
+    expect(config.database).toBe("library");
+    expect(config.password).toBe("p");
+    expect(config.server).toBe("h");
+  });
+});
+
 describe("SQL Server malformed input", () => {
   const BAD = [
     ["host", "sqlserver://u:Secr3t@h%E0%A4%A/db"],
@@ -329,6 +389,43 @@ describe("SQL Server catalogue", () => {
       "dbo",
     ]);
     expect(parseAdo(poolConfigs[0]).get("database")).toBe("library");
+  });
+
+  it("offers only the databases the login can open", async () => {
+    const query = jest.fn().mockResolvedValue({ recordset: [] });
+    connect.mockResolvedValue({
+      request: () => ({ query }),
+      close: jest.fn().mockResolvedValue(undefined),
+    });
+    await mssql.listDatabases("sqlserver://u:p@h/master");
+    expect(query.mock.calls[0][0]).toMatch(/HAS_DBACCESS\(name\) = 1/);
+    expect(query.mock.calls[0][0]).toMatch(/state_desc = 'ONLINE'/);
+  });
+
+  it("leaves out the fixed-role schemas by id, not by name", async () => {
+    const query = jest.fn().mockResolvedValue({ recordset: [] });
+    connect.mockResolvedValue({
+      request: () => ({ query }),
+      close: jest.fn().mockResolvedValue(undefined),
+    });
+    await mssql.listSchemas("sqlserver://u:p@h/library");
+    const text = query.mock.calls[0][0] as string;
+    expect(text).toMatch(/schema_id < 16384/);
+    expect(text).not.toMatch(/db\[_\]|LIKE/);
+    for (const built of ["sys", "INFORMATION_SCHEMA", "guest"]) {
+      expect(text).toContain(`'${built}'`);
+    }
+  });
+
+  it("does not throw when the pool emits 'error', before or after it connects", async () => {
+    // The driver emits it for a connection that failed for a reason other than
+    // the socket, and an emitter with no listener throws it.
+    connect.mockImplementation(async () => {
+      expect(() => pools[0].emit("error", new Error("boom"))).not.toThrow();
+      return pool([]);
+    });
+    await mssql.listDatabases("sqlserver://u:p@h/master");
+    expect(() => pools[0].emit("error", new Error("boom"))).not.toThrow();
   });
 
   it("uses a pool of its own for each call, not the driver's global one", async () => {
@@ -434,6 +531,47 @@ describe("SQL Server fetchSchema", () => {
     );
     expect(config.connectionTimeout).toBe(30_000);
     expect(config.requestTimeout).toBe(60_000);
+  });
+
+  it.each([
+    ["Connect Timeout=0;Request Timeout=0"],
+    ["Connection Timeout=0;Request Timeout=-1"],
+    ["Timeout=0;Request Timeout=forever"],
+  ])("does not let %s leave a read unbounded", async (options) => {
+    // Reads take turns, so one that never ends would block every later one.
+    fetchSchemaJson.mockResolvedValue({ tables: [] });
+    await mssql.fetchSchema(`Server=h;Database=db;${options}`);
+    const config = RealPool.parseConnectionString(
+      fetchSchemaJson.mock.calls[0][0] as string,
+    );
+    expect(config.connectionTimeout).toBe(10_000);
+    expect(config.requestTimeout).toBe(15_000);
+  });
+
+  it("listens for the global pool's 'error' event, once", async () => {
+    fetchSchemaJson.mockResolvedValue({ tables: [] });
+    let fresh: typeof mssql = mssql;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      fresh = (require("../dialects/mssql") as { mssql: typeof mssql }).mssql;
+    });
+    await fresh.fetchSchema("sqlserver://u:p@h/a");
+    await fresh.fetchSchema("sqlserver://u:p@h/b");
+    expect(onGlobal).toHaveBeenCalledTimes(1);
+    expect(onGlobal).toHaveBeenCalledWith("error", expect.any(Function));
+    const listener = onGlobal.mock.calls[0][1] as (e: unknown) => void;
+    expect(() => {
+      listener(new Error("boom"));
+    }).not.toThrow();
+  });
+
+  it("releases the global pool before the failure reaches the caller", async () => {
+    fetchSchemaJson.mockRejectedValue({ code: "ETIMEOUT" });
+    let calledWhenSettled = false;
+    await mssql.fetchSchema("sqlserver://u:p@h/library").catch(() => {
+      calledWhenSettled = closeGlobal.mock.calls.length === 1;
+    });
+    expect(calledWhenSettled).toBe(true);
   });
 
   it("returns what the connector read, which already names its schemas", async () => {

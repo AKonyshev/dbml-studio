@@ -26,6 +26,9 @@ import type { DatabaseSchema } from "../types";
 import type { Dialect } from "./types";
 
 interface Pool {
+  // The driver's pools are event emitters, and one that emits 'error' with no
+  // listener throws.
+  on: (event: "error", listener: () => void) => unknown;
   connect: () => Promise<Pool>;
   request: () => {
     query: <Row>(text: string) => Promise<{ recordset: Row[] }>;
@@ -37,6 +40,8 @@ const sql = driver as {
   ConnectionPool: new (config: string) => Pool;
   // Closes the driver's global pool, the one the connector connects with.
   close: () => Promise<void>;
+  // Attaches a handler to the global pool, whenever it is created.
+  on: (event: "error", listener: () => void) => unknown;
 };
 
 const MSSQL_URL = /^(sqlserver|mssql):\/\//i;
@@ -179,15 +184,42 @@ function bounded(map: Map<string, string>): string {
   return formatAdo(map);
 }
 
+// True when the string sets one of these keys to something that bounds nothing:
+// zero, a negative number, or text the driver cannot read as a number.
+const unbounded = (map: Map<string, string>, keys: string[]): boolean =>
+  keys.some((key) => {
+    const value = map.get(key);
+    return value !== undefined && !(Number(value) > 0);
+  });
+
 // Reading a whole schema is allowed to be configured, since a large catalogue
-// is slower than a name list; what it may not be is unbounded by default. The
-// driver's own defaults happen to be 15 s, but this does not lean on that.
+// is slower than a name list; what it may not be is unbounded. Reads take
+// turns (see `exclusively`), so one that never ends would block every later
+// one: a missing timeout, and a `0` that means "no timeout" to the driver, both
+// get the defaults. The driver's own defaults happen to be 15 s, but this does
+// not lean on that.
 function boundedByDefault(map: Map<string, string>): string {
-  if (!hasAny(map, CONNECT_TIMEOUT_KEYS)) {
-    map.set("connect timeout", String(CONNECT_TIMEOUT_MS / 1000));
+  if (
+    !hasAny(map, CONNECT_TIMEOUT_KEYS) ||
+    unbounded(map, CONNECT_TIMEOUT_KEYS)
+  ) {
+    replaceKeys(
+      map,
+      CONNECT_TIMEOUT_KEYS,
+      "connect timeout",
+      String(CONNECT_TIMEOUT_MS / 1000),
+    );
   }
-  if (!hasAny(map, REQUEST_TIMEOUT_KEYS)) {
-    map.set("request timeout", String(QUERY_TIMEOUT_MS));
+  if (
+    !hasAny(map, REQUEST_TIMEOUT_KEYS) ||
+    unbounded(map, REQUEST_TIMEOUT_KEYS)
+  ) {
+    replaceKeys(
+      map,
+      REQUEST_TIMEOUT_KEYS,
+      "request timeout",
+      String(QUERY_TIMEOUT_MS),
+    );
   }
   return formatAdo(map);
 }
@@ -250,14 +282,19 @@ function toDbImportError(error: unknown): DbImportError {
 const DATABASES_SQL = `
   SELECT name FROM sys.databases
   WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') AND state_desc = 'ONLINE'
+    AND HAS_DBACCESS(name) = 1
   ORDER BY name`;
 
-// Reads the schemas of whatever database the string points at; the fixed roles
-// (`db_owner`, ...) each own a schema, and nobody imports from them.
+// Reads the schemas of whatever database the string points at. The fixed
+// database roles (`db_owner`, ...) each own a schema, and nobody imports from
+// them; their ids start at 16384, which tells them from a user's schema that
+// merely has a name like `db_archive`.
 const SCHEMAS_SQL = `
   SELECT name FROM sys.schemas
-  WHERE name NOT IN ('sys', 'INFORMATION_SCHEMA', 'guest') AND name NOT LIKE 'db[_]%'
+  WHERE schema_id < 16384 AND name NOT IN ('sys', 'INFORMATION_SCHEMA', 'guest')
   ORDER BY name`;
+
+const ignore = (): void => undefined;
 
 // `close` waits for the connections the pool lent out, and after a timeout the
 // request that timed out may still be holding one. Awaiting it on a failure
@@ -283,7 +320,13 @@ async function queryNames(connection: string, text: string): Promise<string[]> {
   let pool: Pool;
   try {
     // The constructor parses the string, and throws from it synchronously.
-    pool = await new sql.ConnectionPool(config).connect();
+    const created = new sql.ConnectionPool(config);
+    // The driver emits 'error' on the pool for a connection that failed for a
+    // reason other than the socket, and an emitter with no listener throws it
+    // from wherever it was emitted. The failure itself reaches us through
+    // `connect()` and the query; this only keeps the event from escaping.
+    created.on("error", ignore);
+    pool = await created.connect();
   } catch (error) {
     throw toDbImportError(error);
   }
@@ -308,6 +351,31 @@ async function queryNames(connection: string, text: string): Promise<string[]> {
         await pool.close();
       });
   }
+}
+
+// Closes the driver's global pool, which a connector read that failed part-way
+// leaves open (and the next read would be handed). It is called here, directly
+// and inside a `try`, rather than from a promise callback: the pool must be
+// released before this read's caller sees its failure, not whenever the
+// microtask queue gets to it. The returned promise is deliberately not awaited
+// (`close` waits for the connections the failed read still holds), and a
+// rejection or a synchronous throw is nobody's business.
+function dropGlobalPool(): void {
+  try {
+    void Promise.resolve(sql.close()).catch(ignore);
+  } catch {
+    // Nothing to release, or nothing that can be.
+  }
+}
+
+// The connector's pool is the driver's global one, created inside the
+// connector, so a listener for its 'error' event is registered on the driver
+// and attached to every global pool it makes. Once is enough.
+let globalListening = false;
+function listenOnGlobalPool(): void {
+  if (globalListening) return;
+  globalListening = true;
+  sql.on("error", ignore);
 }
 
 // The connector connects through the driver's one global pool: a second
@@ -354,13 +422,12 @@ export const mssql: Dialect = {
 
     return await exclusively(async () => {
       try {
+        listenOnGlobalPool();
         return (await fetchSchemaJson(config)) as unknown as DatabaseSchema;
       } catch (error) {
         // A read that fails part-way leaves the global pool open, and the next
         // read would be handed it.
-        closeInBackground(async () => {
-          await sql.close();
-        });
+        dropGlobalPool();
         throw toDbImportError(error);
       }
     });

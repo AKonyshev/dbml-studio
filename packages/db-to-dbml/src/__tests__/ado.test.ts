@@ -43,4 +43,30 @@ describe("ADO connection strings", () => {
   it("reads an unterminated brace to the end instead of throwing", () => {
     expect(parseAdo("Server=h;Password={abc").get("password")).toBe("abc");
   });
+
+  it("skips empty segments and segments with no equals sign", () => {
+    const empty = parseAdo("Server=h;;Database=a;Password=p");
+    expect(empty.get("database")).toBe("a");
+    expect([...empty.keys()]).toEqual(["server", "database", "password"]);
+
+    const bare = parseAdo("Server=h;foo;Database=a");
+    expect(bare.get("database")).toBe("a");
+    expect([...bare.keys()]).toEqual(["server", "database"]);
+
+    expect([...parseAdo(";; ;Server=h;").keys()]).toEqual(["server"]);
+  });
+
+  it("brace-quotes a value that starts with a quote, and not one that merely holds it", () => {
+    const text = formatAdo(
+      new Map([
+        ["a", "'abc"],
+        ["b", '"abc'],
+        ["c", "it's"],
+      ]),
+    );
+    expect(text).toBe("a={'abc};b={\"abc};c=it's");
+    expect(parseAdo(text).get("a")).toBe("'abc");
+    expect(parseAdo(text).get("b")).toBe('"abc');
+    expect(parseAdo(text).get("c")).toBe("it's");
+  });
 });

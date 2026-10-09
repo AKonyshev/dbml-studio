@@ -11,8 +11,15 @@ export function parseAdo(text: string): Map<string, string> {
   const map = new Map<string, string>();
   let i = 0;
   while (i < text.length) {
+    // An empty segment (`a=1;;b=2`) or one with no `=` (`a=1;foo;b=2`) carries
+    // nothing; skip it rather than let its text become part of the next key.
+    const semicolonAt = text.indexOf(";", i);
     const eq = text.indexOf("=", i);
     if (eq === -1) break;
+    if (semicolonAt !== -1 && semicolonAt < eq) {
+      i = semicolonAt + 1;
+      continue;
+    }
     const key = text.slice(i, eq).trim().toLowerCase();
     let j = eq + 1;
     while (text[j] === " ") j++;
@@ -49,7 +56,9 @@ export function parseAdo(text: string): Map<string, string> {
   return map;
 }
 
-const NEEDS_QUOTING = /[;={}]|^\s|\s$/;
+// A leading quote needs braces too: unbraced, the reader takes it for the
+// opening of a quoted value and never finds the end.
+const NEEDS_QUOTING = /[;={}]|^\s|\s$|^['"]/;
 
 export function formatAdo(map: Map<string, string>): string {
   return [...map]
