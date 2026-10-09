@@ -157,9 +157,10 @@ docker rm -f dbml-test-mysql
 The comparison lives in `schema-diff`, not in `db-to-dbml`: that package already
 maps `db-to-dbml` in its jest config, and the reverse would need a mapping the
 dependency graph does not have. It compares the database with the DBML read from
-it, not with `examples/library.dbml`: the connector names a MySQL `ENUM` column's
-type `<table>_<column>_enum` and MySQL indexes every foreign key on its own, so a
-hand-written file never matches a database exactly.
+it, and with the hand-written `examples/library.dbml`. The second needs
+`{ dialect: "mysql" }` to come back clean: the connector names a MySQL `ENUM`
+column's type `<table>_<column>_enum` and MySQL indexes every foreign key on its
+own, and the file has neither.
 
 ### SQL Server
 
@@ -191,6 +192,8 @@ docker exec -i dbml-test-mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U 
 
 DBML_TEST_MSSQL_URL='sqlserver://sa:Test_Passw0rd!@localhost:51433/library?trustServerCertificate=true' \
   yarn workspace db-to-dbml test liveMssql
+DBML_TEST_MSSQL_URL='sqlserver://sa:Test_Passw0rd!@localhost:51433/library?trustServerCertificate=true' \
+  yarn workspace schema-diff test liveMssql
 
 docker rm -f dbml-test-mssql
 ```
@@ -201,6 +204,11 @@ constraints: their names carry a hash SQL Server makes up, as do the names of
 the foreign keys. The suite also does not assert that a missing database is
 `DATABASE_NOT_FOUND`: to a SQL login the server answers "Login failed", the same
 as for a wrong password.
+
+`packages/schema-diff/src/__tests__/liveMssql.test.ts` compares the hand-written
+`examples/library.dbml` with the `dbo` schema, with nothing normalised for SQL
+Server, and asserts the whole remaining difference, so a change to the
+connector or to the comparison that moves it shows up there.
 
 `packages/dbml-mcp` has a second kind of suite that is not about a database but
 is in the sweep all the same: `protocol.test.ts` builds the bundle

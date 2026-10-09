@@ -18,6 +18,7 @@ interface DbField {
 }
 interface DbIndex {
   name?: string;
+  unique?: boolean;
   columns?: Array<{ value: string | number }>;
 }
 interface DbRef {
@@ -55,7 +56,7 @@ export function databaseSchemaToModel(
     const idxList = (schema.indexes[key] as DbIndex[] | undefined) ?? [];
     const indexes: CanonIndex[] = idxList.map((ix) => ({
       columns: (ix.columns ?? []).map((c) => String(c.value)),
-      unique: false,
+      unique: ix.unique === true,
       name: ix.name,
     }));
 

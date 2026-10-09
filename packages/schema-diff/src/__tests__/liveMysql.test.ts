@@ -1,3 +1,6 @@
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
 import { fetchSchema, schemaToDbml } from "db-to-dbml";
 
 import { databaseSchemaToModel } from "../databaseSchemaToModel";
@@ -21,6 +24,8 @@ const describeLive = url === undefined ? describe.skip : describe;
 // Narrowed once. Nothing below runs unless the variable is set, which is a
 // guarantee `describe.skip` gives and the type system does not see.
 const connection = url as unknown as string;
+
+const LIBRARY_EXAMPLE = resolve(__dirname, "../../../../examples/library.dbml");
 
 describeLive("against a real MySQL", () => {
   jest.setTimeout(30_000);
@@ -46,5 +51,26 @@ describeLive("against a real MySQL", () => {
 
     expect(difference.identical).toBe(false);
     expect(JSON.stringify(difference)).toContain("phone");
+  });
+
+  it("finds nothing to report between the hand-written library file and the database", async () => {
+    const live = databaseSchemaToModel(
+      await fetchSchema(connection),
+      "library",
+    );
+    const file = parseDbmlToModel(readFileSync(LIBRARY_EXAMPLE, "utf8"));
+
+    // The file names its enums (`membership_status`) and declares no index for
+    // a foreign key; MySQL names its enums `<table>_<column>_enum` and indexes
+    // every foreign key itself. Both are MySQL's doing, and the dialect is what
+    // lets a file that matches come back clean.
+    expect(diffSchemas(file, live, { dialect: "mysql" }).identical).toBe(true);
+
+    const withoutDialect = diffSchemas(file, live);
+    expect(withoutDialect.enumsOnlyInDbml).toEqual([
+      "copy_condition",
+      "membership_status",
+    ]);
+    expect(withoutDialect.indexDiffs.length).toBeGreaterThan(0);
   });
 });
