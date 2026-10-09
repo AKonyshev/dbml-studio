@@ -64,6 +64,9 @@ function parse(connection: string): URL {
     decodeURIComponent(url.username);
     decodeURIComponent(url.password);
     decodeURIComponent(url.pathname);
+    // `mysql2` decodes the host too, and throws a URIError from
+    // `createConnection` itself, synchronously.
+    decodeURIComponent(url.hostname);
     return url;
   } catch {
     throw unreadable();
@@ -102,8 +105,9 @@ function toDbImportError(error: unknown): DbImportError {
 
   const code = (error as { code?: string })?.code;
   if (code !== undefined) {
-    const known = CODES[code];
-    if (known !== undefined) return dbImportErrorForCode(known);
+    if (Object.prototype.hasOwnProperty.call(CODES, code)) {
+      return dbImportErrorForCode(CODES[code]);
+    }
     if (NETWORK_CODES.has(code)) {
       return dbImportErrorForCode(DbImportErrorCode.UNREACHABLE);
     }
@@ -117,7 +121,10 @@ function toDbImportError(error: unknown): DbImportError {
 // enums and the ends of a reference carry no `schemaName`, and the keys of
 // `fields`, `indexes` and `tableConstraints` are bare table names. Everything
 // downstream addresses a table as `schema.table`, so the database is named here,
-// once, and the result has the shape the PostgreSQL connector's has.
+// once, and the result has the shape the PostgreSQL connector's has. The
+// connector also drops `referenced_table_schema`, so a foreign key into another
+// database is stamped with this database too: it points at a table of the same
+// name here, or at nothing.
 interface ConnectorSchema {
   tables?: Array<Record<string, unknown> & { name: string }>;
   enums?: Array<Record<string, unknown> & { name: string }>;
@@ -203,13 +210,19 @@ export const mysql: Dialect = {
     // there is no client to close.
     const uri = normalize(connection);
 
-    const client = await createConnection({
-      uri,
-      connectTimeout: CONNECT_TIMEOUT_MS,
-    }).catch((error: unknown) => {
-      throw toDbImportError(error);
-    });
+    // `createConnection` can throw before it returns a promise (a malformed
+    // escape the driver decodes itself), which a `.catch` on that promise would
+    // never see. Starting it from inside a `then` turns both into a rejection.
+    const client = await Promise.resolve()
+      .then(
+        async () =>
+          await createConnection({ uri, connectTimeout: CONNECT_TIMEOUT_MS }),
+      )
+      .catch((error: unknown) => {
+        throw toDbImportError(error);
+      });
 
+    let ended = false;
     try {
       const [rows] = await client.query({
         sql: "SHOW DATABASES",
@@ -217,15 +230,22 @@ export const mysql: Dialect = {
       });
       // `SHOW DATABASES` names its column `Database`; the first value of a row
       // is the name without depending on that.
-      return (rows as Array<Record<string, string>>)
+      const names = (rows as Array<Record<string, string>>)
         .map((row) => Object.values(row)[0])
         .filter((name) => !SYSTEM_DATABASES.has(name.toLowerCase()))
         .sort();
+      ended = true;
+      // An abandoned tree expansion would otherwise keep the socket open.
+      await client.end().catch(() => undefined);
+      return names;
     } catch (error) {
       throw toDbImportError(error);
     } finally {
-      // An abandoned tree expansion would otherwise keep the socket open.
-      await client.end().catch(() => undefined);
+      // After a timeout the query is still running on the server, and `end`
+      // queues its Quit behind it: awaiting it would hold the caller for as
+      // long as the query takes, which is what the timeout is there to prevent.
+      // Drop the socket instead.
+      if (!ended) client.destroy();
     }
   },
 

@@ -83,13 +83,14 @@ describe("mysql connection strings", () => {
       for (const bad of [
         "mysql://u:p@h/%E0%A4%A",
         "mysql://u:Secr%E0%A4%A@h/db",
+        "mysql://u:p@h%E0%A4%A/db",
       ]) {
         const error = catchError(() => run(bad));
         expect(error).toBeInstanceOf(DbImportError);
         expect((error as DbImportError).code).toBe(
           DbImportErrorCode.INVALID_CONNECTION_STRING,
         );
-        expect((error as DbImportError).message).not.toMatch(/Secr|%E0/);
+        expect((error as DbImportError).message).not.toMatch(/Secr|%E0|h%/);
       }
     },
   );
@@ -104,9 +105,12 @@ describe("mysql connection strings", () => {
 });
 
 describe("mysql catalogue", () => {
-  const client = (rows: unknown[]): { query: jest.Mock; end: jest.Mock } => ({
+  const client = (
+    rows: unknown[],
+  ): { query: jest.Mock; end: jest.Mock; destroy: jest.Mock } => ({
     query: jest.fn().mockResolvedValue([rows]),
     end: jest.fn().mockResolvedValue(undefined),
+    destroy: jest.fn(),
   });
 
   it("lists user databases, system ones left out, with bounded timeouts", async () => {
@@ -150,18 +154,56 @@ describe("mysql catalogue", () => {
     );
   });
 
-  it("closes the connection when the query fails, and maps the failure", async () => {
+  it("drops the connection when the query fails, without waiting for it to end", async () => {
+    // After a timeout the query is still running and `end` queues behind it, so
+    // it would not settle for as long as the query takes.
     const c = {
       query: jest
         .fn()
         .mockRejectedValue({ code: "ER_ACCESS_DENIED_ERROR", errno: 1045 }),
-      end: jest.fn().mockResolvedValue(undefined),
+      end: jest.fn().mockReturnValue(new Promise(() => undefined)),
+      destroy: jest.fn(),
     };
     createConnection.mockResolvedValue(c);
     await expect(mysql.listDatabases("mysql://u:p@h")).rejects.toMatchObject({
       code: DbImportErrorCode.AUTH_FAILED,
     });
+    expect(c.destroy).toHaveBeenCalled();
+    expect(c.end).not.toHaveBeenCalled();
+  });
+
+  it("ends, and does not destroy, a connection whose query succeeded", async () => {
+    const c = client([{ Database: "library" }]);
+    createConnection.mockResolvedValue(c);
+    await mysql.listDatabases("mysql://u:p@h");
     expect(c.end).toHaveBeenCalled();
+    expect(c.destroy).not.toHaveBeenCalled();
+  });
+
+  it("maps a connect that throws before it returns a promise", async () => {
+    createConnection.mockImplementation(() => {
+      throw new URIError("URI malformed");
+    });
+    await expect(mysql.listDatabases("mysql://u:p@h")).rejects.toMatchObject({
+      code: DbImportErrorCode.UNKNOWN,
+      message: expect.not.stringContaining("malformed"),
+    });
+  });
+
+  it("refuses a malformed escape in the host before connecting", async () => {
+    const bad = "mysql://u:Secr3t@h%E0%A4%A/db";
+    for (const run of [
+      async () => await mysql.listDatabases(bad),
+      async () => await mysql.fetchSchema(bad),
+      async () => await Promise.resolve(mysql.withDatabase(bad, "library")),
+    ]) {
+      const error = (await run().catch((e: unknown) => e)) as DbImportError;
+      expect(error).toBeInstanceOf(DbImportError);
+      expect(error.code).toBe(DbImportErrorCode.INVALID_CONNECTION_STRING);
+      expect(error.message).not.toMatch(/Secr3t|%E0|h%/);
+    }
+    expect(createConnection).not.toHaveBeenCalled();
+    expect(fetchSchemaJson).not.toHaveBeenCalled();
   });
 
   it("maps a failed connect", async () => {
