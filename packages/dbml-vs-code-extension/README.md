@@ -10,7 +10,7 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 ## What this fork adds
 
-- **Import from a database** — command palette → **DBML: Import from database**. A saved connection stands for a whole server: the side bar opens it into its databases and their schemas, and one import can take several databases at once, writing one `.dbml` file per database with every schema you picked inside it. Connections live in the DBML side bar and their credentials go to the VS Code secret store.
+- **Import from a database** — command palette → **DBML: Import from database**. A saved connection stands for a whole server: the side bar opens it into its databases and their schemas, and one import can take several databases at once, writing one `.dbml` file per database with every schema you picked inside it. Connections live in the DBML side bar and are stored, passwords included, in the VS Code secret store.
 - **Compare with a live database** — open a `.dbml` file, then **DBML: Compare with database**, and see where the file and the database have drifted apart.
 - **A layout that lives in the file** — drag tables about and the positions are written into a `MetaInfo` block in the DBML itself, one arrangement per detail level, so the diagram opens as you left it on any machine.
 - **Export** the diagram as PNG, SVG, AsciiDoc, or Markdown.
@@ -19,7 +19,20 @@ _A fictional library schema — the model is in [`examples/library.dbml`](https:
 
 ### Connecting to a database
 
-Import and compare take a connection string for PostgreSQL, MySQL or SQL Server (MariaDB counts as MySQL). The input box checks it as you type. Whichever of these you save is stored as typed, in the VS Code secret store.
+Connections are made in a form that opens in an editor tab: the **+** button in the DBML side bar, or **DBML: Add database connection** in the command palette. Import and compare use the same form when you choose **New connection** in their picker. The form works for PostgreSQL, MySQL (MariaDB counts as MySQL) and SQL Server, and has these fields:
+
+- **Name** — what the connection is called in the side bar and to AI agents.
+- **Database kind** — PostgreSQL, MySQL / MariaDB or SQL Server. Changing it fills in that database's default port, unless you have typed a port yourself.
+- **Host** and **Port**.
+- **Instance** — SQL Server only: a named instance, used instead of a port.
+- **User** and **Password**.
+- **Database** — the database to start from (see below).
+- **Encrypt connection** and **Trust server certificate** — SQL Server only. Tick the second one when the server uses a self-signed certificate.
+- **Additional parameters** — anything in a connection string that has no field of its own, kept as it was written.
+
+**Test** connects with what is in the form and reports how many databases the server has, or why it could not connect, without saving anything. **Save** stores the connection and closes the tab.
+
+If you already have a connection string, paste it into the box at the top of the form and the fields fill in. These are the forms it reads, one example per database:
 
 | Database   | Form                                                               |
 | ---------- | ------------------------------------------------------------------ |
@@ -28,7 +41,9 @@ Import and compare take a connection string for PostgreSQL, MySQL or SQL Server 
 | SQL Server | `sqlserver://user:password@host:1433/database` (or `mssql://`)     |
 | SQL Server | `Server=host;Database=database;User Id=user;Password=password`     |
 
-The database in the string is only the entry point: the side bar lists every database on the server. In MySQL a database is a schema, so a connection opens straight into its databases, without a schema level. Comparison has a few caveats per database; see [Known limitations](https://github.com/AKonyshev/dbml-studio/blob/main/packages/dbml-mcp/README.md#known-limitations) in the `dbml-mcp` README.
+To change a connection later, use the pencil button next to it in the side bar, or **DBML: Edit connection** in the command palette, which asks which connection to edit. The form shows the saved fields but never the password: leave it empty to keep the current one, or type a new one to replace it. Renaming a connection works the same way. Deleting a connection closes its form.
+
+The database in the connection is only the entry point: the side bar lists every database on the server. In MySQL a database is a schema, so a connection opens straight into its databases, without a schema level. Comparison has a few caveats per database; see [Known limitations](https://github.com/AKonyshev/dbml-studio/blob/main/packages/dbml-mcp/README.md#known-limitations) in the `dbml-mcp` README.
 
 ## Diagram
 

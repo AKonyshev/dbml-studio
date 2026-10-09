@@ -12,6 +12,10 @@ jest.mock("../pickImportTargets", () => ({ pickImportTargets: jest.fn() }));
 jest.mock("../importDestination", () => ({
   resolveImportDestination: jest.fn(),
 }));
+jest.mock("../connectionForm/connectionFormPanel", () => ({
+  openConnectionForm: jest.fn(),
+  closeConnectionForm: jest.fn(),
+}));
 
 import { commands, window, workspace } from "vscode";
 import {
@@ -21,6 +25,7 @@ import {
   schemaToDbml,
 } from "db-to-dbml";
 
+import { openConnectionForm } from "../connectionForm/connectionFormPanel";
 import type { SecretStore } from "../connectionStore";
 import { importFromDatabase } from "../importFromDatabase";
 import { resolveImportDestination } from "../importDestination";
@@ -87,6 +92,7 @@ describe("importFromDatabase", () => {
     jest.mocked(window.showTextDocument).mockReset();
     jest.mocked(window.showQuickPick).mockReset();
     jest.mocked(window.showInputBox).mockReset();
+    jest.mocked(openConnectionForm).mockReset();
     jest.mocked(workspace.fs.writeFile).mockReset();
     jest.mocked(commands.executeCommand).mockReset();
   });
@@ -272,7 +278,7 @@ describe("importFromDatabase", () => {
     );
   });
 
-  test("still offers to save a connection entered by hand", async () => {
+  test("does not offer to save a connection made in the form a second time", async () => {
     const { map, context } = fakeSecretsContext();
     jest
       .mocked(pickImportTargets)
@@ -280,23 +286,27 @@ describe("importFromDatabase", () => {
     jest
       .mocked(resolveImportDestination)
       .mockResolvedValue(new Map([["orders", uriFor("public.dbml")]]) as never);
-    // First quick pick is the connection chooser, the second is the save prompt.
-    jest.mocked(window.showQuickPick).mockImplementation((async (
-      items: unknown,
-    ) => {
-      const list = items as Array<{ pickKind?: string }>;
-      return list.find((item) => item?.pickKind === "new") ?? "Yes";
-    }) as never);
     jest
-      .mocked(window.showInputBox)
-      .mockResolvedValueOnce(CONNECTION)
-      .mockResolvedValueOnce("saved-local");
+      .mocked(window.showQuickPick)
+      .mockImplementation((async (items: unknown) =>
+        (items as Array<{ pickKind?: string }>).find(
+          (item) => item?.pickKind === "new",
+        )) as never);
+    jest.mocked(openConnectionForm).mockResolvedValue({
+      name: "saved-local",
+      connectionString: CONNECTION,
+    });
 
     await importFromDatabase(context);
 
-    expect(map.get("dbml.connections")).toBe(
-      JSON.stringify({ "saved-local": CONNECTION }),
+    expect(fetchSchema).toHaveBeenCalledWith(
+      expect.stringContaining("postgres://u:p@h:5432/"),
     );
+    // Only the connection chooser was shown: no "save for next time" question,
+    // no name prompt, and nothing written to the store by the import itself.
+    expect(window.showQuickPick).toHaveBeenCalledTimes(1);
+    expect(window.showInputBox).not.toHaveBeenCalled();
+    expect(map.size).toBe(0);
   });
 
   test("writes a MySQL database's tables without its name in front", async () => {

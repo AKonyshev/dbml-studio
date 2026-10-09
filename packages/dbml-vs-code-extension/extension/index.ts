@@ -21,6 +21,7 @@ import {
   addConnection,
   compareWithConnection,
   deleteConnectionCommand,
+  editConnectionCommand,
   importFromConnection,
 } from "./panelCommands";
 import { DIAGRAM_ACTION_COMMANDS } from "./diagramActionCommands";
@@ -157,6 +158,12 @@ export function activate(context: ExtensionContext): void {
     commands.registerCommand("dbmlStudio.refreshConnections", () => {
       treeProvider.refresh();
     }),
+    commands.registerCommand(
+      "dbmlStudio.editConnection",
+      (node?: PanelNode) => {
+        void editConnectionCommand(context, treeProvider, node);
+      },
+    ),
     commands.registerCommand(
       "dbmlStudio.deleteConnection",
       (node?: PanelNode) => {

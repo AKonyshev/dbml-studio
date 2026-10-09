@@ -8,6 +8,7 @@
   "command.compareWithDatabase": "DBML: Сравнить с базой данных",
   "command.addConnection": "DBML: Добавить подключение к базе данных",
   "command.refreshConnections": "DBML: Обновить список подключений",
+  "command.editConnection": "DBML: Изменить подключение",
   "command.deleteConnection": "DBML: Удалить подключение",
   "command.importFromConnection": "DBML: Импорт из базы данных",
   "command.compareWithConnection": "DBML: Сравнить с базой данных",

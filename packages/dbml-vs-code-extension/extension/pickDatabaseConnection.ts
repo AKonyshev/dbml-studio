@@ -1,10 +1,6 @@
 import { ExtensionContext, QuickPickItem, l10n, window } from "vscode";
 
-import {
-  CONNECTION_PLACEHOLDER,
-  connectionPrompt,
-  validateConnectionInput,
-} from "./connectionInput";
+import { openConnectionForm } from "./connectionForm/connectionFormPanel";
 import { getConnection, listConnections } from "./connectionStore";
 
 // A function, not a constant: l10n.t must not run at module load, before the
@@ -15,7 +11,6 @@ export const newConnectionLabel = (): string =>
 
 export interface PickedConnection {
   connectionString: string;
-  isNew: boolean;
 }
 
 type ConnectionPickItem = QuickPickItem &
@@ -54,17 +49,17 @@ export async function pickDatabaseConnection(
       );
       return undefined;
     }
-    return { connectionString: existing, isNew: false };
+    return { connectionString: existing };
   }
 
-  const entered = await window.showInputBox({
-    prompt: connectionPrompt(),
-    placeHolder: CONNECTION_PLACEHOLDER,
-    validateInput: validateConnectionInput,
-    password: true,
-    ignoreFocusOut: true,
+  // The form saves what it makes, and the tree refreshes itself when the
+  // secret changes, so there is nothing to refresh here and nothing to offer
+  // to save afterwards.
+  const outcome = await openConnectionForm({
+    context,
+    refresh: () => undefined,
   });
-  return entered == null || entered === ""
+  return outcome === undefined
     ? undefined
-    : { connectionString: entered, isNew: true };
+    : { connectionString: outcome.connectionString };
 }
