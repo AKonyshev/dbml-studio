@@ -1,0 +1,690 @@
+import { getWebviewHtml } from "virtual:vscode";
+import { window, type ExtensionContext } from "vscode";
+import { DbImportError, DbImportErrorCode, listDatabases } from "db-to-dbml";
+
+import {
+  emptyFields,
+  type ConnectionFields,
+} from "../connectionForm/connectionFields";
+import { buildConnection } from "../connectionForm/connectionString";
+import { openConnectionForm } from "../connectionForm/connectionFormPanel";
+import { formStrings } from "../connectionForm/strings";
+import {
+  getConnection,
+  listConnections,
+  type SecretStore,
+} from "../connectionStore";
+
+jest.mock("db-to-dbml", () => ({
+  ...jest.requireActual("db-to-dbml"),
+  listDatabases: jest.fn(),
+}));
+
+const listDatabasesMock = listDatabases as jest.MockedFunction<
+  typeof listDatabases
+>;
+
+// Values that are secret in some scenario below. No message to the page may
+// contain one of them, nor any URL.
+const SECRETS = ["Secr3t", "hunter2", "tok3n", "p@", "://", "Password="];
+
+interface FakePanel {
+  webview: {
+    html: string;
+    postMessage: jest.Mock;
+    onDidReceiveMessage: jest.Mock;
+  };
+  onDidDispose: jest.Mock;
+  reveal: jest.Mock;
+  dispose: jest.Mock;
+  receive: (message: unknown) => void;
+}
+
+const panels: FakePanel[] = [];
+const posted: unknown[] = [];
+
+function fakePanel(): FakePanel {
+  let handler: (message: unknown) => void = () => undefined;
+  const onDispose: Array<() => void> = [];
+  let disposed = false;
+  const panel: FakePanel = {
+    webview: {
+      html: "",
+      postMessage: jest.fn(async (message: unknown) => {
+        posted.push(message);
+        return true;
+      }),
+      onDidReceiveMessage: jest.fn((cb: (message: unknown) => void) => {
+        handler = cb;
+        return { dispose: jest.fn() };
+      }),
+    },
+    onDidDispose: jest.fn((cb: () => void) => {
+      onDispose.push(cb);
+      return { dispose: jest.fn() };
+    }),
+    reveal: jest.fn(),
+    dispose: jest.fn(() => {
+      if (disposed) {
+        return;
+      }
+      disposed = true;
+      onDispose.forEach((cb) => {
+        cb();
+      });
+    }),
+    receive: (message) => {
+      handler(message);
+    },
+  };
+  panels.push(panel);
+  return panel;
+}
+
+const flush = async (): Promise<void> => {
+  await new Promise((resolve) => setImmediate(resolve));
+};
+
+const messagesOf = (panel: FakePanel): Array<Record<string, unknown>> =>
+  panel.webview.postMessage.mock.calls.map(
+    (call) => call[0] as Record<string, unknown>,
+  );
+
+const lastOf = (panel: FakePanel, type: string): Record<string, unknown> => {
+  const found = messagesOf(panel).filter((m) => m.type === type);
+  return found[found.length - 1];
+};
+
+function memoryStore(initial: Record<string, string> = {}): SecretStore {
+  const data = new Map<string, string>();
+  if (Object.keys(initial).length > 0) {
+    data.set("dbml.connections", JSON.stringify(initial));
+  }
+  return {
+    get: async (key) => data.get(key),
+    store: async (key, value) => {
+      data.set(key, value);
+    },
+  };
+}
+
+const SHOP = "Server=h,1433;Database=db;User Id=sa;Password=p";
+
+const setup = (initial: Record<string, string> = {}) => {
+  const secrets = memoryStore(initial);
+  const refresh = jest.fn();
+  const deps = {
+    context: {
+      secrets,
+      extensionUri: { path: "/ext" },
+    } as unknown as ExtensionContext,
+    refresh,
+  };
+  return { secrets, refresh, deps };
+};
+
+const fieldsOf = (over: Partial<ConnectionFields> = {}): ConnectionFields => ({
+  ...emptyFields("postgres"),
+  name: "shop",
+  host: "h",
+  user: "u",
+  database: "db",
+  ...over,
+});
+
+const initFields = (panel: FakePanel): ConnectionFields =>
+  (lastOf(panel, "init") as unknown as { fields: ConnectionFields }).fields;
+
+beforeEach(() => {
+  panels.length = 0;
+  posted.length = 0;
+  (window.createWebviewPanel as jest.Mock).mockReset();
+  (window.createWebviewPanel as jest.Mock).mockImplementation(fakePanel);
+  listDatabasesMock.mockReset();
+});
+
+afterEach(async () => {
+  // Close what a test left open, and settle any outcome waiting on it.
+  panels.forEach((panel) => {
+    panel.dispose();
+  });
+  await flush();
+  // The rule behind the whole form: nothing secret is ever posted to the page.
+  const json = JSON.stringify(posted);
+  for (const secret of SECRETS) {
+    expect(json).not.toContain(secret);
+  }
+});
+
+describe("openConnectionForm", () => {
+  it("opens a webview tab, scripts on, hidden state kept, for the form page", () => {
+    const { deps } = setup();
+    void openConnectionForm(deps);
+    const [type, title, column, options] = (
+      window.createWebviewPanel as jest.Mock
+    ).mock.calls[0] as [string, string, unknown, Record<string, unknown>];
+    expect(type).toBe("dbmlStudio.connectionForm");
+    expect(title).toBe("New connection");
+    expect(column).toBeDefined();
+    expect(options).toMatchObject({
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    });
+    expect(options.localResourceRoots).toHaveLength(1);
+    expect(getWebviewHtml).toHaveBeenLastCalledWith(
+      expect.objectContaining({ inputName: "connection-form" }),
+    );
+    expect(panels[0].webview.html).toContain("connection-form");
+  });
+
+  it("adds a connection: init, then Save stores the built string and resolves", async () => {
+    const { deps, secrets, refresh } = setup({ legacy: SHOP });
+    const outcome = openConnectionForm(deps);
+    const panel = panels[0];
+    panel.receive({ type: "ready" });
+    await flush();
+
+    expect(lastOf(panel, "init")).toMatchObject({
+      type: "init",
+      mode: "new",
+      fields: emptyFields(),
+      savedNames: ["legacy"],
+      strings: formStrings(),
+    });
+
+    panel.receive({
+      type: "save",
+      fields: fieldsOf({ name: "  shop  " }),
+      password: "hunter2",
+    });
+    await flush();
+
+    const expected = buildConnection(fieldsOf(), "hunter2");
+    await expect(outcome).resolves.toEqual({
+      name: "shop",
+      connectionString: expected,
+    });
+    expect(await getConnection(secrets, "shop")).toBe(expected);
+    expect(refresh).toHaveBeenCalled();
+    expect(panel.dispose).toHaveBeenCalled();
+  });
+
+  it("refuses to save an invalid form, without writing", async () => {
+    const { deps, secrets } = setup({ legacy: SHOP });
+    const outcome = openConnectionForm(deps);
+    const panel = panels[0];
+    panel.receive({ type: "ready" });
+    panel.receive({ type: "save", fields: fieldsOf({ name: "Legacy" }) });
+    await flush();
+    expect(lastOf(panel, "saveError")).toEqual({
+      type: "saveError",
+      message: "A connection with this name already exists.",
+    });
+    expect(await listConnections(secrets)).toEqual(["legacy"]);
+    panel.receive({ type: "cancel" });
+    await expect(outcome).resolves.toBeUndefined();
+  });
+
+  it("saves once, however many times Save arrives", async () => {
+    const { deps, secrets, refresh } = setup();
+    const outcome = openConnectionForm(deps);
+    const panel = panels[0];
+    const save = { type: "save", fields: fieldsOf(), password: "hunter2" };
+    panel.receive(save);
+    panel.receive(save);
+    await flush();
+    await outcome;
+    expect(await listConnections(secrets)).toEqual(["shop"]);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a message that is not shaped like the form's", async () => {
+    const { deps, secrets } = setup();
+    const outcome = openConnectionForm(deps);
+    const panel = panels[0];
+    panel.receive({ type: "save", fields: { name: 5 } });
+    panel.receive({ type: "test", fields: { ...fieldsOf(), dialect: "x" } });
+    panel.receive({ type: "nope" });
+    panel.receive(null);
+    await flush();
+    expect(await listConnections(secrets)).toEqual([]);
+    expect(listDatabasesMock).not.toHaveBeenCalled();
+    panel.receive({ type: "cancel" });
+    await expect(outcome).resolves.toBeUndefined();
+  });
+
+  describe("editing", () => {
+    it("saves the stored string byte for byte when nothing changed", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+
+      const init = lastOf(panel, "init") as unknown as {
+        mode: string;
+        editing: string;
+      };
+      const fields = initFields(panel);
+      expect(init.mode).toBe("edit");
+      expect(init.editing).toBe("shop");
+      expect(fields).toMatchObject({
+        name: "shop",
+        host: "h",
+        port: "1433",
+        user: "sa",
+        database: "db",
+        dialect: "mssql",
+      });
+      expect(window.createWebviewPanel).toHaveBeenCalledWith(
+        expect.anything(),
+        "Edit connection: shop",
+        expect.anything(),
+        expect.anything(),
+      );
+
+      // Spelled differently, but the same connection.
+      panel.receive({ type: "save", fields: { ...fields, host: " h " } });
+      await flush();
+      await expect(outcome).resolves.toEqual({
+        name: "shop",
+        connectionString: SHOP,
+      });
+      expect(await getConnection(secrets, "shop")).toBe(SHOP);
+    });
+
+    it("keeps the stored password when a field changes and none is typed", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const fields = initFields(panel);
+      panel.receive({
+        type: "save",
+        fields: { ...fields, host: "other" },
+        password: "",
+      });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(
+        buildConnection({ ...fields, host: "other" }, "p"),
+      );
+    });
+
+    it("uses a newly typed password over the stored one", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const fields = initFields(panel);
+      panel.receive({ type: "save", fields, password: "hunter2" });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(
+        buildConnection(fields, "hunter2"),
+      );
+    });
+
+    it("renames, case-only included: the new key is saved and the old one is gone", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const fields = initFields(panel);
+      panel.receive({ type: "save", fields: { ...fields, name: "Shop" } });
+      await flush();
+      await expect(outcome).resolves.toMatchObject({ name: "Shop" });
+      expect(await listConnections(secrets)).toEqual(["Shop"]);
+      expect(await getConnection(secrets, "Shop")).toBe(SHOP);
+    });
+
+    it("refuses a rename onto another saved name, changing nothing", async () => {
+      const { deps, secrets } = setup({ shop: SHOP, legacy: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const fields = initFields(panel);
+      panel.receive({ type: "save", fields: { ...fields, name: "legacy" } });
+      await flush();
+      expect(lastOf(panel, "saveError")).toMatchObject({
+        message: "A connection with this name already exists.",
+      });
+      expect(await listConnections(secrets)).toEqual(["legacy", "shop"]);
+      panel.receive({ type: "cancel" });
+      await expect(outcome).resolves.toBeUndefined();
+    });
+
+    it("starts from empty fields and a fixed sentence when the stored string cannot be read", async () => {
+      const { deps } = setup({ shop: "nonsense Secr3t" });
+      void openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      expect(lastOf(panel, "init")).toMatchObject({
+        mode: "edit",
+        fields: { ...emptyFields(), name: "shop" },
+      });
+      expect(lastOf(panel, "pasteError")).toEqual({
+        type: "pasteError",
+        message: "The connection string is not one DBML Studio can read.",
+      });
+    });
+
+    it("keeps the stored hidden parameters when the fields change", async () => {
+      const stored =
+        "sqlserver://sa:hunter2@h:1433/db?encrypt=true&clientSecret=tok3n";
+      const { deps, secrets } = setup({ shop: stored });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      const fields = initFields(panel);
+      expect(fields.options).toBe("");
+      panel.receive({ type: "save", fields: { ...fields, host: "other" } });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(
+        buildConnection(
+          { ...fields, host: "other" },
+          "hunter2",
+          "clientSecret=tok3n",
+        ),
+      );
+    });
+  });
+
+  describe("reuse", () => {
+    it("opens one tab for a new connection and hands back its promise", async () => {
+      const { deps } = setup();
+      const first = openConnectionForm(deps);
+      const second = openConnectionForm(deps);
+      expect(window.createWebviewPanel).toHaveBeenCalledTimes(1);
+      expect(panels[0].reveal).toHaveBeenCalled();
+      expect(second).toBe(first);
+      panels[0].receive({ type: "cancel" });
+      await expect(first).resolves.toBeUndefined();
+      // Once closed, the next open is a fresh tab.
+      void openConnectionForm(deps);
+      expect(window.createWebviewPanel).toHaveBeenCalledTimes(2);
+    });
+
+    it("opens one tab per edited name, whatever its case", () => {
+      const { deps } = setup({ shop: SHOP, other: SHOP });
+      const first = openConnectionForm(deps, "shop");
+      const again = openConnectionForm(deps, "shop");
+      expect(again).toBe(first);
+      expect(window.createWebviewPanel).toHaveBeenCalledTimes(1);
+      void openConnectionForm(deps, "other");
+      void openConnectionForm(deps);
+      expect(window.createWebviewPanel).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("test", () => {
+    const start = async () => {
+      const ctx = setup();
+      const outcome = openConnectionForm(ctx.deps);
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      await flush();
+      return { ...ctx, outcome, panel };
+    };
+
+    it("reports the databases it could list", async () => {
+      const { panel } = await start();
+      listDatabasesMock.mockResolvedValue(["a", "b"]);
+      panel.receive({
+        type: "test",
+        fields: fieldsOf(),
+        password: "hunter2",
+      });
+      await flush();
+      const types = messagesOf(panel)
+        .map((m) => m.type)
+        .filter((type) => type !== "init");
+      expect(types).toEqual(["testing", "testResult"]);
+      expect(lastOf(panel, "testResult")).toEqual({
+        type: "testResult",
+        ok: true,
+        databases: ["a", "b"],
+      });
+      expect(listDatabasesMock).toHaveBeenCalledWith(
+        buildConnection(fieldsOf(), "hunter2"),
+      );
+    });
+
+    it.each([
+      [
+        DbImportErrorCode.AUTH_FAILED,
+        "The server refused the user name or password.",
+      ],
+      [DbImportErrorCode.UNREACHABLE, "Could not reach the server."],
+      [DbImportErrorCode.ACCESS_DENIED, "The user may not open that database."],
+      [DbImportErrorCode.DATABASE_NOT_FOUND, "There is no such database."],
+      [
+        DbImportErrorCode.INVALID_CONNECTION_STRING,
+        "The connection string is not one DBML Studio can read.",
+      ],
+      [DbImportErrorCode.UNKNOWN, "Could not connect."],
+    ])("answers %s with a fixed sentence", async (code, sentence) => {
+      const { panel } = await start();
+      listDatabasesMock.mockRejectedValue(
+        new DbImportError(code, "driver says Secr3t"),
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      await flush();
+      expect(lastOf(panel, "testResult")).toEqual({
+        type: "testResult",
+        ok: false,
+        message: sentence,
+      });
+    });
+
+    it("adds the certificate hint to an unreachable SQL Server only", async () => {
+      const { panel } = await start();
+      listDatabasesMock.mockRejectedValue(
+        new DbImportError(DbImportErrorCode.UNREACHABLE, "x"),
+      );
+      panel.receive({
+        type: "test",
+        fields: fieldsOf({ dialect: "mssql", port: "1433" }),
+      });
+      await flush();
+      expect((lastOf(panel, "testResult") as { message: string }).message).toBe(
+        "Could not reach the server. If the server uses a self-signed certificate, tick Trust server certificate.",
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      await flush();
+      expect((lastOf(panel, "testResult") as { message: string }).message).toBe(
+        "Could not reach the server.",
+      );
+    });
+
+    it("never repeats an error it does not know", async () => {
+      const { panel } = await start();
+      listDatabasesMock.mockRejectedValue(
+        new Error("connect failed for tok3n"),
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      await flush();
+      expect(lastOf(panel, "testResult")).toEqual({
+        type: "testResult",
+        ok: false,
+        message: "Could not connect.",
+      });
+    });
+
+    it("does not call the driver for a host or port that is not usable", async () => {
+      const { panel } = await start();
+      panel.receive({ type: "test", fields: fieldsOf({ host: "h@evil" }) });
+      await flush();
+      expect(listDatabasesMock).not.toHaveBeenCalled();
+      expect(lastOf(panel, "testResult")).toMatchObject({ ok: false });
+    });
+
+    it("resolves undefined when the tab is closed mid-test, and posts nothing after", async () => {
+      const { panel, outcome } = await start();
+      let settle: (names: string[]) => void = () => undefined;
+      listDatabasesMock.mockReturnValue(
+        new Promise<string[]>((resolve) => {
+          settle = resolve;
+        }),
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      await flush();
+      const before = panel.webview.postMessage.mock.calls.length;
+      panel.dispose();
+      await expect(outcome).resolves.toBeUndefined();
+      settle(["a"]);
+      await flush();
+      expect(panel.webview.postMessage).toHaveBeenCalledTimes(before);
+    });
+
+    it("posts nothing after a failure that arrives once the tab is gone", async () => {
+      const { panel, outcome } = await start();
+      let fail: (error: Error) => void = () => undefined;
+      listDatabasesMock.mockReturnValue(
+        new Promise<string[]>((_resolve, reject) => {
+          fail = reject;
+        }),
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      await flush();
+      const before = panel.webview.postMessage.mock.calls.length;
+      panel.dispose();
+      await outcome;
+      fail(new Error("late"));
+      await flush();
+      expect(panel.webview.postMessage).toHaveBeenCalledTimes(before);
+    });
+
+    it("answers only the latest of two overlapping tests", async () => {
+      const { panel } = await start();
+      const settlers: Array<(names: string[]) => void> = [];
+      listDatabasesMock.mockImplementation(
+        async () =>
+          await new Promise<string[]>((resolve) => {
+            settlers.push(resolve);
+          }),
+      );
+      panel.receive({ type: "test", fields: fieldsOf() });
+      panel.receive({ type: "test", fields: fieldsOf({ host: "h2" }) });
+      await flush();
+      settlers[1](["second"]);
+      await flush();
+      settlers[0](["first"]);
+      await flush();
+      const results = messagesOf(panel).filter((m) => m.type === "testResult");
+      expect(results).toEqual([
+        { type: "testResult", ok: true, databases: ["second"] },
+      ]);
+    });
+  });
+
+  describe("paste", () => {
+    const PG = "postgresql://u:p@h/db?sslmode=require";
+
+    it("fills the fields from a pasted string and saves it untouched, byte for byte", async () => {
+      const { deps, secrets } = setup();
+      const outcome = openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      const pasted = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      expect(pasted.fields).toMatchObject({
+        dialect: "postgres",
+        host: "h",
+        user: "u",
+        database: "db",
+        options: "sslmode=require",
+      });
+      expect("password" in pasted.fields).toBe(false);
+
+      panel.receive({
+        type: "save",
+        fields: { ...pasted.fields, name: "pg" },
+      });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "pg")).toBe(PG);
+    });
+
+    it("answers an unreadable paste with the fixed sentence", async () => {
+      const { deps } = setup();
+      void openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "paste", text: "snowflake://u:Secr3t@a/db" });
+      await flush();
+      expect(lastOf(panel, "pasteError")).toEqual({
+        type: "pasteError",
+        message: "The connection string is not one DBML Studio can read.",
+      });
+    });
+
+    it("keeps the pasted password and its hidden parameters when the fields change", async () => {
+      const { deps, secrets } = setup();
+      const outcome = openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({
+        type: "paste",
+        text: "sqlserver://sa:hunter2@h:1433/db?encrypt=true&clientSecret=tok3n",
+      });
+      await flush();
+      const { fields } = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      expect(fields.options).toBe("");
+      panel.receive({
+        type: "save",
+        fields: { ...fields, name: "ms", host: "other" },
+      });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "ms")).toBe(
+        buildConnection(
+          { ...fields, name: "ms", host: "other" },
+          "hunter2",
+          "clientSecret=tok3n",
+        ),
+      );
+    });
+
+    it("tests the pasted string as it stands", async () => {
+      const { deps } = setup();
+      void openConnectionForm(deps);
+      const panel = panels[0];
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      const { fields } = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      listDatabasesMock.mockResolvedValue(["db"]);
+      panel.receive({ type: "test", fields: { ...fields, name: "" } });
+      await flush();
+      expect(listDatabasesMock).toHaveBeenCalledWith(PG);
+    });
+
+    it("lets a paste replace the stored string as the original", async () => {
+      const { deps, secrets } = setup({ shop: SHOP });
+      const outcome = openConnectionForm(deps, "shop");
+      const panel = panels[0];
+      panel.receive({ type: "ready" });
+      panel.receive({ type: "paste", text: PG });
+      await flush();
+      const { fields } = lastOf(panel, "pasted") as unknown as {
+        fields: Omit<ConnectionFields, "name">;
+      };
+      panel.receive({ type: "save", fields: { ...fields, name: "shop" } });
+      await flush();
+      await outcome;
+      expect(await getConnection(secrets, "shop")).toBe(PG);
+    });
+  });
+});

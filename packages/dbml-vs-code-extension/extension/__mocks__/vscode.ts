@@ -13,6 +13,7 @@ export const window = {
   showSaveDialog: jest.fn(),
   showOpenDialog: jest.fn(),
   registerCustomEditorProvider: jest.fn(() => ({ dispose: jest.fn() })),
+  createWebviewPanel: jest.fn(),
   withProgress: jest.fn(
     async (
       _options: unknown,
