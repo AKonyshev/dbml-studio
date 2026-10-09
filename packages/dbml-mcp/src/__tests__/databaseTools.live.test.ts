@@ -1,4 +1,4 @@
-import { postgresCatalog } from "../catalog";
+import { databaseCatalog } from "../catalog";
 import { connectionsFromEnv } from "../connections";
 import { compareWithDatabase } from "../tools/compareWithDatabase";
 import { importSchema } from "../tools/importSchema";
@@ -22,7 +22,7 @@ describeLive("database tools against DBML_TEST_DATABASE_URL", () => {
   const context = async (): Promise<ToolContext> =>
     await makeContext({
       connections: connectionsFromEnv({ DBML_CONNECTION_TEST: url }),
-      catalog: postgresCatalog,
+      catalog: databaseCatalog,
     });
 
   it("lists databases and schemas", async () => {
@@ -61,7 +61,7 @@ describeLive("database tools against DBML_TEST_DATABASE_URL", () => {
   });
 
   it("never shows the password of a raw connection the server rejects", async () => {
-    const ctx = await makeContext({ catalog: postgresCatalog });
+    const ctx = await makeContext({ catalog: databaseCatalog });
     const wrong = new URL(url ?? "");
     wrong.password = "Wr0ng-Pa55";
     const outcomes = await Promise.all(

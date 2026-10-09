@@ -121,7 +121,8 @@ the ADO string; `encrypt=false` turns TLS off for a server that has none.
 ```
 
 A MySQL URL may name no database (`mysql://user@host`): `list_databases`
-works, and the other tools need a `database`. A tool also accepts a raw
+works, `list_schemas` answers an empty list, and `import_schema` and
+`compare_with_database` need a `database`. A tool also accepts a raw
 connection string of any of these forms as the `connection`. That works, but the URL, password included, is then part of the
 conversation with the model. Prefer a name: the connection string stays in the
 server's environment and the agent only ever sees the name.
@@ -211,8 +212,9 @@ A failed call answers `<CODE>: <message>`. The codes:
   - A server with a self-signed certificate needs `trustServerCertificate=true`
     in the URL (or `TrustServerCertificate=true` in the ADO string), or it is
     reported as `UNREACHABLE`.
-- Snowflake, BigQuery and Oracle databases are not supported (`sql_to_dbml` and
-  `dbml_to_sql` still convert their SQL).
+- Snowflake, BigQuery and Oracle databases cannot be connected to.
+  `sql_to_dbml` still reads Snowflake and Oracle SQL, and `dbml_to_sql` writes
+  Oracle.
 - `dbml_to_sql` comes from `@dbml/core` and keeps its behaviour:
   - For a one-to-one reference (`-`) it emits the foreign key in the opposite
     direction: `Ref: b.a_id - a.id` makes `a.id` reference `b.a_id`. Postgres

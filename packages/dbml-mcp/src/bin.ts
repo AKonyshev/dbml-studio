@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
-import { postgresCatalog } from "./catalog";
+import { databaseCatalog } from "./catalog";
 import { connectionsFromEnv } from "./connections";
 import { rootFromArgs } from "./root";
 import { createServer } from "./server";
@@ -29,7 +29,7 @@ const root = rootFromArgs(process.argv.slice(2), process.cwd(), homedir());
 
 // serveStdio returns a handle at once (it does not return a promise).
 serveStdio(
-  () => createServer({ connections, root, catalog: postgresCatalog }),
+  () => createServer({ connections, root, catalog: databaseCatalog }),
   {
     onerror: (error) => {
       process.stderr.write(`dbml-mcp: ${error.message}\n`);

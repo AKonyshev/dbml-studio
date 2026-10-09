@@ -291,6 +291,24 @@ describe("resolveConnection", () => {
     }
   });
 
+  it.each([
+    "mysql://u:Pa55#w0rd?x@h/db",
+    "sqlserver://u:Pa55@h%zz/db",
+    "Server=;Database=db;User Id=u;Password=Pa55",
+  ])(
+    "calls a raw string its database cannot read an invalid connection string, without echoing it: %#",
+    (value) => {
+      expect.assertions(3);
+      try {
+        resolveConnection(source, value);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ToolError);
+        expect((error as ToolError).code).toBe("INVALID_CONNECTION_STRING");
+        expect((error as ToolError).message).not.toContain("Pa55");
+      }
+    },
+  );
+
   it("still accepts a socket URL that has no host before the path", () => {
     expect(resolveConnection(source, "postgres://u@/library?host=/tmp")).toBe(
       "postgres://u@/library?host=/tmp",

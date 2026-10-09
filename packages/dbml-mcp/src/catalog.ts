@@ -2,7 +2,7 @@ import { fetchSchema, listDatabases, listSchemas } from "db-to-dbml";
 
 import type { Catalog } from "./context";
 
-export const postgresCatalog: Catalog = {
+export const databaseCatalog: Catalog = {
   listDatabases,
   listSchemas,
   fetchSchema,

@@ -1,9 +1,4 @@
-import {
-  assertConnectionString,
-  DbImportErrorCode,
-  dialectOf,
-  withDatabase,
-} from "db-to-dbml";
+import { assertConnectionString, dialectOf, withDatabase } from "db-to-dbml";
 
 import { fromDbImportError, ToolError } from "./errors";
 
@@ -105,32 +100,6 @@ export function connectionsFromEnv(
 // password in it, so only something shaped like a name is quoted back.
 const LOOKS_LIKE_NAME = /^[\w .-]{1,64}$/;
 
-// pg reads a connection string with `new URL`, after encoding spaces, and
-// tries again with a stand-in host for a socket URL such as
-// postgres://user@/db?host=/tmp. A string that fails all of that would fail
-// inside pg as an error that quotes it, so it is refused here, by code only.
-// db-to-dbml checks a PostgreSQL URL's scheme and no more; MySQL and SQL
-// Server read the whole string in their own checks.
-function readableAsPostgresUrl(value: string): boolean {
-  const encoded = encodeURI(value).replace(/%25(\d\d)/g, "%$1");
-  return [value, encoded, encoded.replace("@/", "@localhost/")].some(
-    (candidate) => URL.canParse(candidate),
-  );
-}
-
-// True when some database claims the value by its shape (a scheme, or the
-// `Server=` keys), whether or not the rest turns out to be readable: that is
-// then reported as INVALID_CONNECTION_STRING by the check in
-// `resolveConnection`, not as an unknown name.
-function isConnectionString(value: string): boolean {
-  try {
-    dialectOf(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function resolveConnection(
   source: ConnectionSource,
   value: string,
@@ -140,7 +109,7 @@ export function resolveConnection(
   let connectionString: string;
   if (named !== undefined) {
     connectionString = named;
-  } else if (isConnectionString(value.trim())) {
+  } else if (kindOf(value.trim()) !== "unknown") {
     connectionString = value.trim();
   } else {
     const names = source.names();
@@ -163,15 +132,6 @@ export function resolveConnection(
     assertConnectionString(connectionString);
   } catch (error) {
     throw fromDbImportError(error);
-  }
-  if (
-    dialectOf(connectionString) === "postgres" &&
-    !readableAsPostgresUrl(connectionString)
-  ) {
-    throw new ToolError(
-      DbImportErrorCode.INVALID_CONNECTION_STRING,
-      "The connection string is not a readable PostgreSQL URL.",
-    );
   }
   if (database === undefined) return connectionString;
   try {

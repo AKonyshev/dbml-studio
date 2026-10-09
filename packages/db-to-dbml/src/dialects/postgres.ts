@@ -43,6 +43,17 @@ const LIST_SCHEMAS_SQL = `
   ORDER BY nspname
 `;
 
+// pg reads a connection string with `new URL`, after encoding spaces, and tries
+// again with a stand-in host for a socket URL such as postgres://user@/db?host=/tmp.
+// A string that fails all of that would fail inside pg as an error that quotes
+// it, password and all, so it is refused here instead.
+function readable(value: string): boolean {
+  const encoded = encodeURI(value).replace(/%25(\d\d)/g, "%$1");
+  return [value, encoded, encoded.replace("@/", "@localhost/")].some(
+    (candidate) => URL.canParse(candidate),
+  );
+}
+
 // One guard for every entry point that takes a connection string. It returns
 // the trimmed value, so a caller passes on exactly what was validated rather
 // than trimming again on its own.
@@ -52,6 +63,12 @@ function normalize(value: string): string {
     throw new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,
       UNSUPPORTED_CONNECTION,
+    );
+  }
+  if (!readable(trimmed)) {
+    throw new DbImportError(
+      DbImportErrorCode.INVALID_CONNECTION_STRING,
+      "Connection string is not a readable PostgreSQL URL",
     );
   }
   return trimmed;
