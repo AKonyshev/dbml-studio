@@ -19,6 +19,7 @@ import {
   CONNECT_TIMEOUT_MS,
   NETWORK_CODES,
   QUERY_TIMEOUT_MS,
+  UNREADABLE_CONNECTION,
   UNSUPPORTED_CONNECTION,
 } from "./catalog";
 
@@ -79,7 +80,7 @@ const URL_OPTIONS: Record<string, string> = {
 const unreadable = (): DbImportError =>
   new DbImportError(
     DbImportErrorCode.INVALID_CONNECTION_STRING,
-    "Connection string is not a readable SQL Server connection string",
+    UNREADABLE_CONNECTION.mssql,
   );
 
 // A connection is held as an ADO map, the grammar `mssql` and the connector
@@ -99,12 +100,17 @@ function fromUrl(text: string): Map<string, string> {
 
     let instance: string | undefined;
     const options = new Map<string, string>();
+    // Query keys with no name of their own here are ADO keys written in a URL
+    // (`authentication`, `applicationIntent`, `packet size`…): the driver reads
+    // many of them, so they pass through. They are set only where the URL has
+    // not said it already, so a query cannot repoint the host or the login.
+    const extra = new Map<string, string>();
     for (const [key, value] of url.searchParams) {
       const name = key.toLowerCase();
       if (name === "instancename") instance = value;
       else if (URL_OPTIONS[name] !== undefined) {
         options.set(URL_OPTIONS[name], value);
-      }
+      } else extra.set(name, value);
     }
 
     // `host\instance,port`: the form ADO strings use for both at once.
@@ -119,6 +125,10 @@ function fromUrl(text: string): Map<string, string> {
     if (password !== "") map.set("password", password);
     map.set("encrypt", "true");
     for (const [key, value] of options) map.set(key, value);
+    const taken = [...SERVER_KEYS, ...DATABASE_KEYS];
+    for (const [key, value] of extra) {
+      if (!map.has(key) && !taken.includes(key)) map.set(key, value);
+    }
     return map;
   } catch {
     throw unreadable();

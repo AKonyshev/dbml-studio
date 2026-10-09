@@ -122,6 +122,26 @@ describe("SQL Server connection strings", () => {
     }
   });
 
+  it("passes the URL query keys it has no name for on as ADO keys", () => {
+    const text = mssql.normalize(
+      "sqlserver://u:p@h/db?authentication=ActiveDirectoryPassword&ApplicationIntent=ReadOnly&packet%20size=4096&password=other&server=x",
+    );
+    const ado = parseAdo(text);
+    expect(ado.get("authentication")).toBe("ActiveDirectoryPassword");
+    expect(ado.get("applicationintent")).toBe("ReadOnly");
+    expect(ado.get("packet size")).toBe("4096");
+    // What the URL already says wins over a query key that repeats it.
+    expect(ado.get("server")).toBe("h");
+    expect(ado.get("password")).toBe("p");
+    const config = RealPool.parseConnectionString(text);
+    expect(config.options.packetSize).toBe(4096);
+  });
+
+  it("takes a password from the query when the URL has none", () => {
+    const ado = parseAdo(mssql.normalize("sqlserver://u@h/db?password=q%3Br"));
+    expect(ado.get("password")).toBe("q;r");
+  });
+
   it("keeps an instance and a port apart", () => {
     const config = RealPool.parseConnectionString(
       mssql.normalize("sqlserver://u:p@h:1444/db?instanceName=SQLEXPRESS"),

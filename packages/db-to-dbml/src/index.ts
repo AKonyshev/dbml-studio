@@ -1,7 +1,8 @@
 export { assertConnectionString, withDatabase } from "./connectionString";
 export { defaultSchema } from "./defaultSchema";
 export { parseAdo } from "./dialects/ado";
-export { dialectOf, UNSUPPORTED_CONNECTION } from "./dialects/detect";
+export { UNREADABLE_CONNECTION } from "./dialects/catalog";
+export { dialectOf } from "./dialects/detect";
 export type { DialectId } from "./dialects/types";
 export { fetchSchema } from "./fetchSchema";
 export { listDatabases } from "./listDatabases";

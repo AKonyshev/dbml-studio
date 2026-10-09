@@ -12,6 +12,7 @@ import {
   CONNECT_TIMEOUT_MS,
   NETWORK_CODES,
   QUERY_TIMEOUT_MS,
+  UNREADABLE_CONNECTION,
   UNSUPPORTED_CONNECTION,
 } from "./catalog";
 
@@ -68,7 +69,7 @@ function normalize(value: string): string {
   if (!readable(trimmed)) {
     throw new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,
-      "Connection string is not a readable PostgreSQL URL",
+      UNREADABLE_CONNECTION.postgres,
     );
   }
   return trimmed;
@@ -88,7 +89,7 @@ function parseUrl(connection: string): URL {
     if (error instanceof DbImportError) throw error;
     throw new DbImportError(
       DbImportErrorCode.INVALID_CONNECTION_STRING,
-      "Connection string is not a readable PostgreSQL URL",
+      UNREADABLE_CONNECTION.postgres,
     );
   }
 }
@@ -182,7 +183,7 @@ export const postgres: Dialect = {
     } catch {
       throw new DbImportError(
         DbImportErrorCode.INVALID_CONNECTION_STRING,
-        "Connection string is not a readable PostgreSQL URL",
+        UNREADABLE_CONNECTION.postgres,
       );
     }
   },
