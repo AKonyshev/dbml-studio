@@ -3,7 +3,7 @@
 The dbml-mcp package's history. Its version is its own; the format is
 [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [0.2.0] - 2026-10-09
 
 ### Added
 
