@@ -18,7 +18,6 @@ import {
   withDatabase,
 } from "db-to-dbml";
 
-import { saveConnection } from "./connectionStore";
 import { dbImportErrorMessage } from "./dbImportErrorMessage";
 import { resolveImportDestination } from "./importDestination";
 import { pickDatabaseConnection } from "./pickDatabaseConnection";
@@ -53,26 +52,6 @@ const importFailed = (): string =>
 
 const saveFailed = (): string =>
   l10n.t("The schema was imported, but saving the DBML file failed.");
-
-async function maybeSaveConnection(
-  context: ExtensionContext,
-  connectionString: string,
-): Promise<void> {
-  const save = await window.showQuickPick(["No", "Yes"], {
-    placeHolder: l10n.t("Save this connection for next time?"),
-  });
-  if (save !== "Yes") {
-    return;
-  }
-
-  const name = await window.showInputBox({
-    prompt: l10n.t("Name for this connection"),
-    ignoreFocusOut: true,
-  });
-  if (name != null && name !== "") {
-    await saveConnection(context.secrets, name, connectionString);
-  }
-}
 
 async function importOne(
   connectionString: string,
@@ -261,7 +240,6 @@ export async function importFromDatabase(
   preselect?: ImportPreselect,
 ): Promise<void> {
   let connectionString: string;
-  let isNew = false;
   if (preselect !== undefined) {
     connectionString = preselect.connectionString;
   } else {
@@ -270,7 +248,6 @@ export async function importFromDatabase(
       return;
     }
     connectionString = picked.connectionString;
-    isNew = picked.isNew;
   }
 
   let chosen: ImportTarget[] | undefined;
@@ -311,15 +288,4 @@ export async function importFromDatabase(
   );
 
   await reportOutcomes(outcomes, targets.length, cancelled);
-
-  if (isNew) {
-    try {
-      await maybeSaveConnection(context, connectionString);
-    } catch (error) {
-      console.error("[dbml] failed to save the connection", error);
-      void window.showErrorMessage(
-        l10n.t("The connection could not be saved."),
-      );
-    }
-  }
 }

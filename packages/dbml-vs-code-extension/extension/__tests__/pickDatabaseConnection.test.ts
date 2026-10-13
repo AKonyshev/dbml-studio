@@ -1,4 +1,11 @@
+jest.mock("../connectionForm/connectionFormPanel", () => ({
+  openConnectionForm: jest.fn(),
+  closeConnectionForm: jest.fn(),
+}));
+
 import { window } from "vscode";
+
+import { openConnectionForm } from "../connectionForm/connectionFormPanel";
 import {
   deleteConnection,
   saveConnection,
@@ -48,6 +55,7 @@ describe("pickDatabaseConnection", () => {
     jest.mocked(window.showQuickPick).mockReset();
     jest.mocked(window.showInputBox).mockReset();
     jest.mocked(window.showErrorMessage).mockReset();
+    jest.mocked(openConnectionForm).mockReset();
   });
 
   test("returns saved connection when user picks one", async () => {
@@ -58,10 +66,7 @@ describe("pickDatabaseConnection", () => {
       .mockImplementation(pickSaved("local") as never);
 
     await expect(pickDatabaseConnection(fakeContext(secrets))).resolves.toEqual(
-      {
-        connectionString: "postgres://u:p@h/db",
-        isNew: false,
-      },
+      { connectionString: "postgres://u:p@h/db" },
     );
   });
 
@@ -96,48 +101,38 @@ describe("pickDatabaseConnection", () => {
       .mockImplementation(pickSaved(newConnectionLabel()) as never);
 
     await expect(pickDatabaseConnection(fakeContext(secrets))).resolves.toEqual(
-      {
-        connectionString: "postgres://saved-as-new-label",
-        isNew: false,
-      },
+      { connectionString: "postgres://saved-as-new-label" },
     );
     expect(window.showInputBox).not.toHaveBeenCalled();
   });
 
-  test("returns a new connection when user creates one", async () => {
+  test("opens the form for a new connection and returns what it saved", async () => {
     const secrets = fakeSecrets();
+    const context = fakeContext(secrets);
     jest.mocked(window.showQuickPick).mockImplementation(pickNew() as never);
-    jest.mocked(window.showInputBox).mockResolvedValue("postgres://u:p@h/new");
+    jest.mocked(openConnectionForm).mockResolvedValue({
+      name: "fresh",
+      connectionString: "postgres://u:p@h/new",
+    });
 
-    await expect(pickDatabaseConnection(fakeContext(secrets))).resolves.toEqual(
-      {
-        connectionString: "postgres://u:p@h/new",
-        isNew: true,
-      },
+    await expect(pickDatabaseConnection(context)).resolves.toEqual({
+      connectionString: "postgres://u:p@h/new",
+    });
+    expect(openConnectionForm).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(openConnectionForm).mock.calls[0][0].context).toBe(
+      context,
     );
+    expect(jest.mocked(openConnectionForm).mock.calls[0][1]).toBeUndefined();
+    expect(window.showInputBox).not.toHaveBeenCalled();
   });
 
-  test("checks the typed connection string as it is entered", async () => {
+  test("returns undefined when the form is closed without saving", async () => {
     jest.mocked(window.showQuickPick).mockImplementation(pickNew() as never);
-    jest.mocked(window.showInputBox).mockResolvedValue("mysql://u:p@h/new");
-
-    await pickDatabaseConnection(fakeContext(fakeSecrets()));
-
-    const options = jest.mocked(window.showInputBox).mock.calls[0][0];
-    expect(options?.validateInput?.("mysql://u:p@h/db")).toBeUndefined();
-    expect(options?.validateInput?.("oracle://u:p@h/db")).toEqual(
-      expect.stringContaining("mysql://"),
-    );
-  });
-
-  test("keeps a typed SQL Server URL as typed", async () => {
-    jest.mocked(window.showQuickPick).mockImplementation(pickNew() as never);
-    const typed = "sqlserver://sa:Test_Passw0rd!@h:1433/library";
-    jest.mocked(window.showInputBox).mockResolvedValue(typed);
+    jest.mocked(openConnectionForm).mockResolvedValue(undefined);
 
     await expect(
       pickDatabaseConnection(fakeContext(fakeSecrets())),
-    ).resolves.toEqual({ connectionString: typed, isNew: true });
+    ).resolves.toBeUndefined();
   });
 
   test("returns undefined when the user cancels the quick pick", async () => {

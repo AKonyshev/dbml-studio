@@ -8,6 +8,7 @@
   "command.compareWithDatabase": "DBML: Compare with database",
   "command.addConnection": "DBML: Add database connection",
   "command.refreshConnections": "DBML: Refresh connections",
+  "command.editConnection": "DBML: Edit connection",
   "command.deleteConnection": "DBML: Delete connection",
   "command.importFromConnection": "DBML: Import from database",
   "command.compareWithConnection": "DBML: Compare with database",

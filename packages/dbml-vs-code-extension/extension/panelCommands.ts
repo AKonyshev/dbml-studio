@@ -2,43 +2,58 @@ import { ExtensionContext, l10n, window } from "vscode";
 
 import { compareWithDatabase } from "./compareWithDatabase";
 import {
-  CONNECTION_PLACEHOLDER,
-  connectionPrompt,
-  validateConnectionInput,
-} from "./connectionInput";
+  closeConnectionForm,
+  openConnectionForm,
+  type FormDeps,
+} from "./connectionForm/connectionFormPanel";
 import type { ConnectionsTreeProvider } from "./connectionsTreeProvider";
 import {
   deleteConnection,
   getConnection,
-  saveConnection,
+  listConnections,
 } from "./connectionStore";
 import { importFromDatabase } from "./importFromDatabase";
 import type { PanelNode } from "./panelNodes";
 import type { ImportPreselect } from "./pickImportTargets";
 
+const formDeps = (
+  context: ExtensionContext,
+  provider: ConnectionsTreeProvider,
+): FormDeps => ({ context, refresh: () => provider.refresh() });
+
+// The form saves the connection itself; this only keeps the command alive for
+// as long as the tab is open.
 export async function addConnection(
   context: ExtensionContext,
   provider: ConnectionsTreeProvider,
 ): Promise<void> {
-  const name = await window.showInputBox({
-    prompt: l10n.t("Name for this connection"),
-    ignoreFocusOut: true,
-  });
-  if (name == null || name === "") {
+  await openConnectionForm(formDeps(context, provider));
+}
+
+// From the tree the node names the connection; from the palette there is no
+// node, so the user picks one.
+export async function editConnectionCommand(
+  context: ExtensionContext,
+  provider: ConnectionsTreeProvider,
+  node?: PanelNode,
+): Promise<void> {
+  let name: string | undefined;
+  if (node === undefined) {
+    const saved = await listConnections(context.secrets);
+    if (saved.length === 0) {
+      void window.showInformationMessage(l10n.t("No saved connections"));
+      return;
+    }
+    name = await window.showQuickPick(saved, {
+      placeHolder: l10n.t("Select the connection to edit"),
+    });
+  } else if (node.kind === "connection") {
+    name = node.name;
+  }
+  if (name === undefined) {
     return;
   }
-  const connectionString = await window.showInputBox({
-    prompt: connectionPrompt(),
-    placeHolder: CONNECTION_PLACEHOLDER,
-    validateInput: validateConnectionInput,
-    password: true,
-    ignoreFocusOut: true,
-  });
-  if (connectionString == null || connectionString === "") {
-    return;
-  }
-  await saveConnection(context.secrets, name, connectionString);
-  provider.refresh();
+  await openConnectionForm(formDeps(context, provider), name);
 }
 
 export async function deleteConnectionCommand(
@@ -62,6 +77,8 @@ export async function deleteConnectionCommand(
   }
   await deleteConnection(context.secrets, node.name);
   provider.refresh();
+  // An open edit tab would write the connection back on Save.
+  closeConnectionForm(node.name);
 }
 
 // A node knows the whole path down to itself, so one command serves all three

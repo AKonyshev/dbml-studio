@@ -3,12 +3,13 @@
 The dbml-mcp package's history. Its version is its own; the format is
 [Keep a Changelog](http://keepachangelog.com/).
 
-## [0.2.0] - 2026-10-09
+## [0.2.0] - 2026-10-13
 
 ### Added
 
 - MySQL / MariaDB and SQL Server, next to PostgreSQL: `mysql://`, `mariadb://`, `sqlserver://`, `mssql://` and SQL Server connection strings (`Server=…;Database=…;User Id=…;Password=…`), in `DBML_CONNECTION_<NAME>` or as `connection`.
 - `compare_with_database` picks the database's own default schema when `schema` is left out.
+- Other query parameters of a `sqlserver://` URL reach the driver as connection-string settings (`applicationIntent`, `packet size`, `authentication`…). The server, database, login and password are never taken from the query.
 
 ### Changed
 

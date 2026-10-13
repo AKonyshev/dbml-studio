@@ -122,6 +122,85 @@ describe("SQL Server connection strings", () => {
     }
   });
 
+  it("passes the URL query keys it has no name for on as ADO keys", () => {
+    const text = mssql.normalize(
+      "sqlserver://u:p@h/db?authentication=ActiveDirectoryPassword&ApplicationIntent=ReadOnly&packet%20size=4096&application%20name=a%20b&password=other&server=x",
+    );
+    const ado = parseAdo(text);
+    expect(ado.get("authentication")).toBe("ActiveDirectoryPassword");
+    expect(ado.get("applicationintent")).toBe("ReadOnly");
+    expect(ado.get("packet size")).toBe("4096");
+    expect(ado.get("application name")).toBe("a b");
+    // What the URL already says wins over a query key that repeats it.
+    expect(ado.get("server")).toBe("h");
+    expect(ado.get("password")).toBe("p");
+    const config = RealPool.parseConnectionString(text);
+    expect(config.options.packetSize).toBe(4096);
+  });
+
+  it.each([
+    ["a key that carries a pair", "x%3Bserver%3Devil%3B=", {}],
+    ["a key padded with a space", "%20server=evil", {}],
+    ["a key that carries the password", "x%3Bpassword%3Dpwned%3B=", {}],
+    ["a key with a pair and a value", "k%3D1%3Bserver%3Devil%3B=1", {}],
+    ["a key with a quote", "x%22%3Bserver%3Devil=1", {}],
+    ["the password's alias", "pwd=other", {}],
+    ["the user's alias", "uid=other", {}],
+    ["the user's other alias", "User%20Name=other", {}],
+    ["the server's alias", "Data%20Source=evil", {}],
+    ["the database's alias", "Initial%20Catalog=evil", {}],
+  ])(
+    "does not let %s in the query repoint the host or the login",
+    (_what, query) => {
+      const text = mssql.normalize(
+        `sqlserver://u:p@h/db?${query}&packet%20size=4096`,
+      );
+      const ado = parseAdo(text);
+      expect(ado.get("server")).toBe("h");
+      expect(ado.get("password")).toBe("p");
+      expect(ado.get("user id")).toBe("u");
+      expect(ado.get("database")).toBe("db");
+      expect(ado.get("packet size")).toBe("4096");
+      expect(text).not.toMatch(/evil|pwned|other/);
+      const config = RealPool.parseConnectionString(text);
+      expect(config).toMatchObject({
+        server: "h",
+        password: "p",
+        user: "u",
+        database: "db",
+      });
+    },
+  );
+
+  it("does not pass a `schemas` query key on: it is the connector's own filter, not the URL's", () => {
+    const text = mssql.normalize(
+      "sqlserver://u:p@h/db?schemas=dbo&packet%20size=4096",
+    );
+    const ado = parseAdo(text);
+    expect(ado.has("schemas")).toBe(false);
+    expect(ado.get("packet size")).toBe("4096");
+    expect(text).not.toMatch(/schemas/i);
+  });
+
+  it.each([
+    "sqlserver://u:p@h/db?xschemas=dbo",
+    "sqlserver://u:p@h/db?my%20schemas=dbo",
+    "sqlserver://u:p@h/db?application%20name=schemas%3Ddbo",
+  ])(
+    "passes nothing on that the connector would read as its filter: %s",
+    (url) => {
+      expect(mssql.normalize(url)).not.toMatch(/schemas/i);
+    },
+  );
+
+  it("does not take a login from the query", () => {
+    const ado = parseAdo(
+      mssql.normalize("sqlserver://u@h/db?password=q%3Br&pwd=x"),
+    );
+    expect(ado.has("password")).toBe(false);
+    expect(ado.has("pwd")).toBe(false);
+  });
+
   it("keeps an instance and a port apart", () => {
     const config = RealPool.parseConnectionString(
       mssql.normalize("sqlserver://u:p@h:1444/db?instanceName=SQLEXPRESS"),

@@ -73,4 +73,16 @@ export default defineConfig({
     buildMcpServer(),
   ],
   resolve: workspaceReactResolve,
+  // Two webview pages: the diagram (`index`) and the connection form. The names
+  // are what `getWebviewHtml({ inputName })` looks the page up by. With more
+  // than one input the plugin stops inlining dynamic imports, so the pages may
+  // share chunks.
+  build: {
+    rollupOptions: {
+      input: {
+        index: path.resolve(__dirname, "index.html"),
+        "connection-form": path.resolve(__dirname, "connection-form.html"),
+      },
+    },
+  },
 });

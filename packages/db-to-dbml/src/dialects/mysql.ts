@@ -12,6 +12,7 @@ import {
   CONNECT_TIMEOUT_MS,
   NETWORK_CODES,
   QUERY_TIMEOUT_MS,
+  UNREADABLE_CONNECTION,
   UNSUPPORTED_CONNECTION,
 } from "./catalog";
 
@@ -31,7 +32,7 @@ const SYSTEM_DATABASES = new Set([
 const unreadable = (): DbImportError =>
   new DbImportError(
     DbImportErrorCode.INVALID_CONNECTION_STRING,
-    "Connection string is not a readable MySQL URL",
+    UNREADABLE_CONNECTION.mysql,
   );
 
 // `mysql2` reads only `mysql://`, and so does the connector. MariaDB speaks the

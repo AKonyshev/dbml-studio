@@ -1,3 +1,5 @@
+import type { DialectId } from "./types";
+
 // Expanding a tree node must not be able to hang: a host that drops packets
 // holds an unbounded connect open for minutes. These bound both halves of a
 // catalogue round trip, for every database.
@@ -13,6 +15,14 @@ export const NETWORK_CODES = new Set([
   "ESOCKET",
   "ETIMEOUT",
 ]);
+
+// What a string a dialect owns, but cannot read, is refused with. Fixed
+// sentences: the string holds a password and is never repeated.
+export const UNREADABLE_CONNECTION: Record<DialectId, string> = {
+  postgres: "Connection string is not a readable PostgreSQL URL",
+  mysql: "Connection string is not a readable MySQL URL",
+  mssql: "Connection string is not a readable SQL Server connection string",
+};
 
 // What a string no dialect owns is refused with. It lives here rather than in
 // `detect.ts` so that an adapter can use it without importing the module that

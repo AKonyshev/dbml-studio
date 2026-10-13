@@ -124,6 +124,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "dbmlStudio.editConnection",
+        "title": "%command.editConnection%",
+        "icon": "$(edit)"
+      },
+      {
         "command": "dbmlStudio.deleteConnection",
         "title": "%command.deleteConnection%",
         "icon": "$(trash)"
@@ -345,6 +350,11 @@
         },
         {
           "command": "dbmlStudio.compareWithConnection",
+          "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
+          "group": "inline"
+        },
+        {
+          "command": "dbmlStudio.editConnection",
           "when": "view == dbmlStudio.panel && viewItem == dbmlConnection",
           "group": "inline"
         },
