@@ -4,11 +4,12 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.4.0] - 2026-10-09
+## [1.4.0] - 2026-10-13
 
 ### Added
 
-- **MySQL, MariaDB and SQL Server, next to PostgreSQL.** Add a connection with a `mysql://`, `mariadb://`, `sqlserver://` or `mssql://` URL, or paste a SQL Server connection string (`Server=…;Database=…;User Id=…;Password=…`), and the connections panel, **Import from Database** and **Compare with Database** work with it as they do with PostgreSQL. The panel shows each connection's database kind. A MySQL database opens straight to its import and compare actions, because in MySQL a database is its own schema. The input box tells you as you type whether it recognises the string.
+- **A form for connections, in place of the connection-string box.** **Add connection** opens a tab where you pick the database kind and fill in host, port, user, password and database, or paste a connection string you already have and see it split into the fields. Passwords with `@`, `#` or `;` need no escaping. **Test** connects and lists the server's databases before you save; for SQL Server with a self-signed certificate it tells you to tick **Trust server certificate**. The new **Edit Connection** command (on a connection's context menu and in the Command Palette) opens the same form for a saved connection: the password field stays empty and leaves the stored password as it is, and a connection saved without changes keeps its string exactly as it was. **New connection…** in Import and Compare opens the form too, and the import or comparison carries on with the connection once you save it.
+- **MySQL, MariaDB and SQL Server, next to PostgreSQL.** Add a MySQL / MariaDB or SQL Server connection through the form, or paste a `mysql://`, `mariadb://`, `sqlserver://` or `mssql://` URL or a SQL Server connection string (`Server=…;Database=…;User Id=…;Password=…`), and the connections panel, **Import from Database** and **Compare with Database** work with it as they do with PostgreSQL. The panel shows each connection's database kind. A MySQL database opens straight to its import and compare actions, because in MySQL a database is its own schema.
 - **Imports leave the default schema unwritten.** Tables from MySQL's database or SQL Server's `dbo` come out as `Table "book"`, the way PostgreSQL's `public` always has, not as `Table "library"."book"`.
 - **Comparisons follow the database's own rules.** MySQL enums have no names and SQL Server's are check constraints, so both are compared by their values; MySQL's own indexes on foreign keys are not reported as differences. A DBML file that matches the database now compares as identical. The compare picks the database's default schema first.
 
@@ -16,6 +17,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - **The package is larger,** about 9.8 MB in place of 8.1: it carries the MySQL and SQL Server drivers, for the extension and for its MCP server.
 - **The MCP server (`dbml-mcp` 0.2.0) reaches the same databases.** `list_connections` now names each connection's database kind.
+- **Import no longer asks whether to save a new connection afterwards:** a connection made with **New connection…** is saved by the form before the import starts.
 
 ## [1.3.0] - 2026-10-08
 
