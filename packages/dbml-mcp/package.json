@@ -1,6 +1,6 @@
 {
   "name": "dbml-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "An MCP server that lets AI agents import a PostgreSQL, MySQL or SQL Server schema as DBML, compare DBML with a live database, validate DBML and convert between DBML and SQL.",
   "license": "MIT",
   "author": "AKonyshev",

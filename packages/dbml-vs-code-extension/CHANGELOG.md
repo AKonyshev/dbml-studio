@@ -4,6 +4,19 @@ All notable changes to the "dbml-studio" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.4.0] - 2026-10-09
+
+### Added
+
+- **MySQL, MariaDB and SQL Server, next to PostgreSQL.** Add a connection with a `mysql://`, `mariadb://`, `sqlserver://` or `mssql://` URL, or paste a SQL Server connection string (`Server=…;Database=…;User Id=…;Password=…`), and the connections panel, **Import from Database** and **Compare with Database** work with it as they do with PostgreSQL. The panel shows each connection's database kind. A MySQL database opens straight to its import and compare actions, because in MySQL a database is its own schema. The input box tells you as you type whether it recognises the string.
+- **Imports leave the default schema unwritten.** Tables from MySQL's database or SQL Server's `dbo` come out as `Table "book"`, the way PostgreSQL's `public` always has, not as `Table "library"."book"`.
+- **Comparisons follow the database's own rules.** MySQL enums have no names and SQL Server's are check constraints, so both are compared by their values; MySQL's own indexes on foreign keys are not reported as differences. A DBML file that matches the database now compares as identical. The compare picks the database's default schema first.
+
+### Changed
+
+- **The package is larger,** about 9.8 MB in place of 8.1: it carries the MySQL and SQL Server drivers, for the extension and for its MCP server.
+- **The MCP server (`dbml-mcp` 0.2.0) reaches the same databases.** `list_connections` now names each connection's database kind.
+
 ## [1.3.0] - 2026-10-08
 
 ### Added
